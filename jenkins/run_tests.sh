@@ -18,7 +18,7 @@ if [ $? -ne 0 ] ; then
   echo "make failed"
 fi
 
-emulator/Test/testmain \
+Test/testmain \
   --gtest_shuffle \
   --gtest_output=xml:${WORKSPACE}/testunit.xml
 
