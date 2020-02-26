@@ -1,0 +1,66 @@
+add_library(uiiitedge SHARED
+  ${CMAKE_CURRENT_SOURCE_DIR}/Detail/printtable.cpp
+
+  ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entry.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryleastimpedance.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryroundrobin.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryrandom.cpp
+
+  ${CMAKE_CURRENT_SOURCE_DIR}/composer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/computer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/container.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientfactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientmulti.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientpool.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputerclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputerserver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputerwsk.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontroller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontrollerclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontrolleretsi.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontrolleretsibalanced.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontrollerflat.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontrollerhier.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontrollermessages.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecontrollerserver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgedispatcher.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgelambdaprocessor.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgelambdaprocessoroptions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgemessages.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgerouter.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeserver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeserveroptions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/etsiedgeclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtableclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtableinterface.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtableserver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/lambda.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerasync.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerfactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerperiodic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizertrivial.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/processloadserver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/processor.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/processortype.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimatordelay.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimatorfactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimatorprobe.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimatorrtt.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimatorutil.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/rttestimator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/topology.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/utilestimator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/wskproxy.cpp
+)
+
+target_link_libraries(uiiitedge
+  uiiitetsimec
+  uiiitopenwhisk
+  uiiitrpc
+  uiiitsupport
+)

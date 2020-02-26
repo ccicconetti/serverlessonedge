@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package uiiit.rpc;
+
+service EdgeServer {
+  // request the execution of a remote procedure on an edge computer
+  rpc RunLambda (LambdaRequest) returns (LambdaResponse) {}
+}
+
+message LambdaRequest {
+  // name of the remote procedure to be executed
+  // should never be empty
+  string name    = 1;
+
+  // function input, encoded as a string (may be empty)
+  string input   = 2;
+
+  // function input, encoded as a binary object (may be empty)
+  bytes  datain  = 3;
+
+  // if true then instead of actually executing the function the edge server
+  // gives an estimate of the time required to run it in response
+  bool   dry     = 4;
+
+  // if true this means that this request has been issued from a router or
+  // dispatcher and, hence, should not be forwarded further but rather
+  // addressed to a computer
+  bool   forward = 5;
+
+  // number of edge nodes traversed so far
+  uint32 hops    = 6;
+}
+
+message LambdaResponse {
+  // execution response:
+  // - OK: the function was executed with success
+  // - else: string encoding the type of error encountered
+  // should never be empty
+  string retcode   = 1;
+
+  // execution output, encoded as a string (may be empty)
+  string output    = 2;
+
+  // identifier of the edge computer that carried out the procedure
+  string responder = 3;
+
+  // time required for the execution of the lambda on the computer, in ms
+  // (does not include queueing in the gRPC server)
+  uint32 ptime     = 4;
+  
+  // execution output, encoded as a binary object (may be empty)
+  bytes  dataout   = 5;
+
+  // utilization of the edge computer before the execution
+  // of this procedure, scaled in 0-100
+  uint32 load1     = 6;
+
+  // average utilization of the edge computer in the last 10 seconds,
+  // scaled in 0-100
+  uint32 load10    = 7;
+
+  // average utilization of the edge computer in the last 30 seconds,
+  // scaled in 0-100
+  uint32 load30    = 8;
+
+  // number of edge nodes traversed so far
+  uint32 hops      = 9;
+}

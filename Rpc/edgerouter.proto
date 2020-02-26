@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+import "void.proto";
+
+package uiiit.rpc;
+
+service EdgeRouter {
+  rpc Configure    (EdgeRouterConf) returns (Return) {}
+  rpc GetTable     (TableId)        returns (ForwardingTable) {}
+  rpc GetNumTables (Void)           returns (NumTables) {}
+}
+
+message EdgeRouterConf {
+  enum Action {
+    FLUSH  = 0; // valid fields: none
+    CHANGE = 1; // valid fields: all
+    REMOVE = 2; // valid fields: lambda
+  }
+  Action action      = 1;
+  string lambda      = 2;
+  string destination = 3;
+  float  weight      = 4;
+  bool   final       = 5;
+}
+
+message Return {
+  string msg = 2;
+}
+
+message ForwardingTable {
+  message Entry {
+    string lambda      = 1;
+    string destination = 2;
+    float  weight      = 3;
+    bool   final       = 4;
+  }
+  repeated Entry entries = 1;
+}
+
+message TableId {
+  uint32 value = 1;
+}
+
+message NumTables {
+  uint32 value = 1;
+}

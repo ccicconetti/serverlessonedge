@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "void.proto";
+
+package uiiit.rpc;
+
+service EdgeComputer {
+  rpc StreamUtil (Void) returns (stream Utilization) {}
+}
+
+message Utilization {
+  map<string, float> values = 1;
+}
+

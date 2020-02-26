@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+import "void.proto";
+
+package uiiit.rpc;
+
+service EdgeController {
+  rpc AnnounceComputer (ComputerInfo) returns (Void) {}
+  rpc AnnounceRouter   (RouterInfo)   returns (Void) {}
+  rpc RemoveComputer   (ComputerInfo) returns (Void) {}
+}
+
+message ComputerInfo {
+  message Container {
+    string name       = 1;
+    string processor  = 2;
+    string lambda     = 3;
+    uint32 numWorkers = 4;
+  }
+  string edgeServerEndpoint     = 1;
+  repeated Container containers = 2;
+}
+
+message RouterInfo {
+  string edgeServerEndpoint      = 1;
+  string forwardingTableEndpoint = 2;
+}
