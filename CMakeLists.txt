@@ -32,9 +32,6 @@ set (COMPILER_COMMON_FLAGS "-Wall -Wextra -Werror -DGTEST_CREATE_SHARED_LIBRARY=
 set (CMAKE_CXX_FLAGS_DEBUG "${COMPILER_COMMON_FLAGS} -g -O0")
 set (CMAKE_CXX_FLAGS_RELEASE "${COMPILER_COMMON_FLAGS} -O2 -DNDEBUG")
 
-add_subdirectory(emulator)
-add_subdirectory(misc)
-
 MESSAGE("============CONFIGURATION SUMMARY================")
 MESSAGE("")
 MESSAGE("CMAKE_SOURCE_DIR:         ${CMAKE_CURRENT_SOURCE_DIR}")
@@ -56,6 +53,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec/rest)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec/rest/support)
+
+# third-party includes from external repos
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec/third_party)
 
 # external dependencies
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto-src)
