@@ -1,0 +1,3 @@
+[submodule "etsimec"]
+	path = etsimec
+	url = https://github.com/ccicconetti/etsimec
