@@ -30,7 +30,7 @@ make
 
 This will compile the full build tree. The executables will be in `build/debug/Executables` from the repo root.
 
-The unit tests can be executed by running `build/debug/Test/testmain`.
+The unit tests can be executed by running `build/debug/Test/testedge` or, if you want to execute _all_ the unit tests (including those of the sub-modules), run `NOBUILD=1 etsimec/rest/support/jenkins/run_tests.sh`. Note that without setting the environment variable `NOBUILD` the script will remove the full content of the build directory.
 
 If you want to compile with compiler optimisations and no assertions:
 
