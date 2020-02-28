@@ -84,4 +84,8 @@ add_subdirectory(etsimec/rest/support/Support)
 # unit tests
 if (${CMAKE_BUILD_TYPE} STREQUAL "debug")
   add_subdirectory(Test)
+  set(skip_google_test TRUE)
+  add_subdirectory(etsimec/Test)
+  add_subdirectory(etsimec/rest/Test)
+  add_subdirectory(etsimec/rest/support/Test)
 endif()
