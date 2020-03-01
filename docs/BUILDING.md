@@ -43,7 +43,7 @@ make
 
 Note that this requires extra dependencies, as explained below.
 
-### Dependencies
+## Dependencies
 
 Compiling the software requires the following:
 
@@ -54,6 +54,8 @@ Compiling the software requires the following:
 - [gRPC](https://grpc.io/), tested with 1.27.1
 - [protobuf](https://developers.google.com/protocol-buffers/), tested with version shipped with gRPC 1.27.1
 - [OpenCV](https://opencv.org/) (_optional_), tested with 4.1.1 and 4.2.0
+
+### Mac OS X
 
 With Mac OS X this should be as simple as installing everything via [Homebrew](https://brew.sh/):
 
@@ -66,6 +68,8 @@ If you also want to compile OpenCV stuff:
 ```
 brew install opencv
 ```
+
+### Linux
 
 On Linux this is a bit more complicated. A script that downloads and installs all dependencies can be found in the repo, which assumes that you are using `Ubuntu 18.04 (Bionic)`. Note that the script requires root privileges, it will change the system default CMake version to 3.16.1, and it will install headers and libraries in the system path `/usr/local`. To run it just hit:
 
