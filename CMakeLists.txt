@@ -24,7 +24,9 @@ find_package(Boost
   REQUIRED
   COMPONENTS program_options filesystem system chrono thread
 )
-find_package(OpenCV REQUIRED) # http://opencv.org
+if(WITH_OPENCV)
+  find_package(OpenCV REQUIRED) # http://opencv.org
+endif()
 find_package(CppREST REQUIRED) # populates CPP_REST_INCLUDE_DIR and CPP_REST_LIBRARY
 
 set (DISABLE_WARNINGS "-Wno-missing-field-initializers -Wno-unused-parameter -Wnon-virtual-dtor")
@@ -69,7 +71,9 @@ add_subdirectory(Executables)
 
 # local libraries
 add_subdirectory(Edge)
-add_subdirectory(OpenCV)
+if(WITH_OPENCV)
+  add_subdirectory(OpenCV)
+endif()
 add_subdirectory(Rpc)
 add_subdirectory(Simulation)
 

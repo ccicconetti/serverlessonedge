@@ -1,9 +1,13 @@
 #!/bin/bash
 
-if [ $# -ne 1 ] ; then
-  echo "Syntax: `basename $0` <compiler_path>"
+if [ $# -lt 1 ] ; then
+  echo "Syntax: `basename $0` <compiler_path> [CMake options]"
   exit 1
 fi
+
+COMPILER=$1
+
+shift 1
 
 if [ ! -z "$( ls -A | grep -v .gitignore)" ]; then
   read -p "Directory not empty, remove everything? (say \"yes\" if sure) "
@@ -20,4 +24,8 @@ fi
 
 CURRENTDIR=${PWD##*/}
 
-cmake -DCMAKE_CXX_COMPILER=$1 -DCMAKE_BUILD_TYPE=${CURRENTDIR} ../../
+cmake \
+  -DCMAKE_CXX_COMPILER=$COMPILER \
+  -DCMAKE_BUILD_TYPE=${CURRENTDIR} \
+  "$@" \
+  ../../

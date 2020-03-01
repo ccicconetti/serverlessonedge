@@ -1,4 +1,6 @@
-add_subdirectory(OpenCV)
+if(WITH_OPENCV)
+  add_subdirectory(OpenCV)
+endif()
 
 add_executable(clienttracegen
   ${CMAKE_CURRENT_SOURCE_DIR}/clienttracegenmain.cpp
