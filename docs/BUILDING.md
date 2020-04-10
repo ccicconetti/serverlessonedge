@@ -4,6 +4,7 @@
 
 ```
 git clone https://github.com/ccicconetti/serverlessonedge.git
+cd serverlessonedge
 git submodule update --init --recursive
 ```
 
@@ -71,10 +72,10 @@ brew install opencv
 
 ### Linux
 
-On Linux this is a bit more complicated. A script that downloads and installs all dependencies can be found in the repo, which assumes that you are using `Ubuntu 18.04 (Bionic)`. Note that the script requires root privileges, it will change the system default CMake version to 3.16.1, and it will install headers and libraries in the system path `/usr/local`. To run it just hit:
+On Linux this is a bit more complicated. A script that downloads and installs all dependencies can be found in the repo, which assumes that you are using `Ubuntu 18.04 (Bionic)`. Note that the script requires root privileges, it will change the system default CMake version to 3.16.1, and it will install headers and libraries in the system path `/usr/local`. To run it just hit (from within the cloned `serverlessonedge` repository):
 
 ```
-[sudo] serverlessonedge/etsimec/utils/build_deps.sh
+[sudo] etsimec/utils/build_deps.sh
 ```
 
 from the same directory where you have cloned the repository. This will require about 2 GB of disk space, most of which can be freed after installation by removing the local repositories with compilation artifacts.
@@ -82,7 +83,7 @@ from the same directory where you have cloned the repository. This will require 
 If you want to compile OpenCV, run also:
 
 ```
-[sudo] serverlessonedge/utils/build_opencv.sh
+[sudo] utils/build_opencv.sh
 ```
 
 Note that this requires about 12 GB of free space (!).
