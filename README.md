@@ -1,4 +1,4 @@
-# Serverless on Edge
+![](docs/logo-small.png)
 
 A decentralized framework for the distribution of lambda functions, in a Function-as-a-Service (FaaS) model, to multiple serverless platforms.
 
@@ -181,3 +181,7 @@ The same example can be executed, for instance, launching:
 
 - `edgedispatcher` instead of `edgerouter`;
 - `OpenCV/facerecclient` instead of `edgeclient` and `edgecomputerfacerec` instead of `OpenCV/edgecomputer`, though the latter requires to download suitable models from [OpenCV repositories](https://github.com/opencv).
+
+## Credits
+
+- Chiara Spinelli ([twitter](https://twitter.com/chiarapeggy) / [instagram](https://www.instagram.com/chiarapeggy/)): logo artwork
