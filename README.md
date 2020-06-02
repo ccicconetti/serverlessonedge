@@ -40,7 +40,9 @@ For each of the components there are different versions, illustrated below.
 
 [ETSI MEC](https://www.etsi.org/technologies/multi-access-edge-computing) is a set of specifications, under definition in the Industry Study Group MEC of the European Telecommunications Standards Institute, aimed at defining a reference architecture and open APIs for the deployment and lifecycle management of vendor-neutral applications in edge networks of telecom operators.
 
-We have implemented a partial integration of our _Serverless on Edge_ framework with the ETSI MEC, specifically with the `Mx2` interface. More information can be found in the [dedicated GitHub repository](https://github.com/ccicconetti/etsimec), which is also added as a sub-module to this one.
+We have implemented a partial integration of our _Serverless on Edge_ framework with the ETSI MEC, specifically with the `Mx2` interface. More information can be found in the [dedicated GitHub repository](https://github.com/ccicconetti/etsimec), which is added as a sub-module to this one.
+
+This project is listed as one of the MEC Solutions in the [ETSI MEC ecosystem wiki page](https://mecwiki.etsi.org/index.php?title=MEC_Ecosystem).
 
 ## Integration with Apache OpenWhisk
 
