@@ -42,6 +42,7 @@ SOFTWARE.
 #include "EtsiMec/applistclient.h"
 #include "EtsiMec/grpcueapplcmproxy.h"
 #include "EtsiMec/staticueapplcmproxy.h"
+#include "Support/tostring.h"
 #include "Support/chrono.h"
 #include "Support/conf.h"
 #include "Support/wait.h"
@@ -183,7 +184,15 @@ TEST_F(TestEtsiTransaction, test_endtoend) {
   // verify that the list of apps has not changed
   const auto myAnotherAppList =
       uiiit::etsimec::AppListClient(mySystem.theApiRoot)();
-  ASSERT_EQ(myAppList, myAnotherAppList);
+  ASSERT_EQ(myAnotherAppList.size(), myAppList.size());
+  for (auto it = myAnotherAppList.begin(), jt = myAppList.begin();
+       it != myAnotherAppList.end();
+       ++it, ++jt) {
+    ASSERT_EQ(toString(*it), toString(*jt));
+  }
+
+  // does not compile with gcc 7.5.0 ¯\_(ツ)_/¯
+  // ASSERT_EQ(myAppList, myAnotherAppList)*/
 
   // run another lambda on the other computer
   const auto myResp2 = myClient.RunLambda(myReq, false);
