@@ -57,7 +57,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec/rest)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec/rest/support)
 
 # third-party includes from external repos
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec/third_party)
+include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/etsimec/third_party)
 
 # external dependencies
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto-src)
