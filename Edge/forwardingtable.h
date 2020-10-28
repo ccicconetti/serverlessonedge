@@ -55,6 +55,7 @@ class ForwardingTable final : public ForwardingTableInterface
     Random         = 0,
     LeastImpedance = 1,
     RoundRobin     = 2,
+    ProportionalFairness = 3,
   };
 
   NONCOPYABLE_NONMOVABLE(ForwardingTable);
