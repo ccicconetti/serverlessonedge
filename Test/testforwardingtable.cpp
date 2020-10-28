@@ -49,6 +49,46 @@ TEST_F(TestForwardingTable, test_ctor) {
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::LeastImpedance)));
 }
 
+TEST_F(TestForwardingTable, test_pf_ctor) {
+  ASSERT_NO_THROW(
+      (ForwardingTable(ForwardingTable::Type::ProportionalFairness)));
+  LOG(INFO) << ">> RICHIAMATO COSTRUTTORE FORWARDING_TABLE(pf)";
+}
+
+TEST_F(TestForwardingTable, test_pf_operations) {
+  ForwardingTable myTable(ForwardingTable::Type::ProportionalFairness);
+
+  myTable.change("lambda1", "dest1:666", 1, true);
+  myTable.change("lambda1", "dest2:666", 0.5, false);
+  myTable.change("lambda1", "dest2:667", 99, true);
+
+  myTable.change("lambda2", "dest1:666", 1, true);
+  myTable.change("lambda2", "dest2:666", 0.5, false);
+
+  myTable.change("another_lambda", "dest3:666", 42, false);
+
+  ASSERT_EQ(std::string("another_lambda [42 ] dest3:666\n"
+                        "lambda1        [1  ] dest1:666 (F)\n"
+                        "               [0.5] dest2:666\n"
+                        "               [99 ] dest2:667 (F)\n"
+                        "lambda2        [1  ] dest1:666 (F)\n"
+                        "               [0.5] dest2:666\n"),
+            ::toString(myTable));
+
+  std::string ret = myTable("lambda1");
+  LOG(INFO) << "Destinazione per \"Lambda1\" = " << ret;
+  ASSERT_EQ(ret, std::string("dest2:667"));
+
+  ret = myTable("lambda2");
+  LOG(INFO) << "Destinazione per \"Lambda2\" = " << ret;
+  ASSERT_EQ(ret, std::string("dest1:666"));
+
+  myTable.remove("lambda1", "dest2:667");
+  ret = myTable("lambda1");
+  LOG(INFO) << "Destinazione per \"Lambda1\" DOPO la rimozione = " << ret;
+  ASSERT_EQ(ret, std::string("dest1:666"));
+}
+
 TEST_F(TestForwardingTable, test_add_remove) {
   ForwardingTable myTable(ForwardingTable::Type::Random);
 
