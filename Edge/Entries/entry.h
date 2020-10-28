@@ -50,6 +50,9 @@ class Entry
     bool        operator<(const Element& aOther) const noexcept {
       return theWeight < aOther.theWeight;
     }
+    bool operator>(const Element& aOther) const noexcept {
+      return theWeight > aOther.theWeight;
+    }
   };
 
  public:
