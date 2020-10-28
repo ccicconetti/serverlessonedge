@@ -30,6 +30,7 @@ SOFTWARE.
 #include "forwardingtable.h"
 
 #include "Edge/Entries/entryleastimpedance.h"
+#include "Edge/Entries/entryproportionalfairness.h"
 #include "Edge/Entries/entryrandom.h"
 #include "Edge/Entries/entryroundrobin.h"
 #include "forwardingtableexceptions.h"
@@ -65,9 +66,11 @@ void ForwardingTable::change(const std::string& aLambda,
       ret.first->second.reset(new entries::EntryRandom());
     } else if (theType == Type::LeastImpedance) {
       ret.first->second.reset(new entries::EntryLeastImpedance());
-    } else {
-      assert(theType == Type::RoundRobin);
+    } else if (theType == Type::RoundRobin) {
       ret.first->second.reset(new entries::EntryRoundRobin());
+    } else {
+      assert(theType == Type::ProportionalFairness);
+      ret.first->second.reset(new entries::EntryProportionalFairness());
     }
   }
 
@@ -200,11 +203,11 @@ ForwardingTable::fullTable() const {
 }
 
 const std::string& toString(const ForwardingTable::Type aType) {
-  static const std::map<ForwardingTable::Type, std::string> myValues({
-      {ForwardingTable::Type::Random, "random"},
-      {ForwardingTable::Type::LeastImpedance, "least-impedance"},
-      {ForwardingTable::Type::RoundRobin, "round-robin"},
-  });
+  static const std::map<ForwardingTable::Type, std::string> myValues(
+      {{ForwardingTable::Type::Random, "random"},
+       {ForwardingTable::Type::LeastImpedance, "least-impedance"},
+       {ForwardingTable::Type::RoundRobin, "round-robin"},
+       {ForwardingTable::Type::ProportionalFairness, "proportional-fairness"}});
   assert(myValues.find(aType) != myValues.end());
   return myValues.find(aType)->second;
 }
@@ -216,6 +219,9 @@ ForwardingTable::Type forwardingTableTypeFromString(const std::string& aType) {
     return ForwardingTable::Type::LeastImpedance;
   } else if (aType == "round-robin") {
     return ForwardingTable::Type::RoundRobin;
+  } else {
+    assert(aType == "proportional-fairness");
+    return ForwardingTable::Type::ProportionalFairness;
   }
   throw InvalidForwardingTableType(aType);
 }
