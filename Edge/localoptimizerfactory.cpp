@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "Support/conf.h"
 #include "localoptimizerasync.h"
+#include "localoptimizerasyncPF.h"
 #include "localoptimizernone.h"
 #include "localoptimizertrivial.h"
 
@@ -56,7 +57,13 @@ LocalOptimizerFactory::make(ForwardingTable&     aTable,
   } else if (myType == "async") {
     myRet.reset(new LocalOptimizerAsync(aTable, aConf.getDouble("alpha")));
 
-  } else {
+  } else if (myType == "asyncPF") {
+    myRet.reset(new LocalOptimizerAsyncPF(
+        aTable, aConf.getDouble("alpha"), aConf.getDouble("beta")));
+
+  }
+
+  else {
     throw std::runtime_error("Invalid local optimizer type: " + myType);
   }
 
