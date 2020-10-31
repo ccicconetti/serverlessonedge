@@ -52,7 +52,6 @@ TEST_F(TestForwardingTable, test_ctor) {
 TEST_F(TestForwardingTable, test_pf_ctor) {
   ASSERT_NO_THROW(
       (ForwardingTable(ForwardingTable::Type::ProportionalFairness)));
-  LOG(INFO) << ">> RICHIAMATO COSTRUTTORE FORWARDING_TABLE(pf)";
 }
 
 TEST_F(TestForwardingTable, test_pf_operations) {
