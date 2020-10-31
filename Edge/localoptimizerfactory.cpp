@@ -31,7 +31,7 @@ SOFTWARE.
 
 #include "Support/conf.h"
 #include "localoptimizerasync.h"
-#include "localoptimizerasyncPF.h"
+#include "localoptimizerasyncpf.h"
 #include "localoptimizernone.h"
 #include "localoptimizertrivial.h"
 
