@@ -70,12 +70,14 @@ void ForwardingTable::change(const std::string& aLambda,
       ret.first->second.reset(new entries::EntryRoundRobin());
     } else {
       assert(theType == Type::ProportionalFairness);
-      ret.first->second.reset(new entries::EntryProportionalFairness());
+      //ret.first->second.reset(new entries::EntryProportionalFairness()); <<<<<<<<<<<<<<<<<<
+      ret.first->second.reset(new entries::EntryLeastImpedance());
     }
   }
 
   assert(ret.first != theTable.end());
   assert(static_cast<bool>(ret.first->second));
+  LOG(INFO) << "ENTRY.CHANGE CON BOOL" << '\n'; 
   ret.first->second->change(aDest, aWeight, aFinal);
 
   VLOG(1) << "Changed the weight of destination " << aDest << " for lambda "
@@ -85,7 +87,11 @@ void ForwardingTable::change(const std::string& aLambda,
 void ForwardingTable::change(const std::string& aLambda,
                              const std::string& aDest,
                              const float        aWeight) {
+  
+  LOG(INFO) << "FORWARDINGTABLE.CHANGE";
+
   if (aDest.empty()) {
+    LOG(INFO) << "FIRST IF";
     throw NoDestinations();
   }
   if (aWeight < 0) {
@@ -96,9 +102,11 @@ void ForwardingTable::change(const std::string& aLambda,
 
   const auto it = theTable.find(aLambda);
   if (it == theTable.end()) {
+    LOG(INFO) << "THIRD IF";
     throw NoDestinations();
   }
 
+  LOG(INFO) << "ENTRY.CHANGE senza BOOL";
   it->second->change(aDest, aWeight);
 
   VLOG(1) << "Changed the weight of destination " << aDest << " for lambda "
