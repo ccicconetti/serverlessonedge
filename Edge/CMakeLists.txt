@@ -41,7 +41,7 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/lambda.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerasync.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerasyncPF.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerasyncpf.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerfactory.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizerperiodic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/localoptimizertrivial.cpp
