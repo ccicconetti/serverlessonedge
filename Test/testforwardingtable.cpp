@@ -76,13 +76,13 @@ TEST_F(TestForwardingTable, test_pf_operations) {
 
   std::string ret = myTable("lambda1");
   LOG(INFO) << "Destinazione per \"Lambda1\" = " << ret;
-  ASSERT_EQ(ret, std::string("dest2:667"));
+  ASSERT_EQ(ret, std::string("dest2:666"));
 
   ret = myTable("lambda2");
   LOG(INFO) << "Destinazione per \"Lambda2\" = " << ret;
-  ASSERT_EQ(ret, std::string("dest1:666"));
+  ASSERT_EQ(ret, std::string("dest2:666"));
 
-  myTable.remove("lambda1", "dest2:667");
+  myTable.remove("lambda1", "dest2:666");
   ret = myTable("lambda1");
   LOG(INFO) << "Destinazione per \"Lambda1\" DOPO la rimozione = " << ret;
   ASSERT_EQ(ret, std::string("dest1:666"));
