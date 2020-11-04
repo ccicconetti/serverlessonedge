@@ -29,14 +29,13 @@ SOFTWARE.
 
 #include "Edge/forwardingtable.h"
 #include "Edge/forwardingtableexceptions.h"
+#include "Edge/lambda.h"
 #include "Support/chrono.h"
 #include "Support/tostring.h"
 #include "Support/wait.h"
 
 #include "gtest/gtest.h"
-
 #include <cmath>
-
 #include <glog/logging.h>
 
 namespace uiiit {
@@ -56,36 +55,64 @@ TEST_F(TestForwardingTable, test_pf_ctor) {
 
 TEST_F(TestForwardingTable, test_pf_operations) {
   ForwardingTable myTable(ForwardingTable::Type::ProportionalFairness);
+  myTable.setAlpha(2);
+  myTable.setBeta(1);
 
   myTable.change("lambda1", "dest1:666", 1, true);
-  myTable.change("lambda1", "dest2:666", 0.5, false);
-  myTable.change("lambda1", "dest2:667", 99, true);
+  myTable.change("lambda1", "dest2:666", 1, true);
+  myTable.change("lambda1", "dest1:667", 1, true);
+  myTable.change("lambda2", "dest3:668", 1, true);
+  myTable.change("lambda2", "dest2:667", 1, true);
 
-  myTable.change("lambda2", "dest1:666", 1, true);
-  myTable.change("lambda2", "dest2:666", 0.5, false);
-
-  myTable.change("another_lambda", "dest3:666", 42, false);
-
-  ASSERT_EQ(std::string("another_lambda [42 ] dest3:666\n"
-                        "lambda1        [1  ] dest1:666 (F)\n"
-                        "               [0.5] dest2:666\n"
-                        "               [99 ] dest2:667 (F)\n"
-                        "lambda2        [1  ] dest1:666 (F)\n"
-                        "               [0.5] dest2:666\n"),
+  ASSERT_EQ(std::string("lambda1 [1] dest1:666 (F)\n"
+                        "        [1] dest1:667 (F)\n"
+                        "        [1] dest2:666 (F)\n"
+                        "lambda2 [1] dest2:667 (F)\n"
+                        "        [1] dest3:668 (F)\n"),
             ::toString(myTable));
 
-  std::string ret = myTable("lambda1");
-  LOG(INFO) << "Destinazione per \"Lambda1\" = " << ret;
-  ASSERT_EQ(ret, std::string("dest2:666"));
+  // scheduling test, function EdgeRouter.destination()
+  std::string scheduledDestination = myTable("lambda1");
+  ASSERT_EQ(scheduledDestination, std::string("dest1:666"));
 
-  ret = myTable("lambda2");
-  LOG(INFO) << "Destinazione per \"Lambda2\" = " << ret;
-  ASSERT_EQ(ret, std::string("dest2:666"));
+  // this statement simulates the EdgeRouter.processSuccess()
+  myTable.change("lambda1", scheduledDestination, 2);
+  ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
+                        "        [1] dest1:667 (F)\n"
+                        "        [1] dest2:666 (F)\n"
+                        "lambda2 [1] dest2:667 (F)\n"
+                        "        [1] dest3:668 (F)\n"),
+            ::toString(myTable));
 
-  myTable.remove("lambda1", "dest2:666");
-  ret = myTable("lambda1");
-  LOG(INFO) << "Destinazione per \"Lambda1\" DOPO la rimozione = " << ret;
-  ASSERT_EQ(ret, std::string("dest1:666"));
+  // new scheduling request after thePFstats update
+  scheduledDestination = myTable("lambda1");
+  ASSERT_EQ(scheduledDestination, std::string("dest2:666"));
+
+  // these statements simulate the EdgeRouter.processFailure()
+  myTable.remove("lambda1", scheduledDestination);
+  ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
+                        "        [1] dest1:667 (F)\n"
+                        "lambda2 [1] dest2:667 (F)\n"
+                        "        [1] dest3:668 (F)\n"),
+            ::toString(myTable));
+
+  // new scheduling request after deleting the previous scheduled destination in
+  // thePFstats data structure
+  scheduledDestination = myTable("lambda1");
+  ASSERT_EQ(scheduledDestination, std::string("dest1:667"));
+  ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
+                        "        [1] dest1:667 (F)\n" 
+                        "lambda2 [1] dest2:667 (F)\n"
+                        "        [1] dest3:668 (F)\n"),
+            ::toString(myTable));
+
+  // this statement simulates the EdgeRouter.processSuccess()
+  myTable.change("lambda1", scheduledDestination, 3);
+  ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
+                        "        [3] dest1:667 (F)\n" 
+                        "lambda2 [1] dest2:667 (F)\n"
+                        "        [1] dest3:668 (F)\n"),
+            ::toString(myTable));
 }
 
 TEST_F(TestForwardingTable, test_add_remove) {
