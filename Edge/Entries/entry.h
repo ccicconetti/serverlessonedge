@@ -119,6 +119,9 @@ class Entry
   //! \return All the destinations, weights, and final flags.
   std::map<std::string, std::pair<float, bool>> destinations() const;
 
+  //! print content of thePFstats (used for testing)
+  void printPFstats();
+
  private:
   virtual void updateWeight(const std::string& aDest,
                             const float        aOldWeight,
@@ -128,6 +131,17 @@ class Entry
 
  protected:
   std::list<Element> theDestinations;
+
+  /**
+   * data structure used only if the scheduling policy is PF:
+   * - the string is the destination (field theDestination in datastructure
+   *   Element);
+   * - pair.first is theLambdaServedCount related to the destination,
+   *   datastructure
+   * - pair.second is theTimestamp in which the destination joined the system
+   *   or has served the last Lambda Request
+   */
+  std::map<std::string, std::pair<int, double>> thePFstats;
 };
 
 } // namespace entries
