@@ -34,8 +34,6 @@ SOFTWARE.
 #include "localoptimizer.h"
 #include "localoptimizerfactory.h"
 
-#include <glog/logging.h>
-
 namespace uiiit {
 namespace edge {
 
@@ -57,6 +55,13 @@ EdgeRouter::EdgeRouter(const std::string&   aLambdaEndpoint,
     , theFinalTable(forwardingTableTypeFromString(aTableConf("type")))
     , theFinalOptimizer(
           LocalOptimizerFactory::make(theFinalTable, aLocalOptimizerConf)) {
+
+  if (aTableConf("type") == "proportional-fairness") {
+    theOverallTable.setAlpha(aTableConf.getDouble("alpha"));
+    theOverallTable.setBeta(aTableConf.getDouble("beta"));
+    theFinalTable.setAlpha(aTableConf.getDouble("alpha"));
+    theFinalTable.setBeta(aTableConf.getDouble("beta"));
+  }
 }
 
 std::string EdgeRouter::destination(const rpc::LambdaRequest& aReq) {
