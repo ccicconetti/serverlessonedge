@@ -58,9 +58,7 @@ LocalOptimizerFactory::make(ForwardingTable&     aTable,
     myRet.reset(new LocalOptimizerAsync(aTable, aConf.getDouble("alpha")));
 
   } else if (myType == "asyncPF") {
-    myRet.reset(new LocalOptimizerAsyncPF(
-        aTable, aConf.getDouble("alpha"), aConf.getDouble("beta")));
-
+    myRet.reset(new LocalOptimizerAsyncPF(aTable));
   }
 
   else {
