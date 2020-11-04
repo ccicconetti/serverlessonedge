@@ -52,9 +52,9 @@ class ForwardingTable final : public ForwardingTableInterface
 {
  public:
   enum class Type : int {
-    Random         = 0,
-    LeastImpedance = 1,
-    RoundRobin     = 2,
+    Random               = 0,
+    LeastImpedance       = 1,
+    RoundRobin           = 2,
     ProportionalFairness = 3,
   };
 
@@ -144,10 +144,25 @@ class ForwardingTable final : public ForwardingTableInterface
   std::map<std::string, std::map<std::string, std::pair<float, bool>>>
   fullTable() const override;
 
+  //! set theAlpha value (invoked only in PF FT case)
+  void setAlpha(const double aAlpha) {
+    theAlpha = aAlpha;
+  }
+
+  //! set theBeta value (invoked only in PF FT case)
+  void setBeta(const double aBeta) {
+    theBeta = aBeta;
+  }
+
  private:
   const Type                                             theType;
   mutable std::mutex                                     theMutex;
   std::map<std::string, std::unique_ptr<entries::Entry>> theTable;
+
+  /** TODO: useful only in case of PF scheduling policy (is there a way to put
+   * them constant?) */
+  double theAlpha;
+  double theBeta;
 };
 
 const std::string& toString(const ForwardingTable::Type aType);
