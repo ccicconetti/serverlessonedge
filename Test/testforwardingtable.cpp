@@ -28,11 +28,13 @@ SOFTWARE.
 */
 
 #include "Edge/forwardingtable.h"
+#include "Edge/forwardingtablefactory.h"
 #include "Edge/forwardingtableexceptions.h"
 #include "Edge/lambda.h"
 #include "Support/chrono.h"
 #include "Support/tostring.h"
 #include "Support/wait.h"
+#include "Support/conf.h"
 
 #include "gtest/gtest.h"
 #include <cmath>
@@ -46,73 +48,78 @@ struct TestForwardingTable : public ::testing::Test {};
 TEST_F(TestForwardingTable, test_ctor) {
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::Random)));
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::LeastImpedance)));
+  
+  ForwardingTable* myTable1(ForwardingTableFactory::make(support::Conf("type=random,alpha=2,beta=1")));
+  ASSERT_NE(myTable1, nullptr);
+  ForwardingTable* myTable2(ForwardingTableFactory::make(support::Conf("type=least-impedance,alpha=2,beta=1")));
+  ASSERT_NE(myTable2, nullptr);
 }
 
 TEST_F(TestForwardingTable, test_pf_ctor) {
   ASSERT_NO_THROW(
       (ForwardingTable(ForwardingTable::Type::ProportionalFairness)));
+  ForwardingTable* myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
+  ASSERT_NE(myTable, nullptr);
 }
 
 TEST_F(TestForwardingTable, test_pf_operations) {
-  ForwardingTable myTable(ForwardingTable::Type::ProportionalFairness);
-  myTable.setAlpha(2);
-  myTable.setBeta(1);
+  ForwardingTable* myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
 
-  myTable.change("lambda1", "dest1:666", 1, true);
-  myTable.change("lambda1", "dest2:666", 1, true);
-  myTable.change("lambda1", "dest1:667", 1, true);
-  myTable.change("lambda2", "dest3:668", 1, true);
-  myTable.change("lambda2", "dest2:667", 1, true);
+  (*myTable).change("lambda1", "dest1:666", 1, true);
+  (*myTable).change("lambda1", "dest2:666", 1, true);
+  (*myTable).change("lambda1", "dest1:667", 1, true);
+  (*myTable).change("lambda2", "dest3:668", 1, true);
+  (*myTable).change("lambda2", "dest2:667", 1, true);
 
   ASSERT_EQ(std::string("lambda1 [1] dest1:666 (F)\n"
                         "        [1] dest1:667 (F)\n"
                         "        [1] dest2:666 (F)\n"
                         "lambda2 [1] dest2:667 (F)\n"
                         "        [1] dest3:668 (F)\n"),
-            ::toString(myTable));
+            ::toString((*myTable)));
 
   // scheduling test, function EdgeRouter.destination()
-  std::string scheduledDestination = myTable("lambda1");
+  std::string scheduledDestination = (*myTable)("lambda1");
   ASSERT_EQ(scheduledDestination, std::string("dest1:666"));
 
   // this statement simulates the EdgeRouter.processSuccess()
-  myTable.change("lambda1", scheduledDestination, 2);
+  (*myTable).change("lambda1", scheduledDestination, 2);
   ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
                         "        [1] dest1:667 (F)\n"
                         "        [1] dest2:666 (F)\n"
                         "lambda2 [1] dest2:667 (F)\n"
                         "        [1] dest3:668 (F)\n"),
-            ::toString(myTable));
+            ::toString((*myTable)));
 
   // new scheduling request after thePFstats update
-  scheduledDestination = myTable("lambda1");
+  scheduledDestination = (*myTable)("lambda1");
   ASSERT_EQ(scheduledDestination, std::string("dest2:666"));
 
   // these statements simulate the EdgeRouter.processFailure()
-  myTable.remove("lambda1", scheduledDestination);
+  (*myTable).remove("lambda1", scheduledDestination);
   ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
                         "        [1] dest1:667 (F)\n"
                         "lambda2 [1] dest2:667 (F)\n"
                         "        [1] dest3:668 (F)\n"),
-            ::toString(myTable));
+            ::toString((*myTable)));
 
   // new scheduling request after deleting the previous scheduled destination in
   // thePFstats data structure
-  scheduledDestination = myTable("lambda1");
+  scheduledDestination = (*myTable)("lambda1");
   ASSERT_EQ(scheduledDestination, std::string("dest1:667"));
   ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
                         "        [1] dest1:667 (F)\n" 
                         "lambda2 [1] dest2:667 (F)\n"
                         "        [1] dest3:668 (F)\n"),
-            ::toString(myTable));
+            ::toString((*myTable)));
 
   // this statement simulates the EdgeRouter.processSuccess()
-  myTable.change("lambda1", scheduledDestination, 3);
+  (*myTable).change("lambda1", scheduledDestination, 3);
   ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
                         "        [3] dest1:667 (F)\n" 
                         "lambda2 [1] dest2:667 (F)\n"
                         "        [1] dest3:668 (F)\n"),
-            ::toString(myTable));
+            ::toString((*myTable)));
 }
 
 TEST_F(TestForwardingTable, test_add_remove) {

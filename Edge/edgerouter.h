@@ -111,9 +111,9 @@ class EdgeRouter final : public EdgeLambdaProcessor
                       const std::string&        aDestination) override;
 
  private:
-  ForwardingTable                 theOverallTable;
+  ForwardingTable*                 theOverallTable;
   std::shared_ptr<LocalOptimizer> theOverallOptimizer;
-  ForwardingTable                 theFinalTable;
+  ForwardingTable*                 theFinalTable;
   std::shared_ptr<LocalOptimizer> theFinalOptimizer;
 }; // namespace edge
 

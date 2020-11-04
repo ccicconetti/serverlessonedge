@@ -36,6 +36,7 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/etsiedgeclient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtableclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtablefactory.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtableinterface.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtableserver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/lambda.cpp

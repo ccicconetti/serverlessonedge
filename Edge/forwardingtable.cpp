@@ -46,8 +46,24 @@ ForwardingTable::ForwardingTable(const Type aType)
     : ForwardingTableInterface()
     , theType(aType)
     , theMutex()
-    , theTable() {
-  LOG(INFO) << "Created forwarding table of type " << toString(aType);
+    , theTable()
+    , theAlpha(0)
+    , theBeta(0) {
+  LOG(INFO) << "Created forwarding table of type " << toString(aType) << '\n';
+}
+
+ForwardingTable::ForwardingTable(const Type   aType,
+                                 const double aAlpha,
+                                 const double aBeta)
+    : ForwardingTableInterface()
+    , theType(aType)
+    , theMutex()
+    , theTable()
+    , theAlpha(aAlpha)
+    , theBeta(aBeta) {
+  assert(aType == ForwardingTable::Type::ProportionalFairness);
+  LOG(INFO) << "Created forwarding table of type " << toString(aType) << '\n'
+            << "with alpha = " << theAlpha << " and beta = " << theBeta << '\n';
 }
 
 void ForwardingTable::change(const std::string& aLambda,
@@ -70,7 +86,8 @@ void ForwardingTable::change(const std::string& aLambda,
       ret.first->second.reset(new entries::EntryRoundRobin());
     } else {
       assert(theType == Type::ProportionalFairness);
-      ret.first->second.reset(new entries::EntryProportionalFairness(theAlpha, theBeta));
+      ret.first->second.reset(
+          new entries::EntryProportionalFairness(theAlpha, theBeta));
     }
   }
 

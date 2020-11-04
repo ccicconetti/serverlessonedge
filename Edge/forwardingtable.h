@@ -63,6 +63,9 @@ class ForwardingTable final : public ForwardingTableInterface
   //! Create a forwarding table with no entries.
   explicit ForwardingTable(const Type aType);
 
+  //! Create a forwarding table for PF policy
+  explicit ForwardingTable(const Type aType, const double aAlpha, const double aBeta);
+
   /**
    * Add a new destination for a given lambda or change its weight.
    *
@@ -144,25 +147,14 @@ class ForwardingTable final : public ForwardingTableInterface
   std::map<std::string, std::map<std::string, std::pair<float, bool>>>
   fullTable() const override;
 
-  //! set theAlpha value (invoked only in PF FT case)
-  void setAlpha(const double aAlpha) {
-    theAlpha = aAlpha;
-  }
-
-  //! set theBeta value (invoked only in PF FT case)
-  void setBeta(const double aBeta) {
-    theBeta = aBeta;
-  }
-
  private:
   const Type                                             theType;
   mutable std::mutex                                     theMutex;
   std::map<std::string, std::unique_ptr<entries::Entry>> theTable;
 
-  /** TODO: useful only in case of PF scheduling policy (is there a way to put
-   * them constant?) */
-  double theAlpha;
-  double theBeta;
+  
+  const double theAlpha;
+  const double theBeta;
 };
 
 const std::string& toString(const ForwardingTable::Type aType);

@@ -33,6 +33,7 @@ SOFTWARE.
 #include "edgemessages.h"
 #include "localoptimizer.h"
 #include "localoptimizerfactory.h"
+#include "forwardingtablefactory.h"
 
 namespace uiiit {
 namespace edge {
@@ -49,26 +50,19 @@ EdgeRouter::EdgeRouter(const std::string&   aLambdaEndpoint,
                           aControllerEndpoint,
                           aNumThreads,
                           aProcessorConf)
-    , theOverallTable(forwardingTableTypeFromString(aTableConf("type")))
+    , theOverallTable(ForwardingTableFactory::make(aTableConf))
     , theOverallOptimizer(
-          LocalOptimizerFactory::make(theOverallTable, aLocalOptimizerConf))
-    , theFinalTable(forwardingTableTypeFromString(aTableConf("type")))
+          LocalOptimizerFactory::make(*theOverallTable, aLocalOptimizerConf))
+    , theFinalTable(ForwardingTableFactory::make(aTableConf))
     , theFinalOptimizer(
-          LocalOptimizerFactory::make(theFinalTable, aLocalOptimizerConf)) {
-
-  if (aTableConf("type") == "proportional-fairness") {
-    theOverallTable.setAlpha(aTableConf.getDouble("alpha"));
-    theOverallTable.setBeta(aTableConf.getDouble("beta"));
-    theFinalTable.setAlpha(aTableConf.getDouble("alpha"));
-    theFinalTable.setBeta(aTableConf.getDouble("beta"));
-  }
+          LocalOptimizerFactory::make(*theFinalTable, aLocalOptimizerConf)) {
 }
 
 std::string EdgeRouter::destination(const rpc::LambdaRequest& aReq) {
   if (aReq.forward()) {
-    return theFinalTable(aReq.name());
+    return (*theFinalTable)(aReq.name());
   }
-  return theOverallTable(aReq.name());
+  return (*theOverallTable)(aReq.name());
 }
 
 void EdgeRouter::processSuccess(const rpc::LambdaRequest& aReq,
@@ -93,14 +87,14 @@ void EdgeRouter::processFailure(const rpc::LambdaRequest& aReq,
   // regardless of whether the request came from an edge client or node
   // we remove the destination from both overall and final tables if
   // it is found to be unreachable
-  theOverallTable.remove(aReq.name(), aDestination);
-  theFinalTable.remove(aReq.name(), aDestination);
+  (*theOverallTable).remove(aReq.name(), aDestination);
+  (*theFinalTable).remove(aReq.name(), aDestination);
 }
 
 std::vector<ForwardingTableInterface*> EdgeRouter::tables() {
   std::vector<ForwardingTableInterface*> myRet(2);
-  myRet[0] = &theOverallTable;
-  myRet[1] = &theFinalTable;
+  myRet[0] = theOverallTable;
+  myRet[1] = theFinalTable;
   return myRet;
 }
 
