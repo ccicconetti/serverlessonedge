@@ -30,6 +30,7 @@ SOFTWARE.
 #include "entry.h"
 
 #include "Edge/forwardingtableexceptions.h"
+#include <glog/logging.h>
 
 #include <algorithm>
 
@@ -44,6 +45,7 @@ Entry::Entry()
 void Entry::change(const std::string& aDest,
                    const float        aWeight,
                    const bool         aFinal) {
+
   if (aDest.empty() or aWeight <= 0.0f) {
     throw InvalidDestination(aDest, aWeight);
   }
@@ -59,7 +61,6 @@ void Entry::change(const std::string& aDest,
     it->theFinal           = aFinal;
 
     updateWeight(aDest, myOldWeight, aWeight);
-
   } else {
     theDestinations.emplace_back(Element{aDest, aWeight, aFinal});
     updateAddDest(aDest, aWeight);
@@ -126,6 +127,14 @@ std::map<std::string, std::pair<float, bool>> Entry::destinations() const {
                            std::make_pair(myElem.theWeight, myElem.theFinal));
   }
   return myDestinations;
+}
+
+void Entry::printPFstats() {
+  LOG(INFO) << "thePFStats = " << '\n';
+  for (auto it = thePFstats.begin(); it != thePFstats.end(); ++it) {
+    LOG(INFO) << "[" << (*it).first << "] [" << (*it).second.first << "] ["
+              << (*it).second.second << "]\n";
+  }
 }
 
 } // namespace entries
