@@ -49,21 +49,21 @@ TEST_F(TestForwardingTable, test_ctor) {
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::Random)));
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::LeastImpedance)));
   
-  ForwardingTable* myTable1(ForwardingTableFactory::make(support::Conf("type=random,alpha=2,beta=1")));
+  std::unique_ptr<ForwardingTable> myTable1(ForwardingTableFactory::make(support::Conf("type=random,alpha=2,beta=1")));
   ASSERT_NE(myTable1, nullptr);
-  ForwardingTable* myTable2(ForwardingTableFactory::make(support::Conf("type=least-impedance,alpha=2,beta=1")));
+  std::unique_ptr<ForwardingTable> myTable2(ForwardingTableFactory::make(support::Conf("type=least-impedance,alpha=2,beta=1")));
   ASSERT_NE(myTable2, nullptr);
 }
 
 TEST_F(TestForwardingTable, test_pf_ctor) {
   ASSERT_NO_THROW(
       (ForwardingTable(ForwardingTable::Type::ProportionalFairness)));
-  ForwardingTable* myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
+  std::unique_ptr<ForwardingTable> myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
   ASSERT_NE(myTable, nullptr);
 }
 
 TEST_F(TestForwardingTable, test_pf_operations) {
-  ForwardingTable* myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
+  std::unique_ptr<ForwardingTable> myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
 
   (*myTable).change("lambda1", "dest1:666", 1, true);
   (*myTable).change("lambda1", "dest2:666", 1, true);

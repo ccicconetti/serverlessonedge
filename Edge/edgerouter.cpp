@@ -93,8 +93,8 @@ void EdgeRouter::processFailure(const rpc::LambdaRequest& aReq,
 
 std::vector<ForwardingTableInterface*> EdgeRouter::tables() {
   std::vector<ForwardingTableInterface*> myRet(2);
-  myRet[0] = theOverallTable;
-  myRet[1] = theFinalTable;
+  myRet[0] = theOverallTable.get();
+  myRet[1] = theFinalTable.get();
   return myRet;
 }
 

@@ -6,18 +6,21 @@
 namespace uiiit {
 namespace edge {
 
-ForwardingTable* ForwardingTableFactory::make(const support::Conf& aConf) {
+std::unique_ptr<ForwardingTable>
+ForwardingTableFactory::make(const support::Conf& aConf) {
 
   const auto myType = aConf("type");
 
   if (myType == "random" || myType == "round-robin" ||
       myType == "least-impedance") {
-    return new ForwardingTable(forwardingTableTypeFromString(aConf("type")));
+    return std::make_unique<ForwardingTable>(
+        forwardingTableTypeFromString(aConf("type")));
 
   } else if (myType == "proportional-fairness") {
-    return new ForwardingTable(forwardingTableTypeFromString(aConf("type")),
-                            aConf.getDouble("alpha"),
-                            aConf.getDouble("beta"));
+    return std::make_unique<ForwardingTable>(
+        forwardingTableTypeFromString(aConf("type")),
+        aConf.getDouble("alpha"),
+        aConf.getDouble("beta"));
   } else {
     throw std::runtime_error("Invalid forwarding table type: " + myType);
   }

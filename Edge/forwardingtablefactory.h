@@ -15,7 +15,7 @@ class ForwardingTable;
 class ForwardingTableFactory final
 {
  public:
-  static ForwardingTable* make(const support::Conf& aConf);
+  static std::unique_ptr<ForwardingTable> make(const support::Conf& aConf);
 };
 
 } // namespace edge
