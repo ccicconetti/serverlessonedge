@@ -86,7 +86,8 @@ add_subdirectory(etsimec/rest/support/RpcSupport)
 add_subdirectory(etsimec/rest/support/Support)
 
 # unit tests
-if (${CMAKE_BUILD_TYPE} STREQUAL "debug")
+string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type_lower)
+if (${build_type_lower} STREQUAL "debug")
   add_subdirectory(Test)
   set(skip_google_test TRUE)
   add_subdirectory(etsimec/Test)
