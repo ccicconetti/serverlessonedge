@@ -12,8 +12,6 @@ set(PROXYGENLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/lib/libproxygen.a")
 set(PROXYGENCURLLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpclient/samples/curl/libproxygencurl.a")
 set(PROXYGENHTTPSERVERLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpserver/libproxygenhttpserver.a")
 link_directories("${PROXYGEN_ROOT}/proxygen/_build/deps/lib")
-#proxygencurl
-#proxygenhttpserver
 
 add_executable(hq
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
@@ -25,84 +23,89 @@ add_executable(hq
     ${CMAKE_CURRENT_SOURCE_DIR}/SampleHandlers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PartiallyReliableCurlClient.cpp
 )
+target_compile_options(
+  hq
+  PRIVATE
+    -DFMT_LOCALE
+    -DGFLAGS_IS_A_DLL=0
+)
 target_link_libraries(
     hq
 
-
+-Wl,-rpath,/usr/local/lib:
     ${PROXYGENLIB}
     ${PROXYGENCURLLIB}
     ${PROXYGENHTTPSERVERLIB}
-    mvfst_transport
-    mvfst_client
-    mvfst_server
+    libmvfst_transport.a
+    libmvfst_client.a
+    libmvfst_server.a
     ${PROXYGENLIB}
-    mvfst_server
-    wangle
-    zstd
-    boost_iostreams
-    boost_regex
-    mvfst_fizz_client
-    mvfst_client
-    mvfst_transport
-    mvfst_buf_accessor
-    mvfst_cc_algo
-    mvfst_codec_pktrebuilder
-    mvfst_looper
-    mvfst_happyeyeballs
-    mvfst_socketutil
-    mvfst_state_ack_handler
-    mvfst_loss
-    mvfst_state_simple_frame_functions
-    mvfst_state_qpr_functions
-    mvfst_d6d_state_functions
-    mvfst_state_functions
-    mvfst_codec_pktbuilder
-    mvfst_state_stream
-    mvfst_flowcontrol
-    mvfst_qlogger
-    mvfst_state_stream_functions
-    mvfst_state_pacing_functions
-    mvfst_fizz_handshake
-    mvfst_state_machine
-    mvfst_codec
-    mvfst_handshake
-    mvfst_codec_packet_number_cipher
-    mvfst_codec_decode
-    mvfst_d6d_types
-    mvfst_codec_types
-    mvfst_bufutil
-    mvfst_constants
-    mvfst_exception
-    fizz
-    folly
-    event
-    fmt
-
-    pthread
-    z
-    bz2
-    lzma
-    lz4
-    zstd
-    snappy
-    iberty.a
-    ssl
-    crypto
-    sodium
-    glog
-    gflags
-    double-conversion
-    dl
-    rt
-    boost_context
-    boost_filesystem
-    boost_program_options
-    boost_regex
-    boost_system
-    boost_thread
-    pthread
-    boost_chrono
-    boost_date_time
-    boost_atomic
+    libmvfst_server.a
+    libwangle.a
+/usr/lib/x86_64-linux-gnu/libzstd.so
+/usr/lib/x86_64-linux-gnu/libboost_iostreams.so
+/usr/lib/x86_64-linux-gnu/libboost_regex.so
+    libmvfst_fizz_client.a
+    libmvfst_client.a
+    libmvfst_transport.a
+    libmvfst_buf_accessor.a
+    libmvfst_cc_algo.a
+    libmvfst_codec_pktrebuilder.a
+    libmvfst_looper.a
+    libmvfst_happyeyeballs.a
+    libmvfst_socketutil.a
+    libmvfst_state_ack_handler.a
+    libmvfst_loss.a
+    libmvfst_state_simple_frame_functions.a
+    libmvfst_state_qpr_functions.a
+    libmvfst_d6d_state_functions.a
+    libmvfst_state_functions.a
+    libmvfst_codec_pktbuilder.a
+    libmvfst_state_stream.a
+    libmvfst_flowcontrol.a
+    libmvfst_qlogger.a
+    libmvfst_state_stream_functions.a
+    libmvfst_state_pacing_functions.a
+    libmvfst_fizz_handshake.a
+    libmvfst_state_machine.a
+    libmvfst_codec.a
+    libmvfst_handshake.a
+    libmvfst_codec_packet_number_cipher.a
+    libmvfst_codec_decode.a
+    libmvfst_d6d_types.a
+    libmvfst_codec_types.a
+    libmvfst_bufutil.a
+    libmvfst_constants.a
+    libmvfst_exception.a
+    libfizz.a
+    libfolly.a
+/usr/lib/x86_64-linux-gnu/libevent.so
+    libfmt.a
+-pthread
+/usr/local/lib/libz.so
+/usr/lib/x86_64-linux-gnu/libbz2.so
+/usr/lib/x86_64-linux-gnu/liblzma.so
+/usr/lib/x86_64-linux-gnu/liblz4.so
+/usr/lib/x86_64-linux-gnu/libzstd.so
+/usr/lib/x86_64-linux-gnu/libsnappy.so
+/usr/lib/x86_64-linux-gnu/libiberty.a
+/usr/lib/x86_64-linux-gnu/libssl.so
+/usr/lib/x86_64-linux-gnu/libcrypto.so
+/usr/lib/x86_64-linux-gnu/libsodium.so
+/usr/lib/x86_64-linux-gnu/libglog.so
+/usr/lib/x86_64-linux-gnu/libgflags.so.2.2.1
+/usr/lib/x86_64-linux-gnu/libdouble-conversion.so
+-ldl
+/usr/lib/x86_64-linux-gnu/librt.so
+/usr/lib/x86_64-linux-gnu/libboost_context.so
+/usr/lib/x86_64-linux-gnu/libboost_filesystem.so
+/usr/lib/x86_64-linux-gnu/libboost_program_options.so
+/usr/lib/x86_64-linux-gnu/libboost_regex.so
+/usr/lib/x86_64-linux-gnu/libboost_system.so
+/usr/lib/x86_64-linux-gnu/libboost_thread.so
+-lpthread
+/usr/lib/x86_64-linux-gnu/libboost_chrono.so
+/usr/lib/x86_64-linux-gnu/libboost_date_time.so
+/usr/lib/x86_64-linux-gnu/libboost_atomic.so
 )
 
