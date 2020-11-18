@@ -35,8 +35,9 @@ namespace uiiit {
 namespace edge {
 
 EdgeServerQuic::EdgeServerQuic(const std::string& aServerEndpoint,
-                       const size_t       aNumThreads)
-    : theServerEndpoint(aServerEndpoint)
+                               const size_t       aNumThreads)
+    : theParams()
+    , theServerEndpoint(aServerEndpoint)
     , theNumThreads(aNumThreads) {
   if (aNumThreads == 0) {
     throw std::runtime_error("Cannot spawn 0 threads");
@@ -45,7 +46,7 @@ EdgeServerQuic::EdgeServerQuic(const std::string& aServerEndpoint,
 
 void EdgeServerQuic::run() {
   // XXX
-  
+
   init();
 }
 

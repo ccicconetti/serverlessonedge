@@ -77,7 +77,7 @@ target_link_libraries(uiiitedge
   uiiitsupport
 )
 
-add_library(uiiitedgequic SHARED
+add_library(uiiitedgequic STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquic.cpp
 )
 

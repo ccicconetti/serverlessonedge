@@ -38,8 +38,6 @@ SOFTWARE.
 
 namespace uiiit {
 namespace edge {
-namespace quic {
-namespace samples {
 
 /**
  * Generic edge server providing a multi-threaded gRPC server interface for the
@@ -74,7 +72,7 @@ class EdgeServerQuic
 
  private:
   //****************** private members HQServer.h
-  HQParams& params_;
+  quic::samples::HQParams theParams;
   //******************
 
   //! Execute initialization logic immediately after run().
@@ -89,7 +87,5 @@ class EdgeServerQuic
   const size_t      theNumThreads;
 }; // end class EdgeServer
 
-} // namespace samples
-} // namespace quic
 } // namespace edge
 } // namespace uiiit
