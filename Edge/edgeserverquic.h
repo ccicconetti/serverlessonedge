@@ -31,12 +31,15 @@ SOFTWARE.
 
 #include "Support/macros.h"
 
+#include <proxygen/httpserver/samples/hq/HQParams.h>
 #include <set>
 #include <string>
 #include <thread>
 
 namespace uiiit {
 namespace edge {
+namespace quic {
+namespace samples {
 
 /**
  * Generic edge server providing a multi-threaded gRPC server interface for the
@@ -50,7 +53,7 @@ class EdgeServerQuic
 
   //! Create an edge server with a given number of threads.
   explicit EdgeServerQuic(const std::string& aServerEndpoint,
-                      const size_t       aNumThreads);
+                          const size_t       aNumThreads);
 
   virtual ~EdgeServerQuic();
 
@@ -70,6 +73,10 @@ class EdgeServerQuic
   std::set<std::thread::id> threadIds() const;
 
  private:
+  //****************** private members HQServer.h
+  HQParams& params_;
+  //******************
+
   //! Execute initialization logic immediately after run().
   virtual void init() {
   }
@@ -78,9 +85,11 @@ class EdgeServerQuic
   virtual std::string process(const std::string& aReq) = 0;
 
  protected:
-  const std::string  theServerEndpoint;
-  const size_t       theNumThreads;
+  const std::string theServerEndpoint;
+  const size_t      theNumThreads;
 }; // end class EdgeServer
 
-} // end namespace edge
-} // end namespace uiiit
+} // namespace samples
+} // namespace quic
+} // namespace edge
+} // namespace uiiit
