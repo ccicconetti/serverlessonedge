@@ -1,4 +1,3 @@
-set(PROXYGEN_ROOT "${PROJECT_SOURCE_DIR}/thirdparty/proxygen")
 include_directories(SYSTEM ${PROXYGEN_ROOT})
 include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/deps/include")
 include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/generated")

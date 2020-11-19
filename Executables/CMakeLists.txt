@@ -1,3 +1,5 @@
+link_directories("${PROXYGEN_ROOT}/proxygen/_build/deps/lib")
+
 if(WITH_OPENCV)
   add_subdirectory(OpenCV)
 endif()
