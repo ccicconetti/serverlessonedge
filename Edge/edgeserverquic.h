@@ -31,13 +31,16 @@ SOFTWARE.
 
 #include "Support/macros.h"
 
-#include <proxygen/httpserver/samples/hq/HQParams.h>
 #include <set>
 #include <string>
 #include <thread>
 
 namespace uiiit {
 namespace edge {
+
+// using HTTPTransactionHandlerProvider =
+//     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
+//                                                     const quic::samples::HQParams&)>;
 
 /**
  * Generic edge server providing a multi-threaded gRPC server interface for the
@@ -50,8 +53,10 @@ class EdgeServerQuic
   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
   //! Create an edge server with a given number of threads.
-  explicit EdgeServerQuic(const std::string& aServerEndpoint,
+  explicit EdgeServerQuic(const std::string& aServerEndpoint, 
                           const size_t       aNumThreads);
+                          // const quic::samples::HQParams& params,
+                          // HTTPTransactionHandlerProvider httpTransactionHandlerProvider); // VERIFY is is ok to use it this way
 
   virtual ~EdgeServerQuic();
 
@@ -72,7 +77,10 @@ class EdgeServerQuic
 
  private:
   //****************** private members HQServer.h
-  quic::samples::HQParams theParams;
+  // quic::samples::HQParams theParams; //params_ //CONST E REF<<<<<<<<<<<<<<<<<
+  // folly::EventBase theEventBase; //eventbase_
+  // std::shared_ptr<quic::QuicServer> theServer; //server_
+  // folly::Baton<> theSemaphore; //cv_ 
   //******************
 
   //! Execute initialization logic immediately after run().

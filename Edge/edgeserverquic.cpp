@@ -31,16 +31,30 @@ SOFTWARE.
 
 #include <glog/logging.h>
 
+#include <proxygen/httpserver/samples/hq/HQParams.h>
+#include <proxygen/httpserver/samples/hq/HQServer.h>
+
 namespace uiiit {
 namespace edge {
 
 EdgeServerQuic::EdgeServerQuic(const std::string& aServerEndpoint,
                                const size_t       aNumThreads)
-    : theParams()
-    , theServerEndpoint(aServerEndpoint)
+    : // theParams(),
+    theServerEndpoint(aServerEndpoint)
     , theNumThreads(aNumThreads) {
   if (aNumThreads == 0) {
     throw std::runtime_error("Cannot spawn 0 threads");
+  }
+
+  // TODO: modify
+  auto defaultParams = quic::samples::initializeParamsFromCmdline();
+  
+  if (defaultParams) {
+    // TODO: set properly the serverEndpoint and the numThreads value
+    auto& edgeServerQuicParams = defaultParams.value();
+    quic::samples::startServer(edgeServerQuicParams);
+  } else {
+    LOG(ERROR) << "Invalid Parameters!" << '\n';
   }
 }
 

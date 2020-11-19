@@ -42,6 +42,9 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/edgerouter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserveroptions.cpp
+
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquic.cpp
+  
   ${CMAKE_CURRENT_SOURCE_DIR}/etsiedgeclient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtableclient.cpp
