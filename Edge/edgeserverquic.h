@@ -88,7 +88,7 @@ class EdgeServerQuic
   }
 
   //! Perform actual processing of a lambda request.
-  virtual std::string process(const std::string& aReq) = 0;
+  //virtual std::string process(const std::string& aReq) = 0;
 
  protected:
   const std::string theServerEndpoint;
