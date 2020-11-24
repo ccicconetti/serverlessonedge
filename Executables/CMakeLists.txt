@@ -117,17 +117,6 @@ target_link_libraries(edgerouter
   ${Boost_LIBRARIES}
 )
 
-add_executable(edgeserverquic
-  ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquicmain.cpp
-)
-
-target_link_libraries(edgeserverquic
-  uiiitedgequic
-  uiiitedge
-  ${GLOG}
-  ${Boost_LIBRARIES}
-)
-
 add_executable(wskproxy
   ${CMAKE_CURRENT_SOURCE_DIR}/wskproxymain.cpp
 )
