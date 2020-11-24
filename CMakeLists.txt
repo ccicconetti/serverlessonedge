@@ -67,6 +67,10 @@ file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
 include_directories(${PROTO_SRC_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(SYSTEM ${PROXYGEN_ROOT})
+include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/deps/include")
+include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/generated")
+link_directories("${PROXYGEN_ROOT}/proxygen/_build/deps/lib")
 
 # executables
 add_subdirectory(Executables)
