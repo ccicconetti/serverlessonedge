@@ -1,10 +1,6 @@
-include_directories(SYSTEM ${PROXYGEN_ROOT})
-include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/deps/include")
-include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/generated")
 set(PROXYGENLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/lib/libproxygen.a")
 set(PROXYGENCURLLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpclient/samples/curl/libproxygencurl.a")
 set(PROXYGENHTTPSERVERLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpserver/libproxygenhttpserver.a")
-link_directories("${PROXYGEN_ROOT}/proxygen/_build/deps/lib")
 
 add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/Detail/printtable.cpp
