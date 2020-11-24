@@ -30,6 +30,7 @@ SOFTWARE.
 #pragma once
 
 #include "Support/macros.h"
+#include "edgeserver.grpc.pb.h"
 
 #include <cassert>
 #include <condition_variable>
@@ -40,102 +41,55 @@ SOFTWARE.
 #include <string>
 #include <thread>
 
-#include "edgeserver.grpc.pb.h"
-
 namespace uiiit {
 namespace edge {
 
 struct LambdaResponse;
 
 /**
- * Generic edge server providing a multi-threaded gRPC server interface for the
+ * TODO: correct documentation 
+ * Generic edge server base class for the
  * processing of lambda functions.
  */
 class EdgeServer
 {
-  // Class encompassing the state and logic needed to serve a request.
-  class CallData
-  {
-    enum CallStatus { CREATE, PROCESS, FINISH };
-
-   public:
-    explicit CallData(rpc::EdgeServer::AsyncService* aService,
-                      grpc::ServerCompletionQueue*   aCq,
-                      EdgeServer&                    aEdgeServer);
-
-    void Proceed();
-
-   private:
-    // The means of communication with the gRPC runtime for an asynchronous
-    // server.
-    rpc::EdgeServer::AsyncService* theService;
-    // The producer-consumer queue where for asynchronous server notifications.
-    grpc::ServerCompletionQueue* theCq;
-
-    EdgeServer& theEdgeServer;
-
-    // Context for the rpc, allowing to tweak aspects of it such as the use
-    // of compression, authentication, as well as to send metadata back to the
-    // client.
-    grpc::ServerContext theContext;
-
-    // What we get from the client.
-    rpc::LambdaRequest theRequest;
-    // What we send back to the client.
-    rpc::LambdaResponse theResponse;
-
-    // The means to get back to the client.
-    grpc::ServerAsyncResponseWriter<rpc::LambdaResponse> theResponder;
-
-    // The current serving state.
-    CallStatus theStatus;
-  };
 
  public:
   NONCOPYABLE_NONMOVABLE(EdgeServer);
 
-  //! Create an edge server with a given number of threads.
-  explicit EdgeServer(const std::string& aServerEndpoint,
-                      const size_t       aNumThreads);
+  //! Create an edge server with just a mutex.
+  explicit EdgeServer();
 
   virtual ~EdgeServer();
 
   //! Start the server. No more configuration allowed after this call.
-  void run();
+  // void run();
 
   //! Wait until termination of the server.
-  void wait();
+  // void wait();
 
  protected:
   /**
-   * \return the set of the identifiers of the threads that have been
-   * spawned during the call to run(). The cardinality of this set
-   * if equal to the number of threads specified in the ctor. If
-   * run() has not (yet) been called, then an empty set is returned.
+   * \return the set of the identifiers of the
+   * threads that have been spawned during the call to run(). The cardinality of
+   * this set if equal to the number of threads specified in the ctor. If run()
+   * has not (yet) been called, then an empty set is returned.
    */
-  std::set<std::thread::id> threadIds() const;
+  // std::set<std::thread::id> threadIds() const;
 
  private:
   //! Thread execution body.
-  void handle();
+  // void handle();
 
   //! Execute initialization logic immediately after run().
-  virtual void init() {
-  }
+  //virtual void init() {}
 
   //! Perform actual processing of a lambda request.
   virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
 
  protected:
   mutable std::mutex theMutex;
-  const std::string  theServerEndpoint;
-  const size_t       theNumThreads;
-
- private:
-  std::unique_ptr<grpc::ServerCompletionQueue> theCq;
-  rpc::EdgeServer::AsyncService                theService;
-  std::unique_ptr<grpc_impl::Server>           theServer;
-  std::list<std::thread>                       theHandlers;
+  
 }; // end class EdgeServer
 
 } // end namespace edge

@@ -27,38 +27,71 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeserverquic.h"
+#pragma once
 
-#include <glog/logging.h>
+#include "Support/macros.h"
+#include "edgeserver.h"
 
-#include <proxygen/httpserver/samples/hq/HQParams.h>
-#include <proxygen/httpserver/samples/hq/HQServer.h>
+#include <cassert>
+#include <condition_variable>
+#include <list>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <thread>
 
 namespace uiiit {
 namespace edge {
 
-EdgeServerQuic::EdgeServerQuic(){
-    LOG(INFO) << "EdgeServerQuic CTOR" <<'\n';
-}
+struct LambdaResponse;
 
-void EdgeServerQuic::run() {
-  // XXX
+/**
+ * TODO: correct documentation
+ * Generic edge server base class for the
+ * processing of lambda functions.
+ */
+class EdgeServerImpl : public EdgeServer
+{
 
-  init();
-}
+ public:
+  NONCOPYABLE_NONMOVABLE(EdgeServerImpl);
 
-void EdgeServerQuic::wait() {
-  // XXX
-}
+  //! Create an edge server with just a mutex.
+  explicit EdgeServerImpl(EdgeServer& aEdgeServer);
 
-EdgeServerQuic::~EdgeServerQuic() {
-}
+  virtual ~EdgeServerImpl();
 
-std::set<std::thread::id> EdgeServerQuic::threadIds() const {
-  return std::set<std::thread::id>();
-}
+//   //! Start the server. No more configuration allowed after this call.
+//   void run();
 
-void process(const std::string& aReq){}; // std::string
+//   //! Wait until termination of the server.
+//   void wait();
 
-} // namespace edge
-} // namespace uiiit
+//  protected:
+//   /**
+//    * \return the set of the identifiers of the
+//    * threads that have been spawned during the call to run(). The cardinality of
+//    * this set if equal to the number of threads specified in the ctor. If run()
+//    * has not (yet) been called, then an empty set is returned.
+//    */
+//   std::set<std::thread::id> threadIds() const;
+
+//  private:
+//   //! Thread execution body.
+//   void handle();
+
+//   //! Execute initialization logic immediately after run().
+//   virtual void init() {
+//   }
+
+  //! Perform actual processing of a lambda request.
+  virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
+
+ protected:
+  EdgeServer& theEdgeServer;
+
+}; // end class EdgeServer
+
+} // end namespace edge
+} // end namespace uiiit
