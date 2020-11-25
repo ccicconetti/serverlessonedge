@@ -51,7 +51,7 @@ struct LambdaResponse;
  * Generic edge server base class for the
  * processing of lambda functions.
  */
-class EdgeServerImpl : public EdgeServer
+class EdgeServerImpl
 {
 
  public:
