@@ -65,8 +65,6 @@ class EdgeLambdaProcessor : public EdgeServer
    * \param aControllerEndpoint the end-point of the edge controller. Can be
    * empty, in which case it is assumed that there is no controller.
    *
-   * \param aNumThreads the number of threads to spawn.
-   *
    * \param aConf the configuration of this object.
    *
    * The configuration consists of the following parameters:
@@ -80,7 +78,8 @@ class EdgeLambdaProcessor : public EdgeServer
    *   we add an artificial process time randomly drawn from U[A, B].
    *   A and B are in fractional seconds.
    */
-  explicit EdgeLambdaProcessor(const std::string&   aCommandsEndpoint,
+  explicit EdgeLambdaProcessor(const std::string&   aLambdaEndpoint,
+                               const std::string&   aCommandsEndpoint,
                                const std::string&   aControllerEndpoint,
                                const support::Conf& aRouterConf);
 
@@ -144,7 +143,7 @@ class EdgeLambdaProcessor : public EdgeServer
  private:
   const std::string theCommandsEndpoint;
   const std::string theControllerEndpoint;
-  const bool theFakeProcessor;
+  const bool        theFakeProcessor;
 
   EdgeClientPool                        theClientPool;
   std::unique_ptr<EdgeControllerClient> theControllerClient;

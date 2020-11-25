@@ -31,9 +31,9 @@ SOFTWARE.
 #include "Edge/edgelambdaprocessoroptions.h"
 #include "Edge/edgerouter.h"
 
+#include "Edge/edgeservergrpc.h"
 #include "Edge/edgeserverimpl.h"
 #include "Edge/edgeserverquic.h"
-#include "Edge/edgeservergrpc.h"
 
 #include "Edge/forwardingtableserver.h"
 #include "Support/conf.h"
@@ -83,7 +83,8 @@ int main(int argc, char* argv[]) {
                                myCli.forwardingEndpoint());
     }
 
-    ec::EdgeRouter myEdgeRouter(myCli.forwardingEndpoint(),
+    ec::EdgeRouter myEdgeRouter(myCli.serverEndpoint(),
+                                myCli.forwardingEndpoint(),
                                 myCli.controllerEndpoint(),
                                 uiiit::support::Conf(myCli.routerConf()),
                                 uiiit::support::Conf(myTableConf),
@@ -91,12 +92,13 @@ int main(int argc, char* argv[]) {
 
     std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
     const auto myServerImplConf = uiiit::support::Conf(myServerConf);
+
     if (myServerImplConf("type") == "grpc") {
-      // myServerImpl.reset(new ec::EdgeServerGrpc(myServerImplConf("server-endpoint"), myServerImplConf("num-threads")));
+      myServerImpl.reset(new ec::EdgeServerGrpc(myEdgeRouter, myServerImplConf("server-endpoint"), myServerImplConf("num-threads")));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // STESSO DISCORSO Costruttore da mettere parametri makeHqParams(myImplConf) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    }
-    else{
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
+      LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
+    } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
                                myServerImplConf("type"));
     }
@@ -113,9 +115,9 @@ int main(int argc, char* argv[]) {
         myCli.forwardingEndpoint(), *myTables[0], *myTables[1]);
 
     myForwardingTableServer.run(false); // non-blocking
-    
-    // myServerImpl -> run(); 
-    // myServerImpl -> wait();
+
+    myServerImpl -> run();
+    myServerImpl -> wait();
 
     return EXIT_SUCCESS;
 

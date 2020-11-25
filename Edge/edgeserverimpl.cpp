@@ -27,14 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeservergrpc.h"
-
-#include "Support/chrono.h"
-#include "edgemessages.h"
 #include "edgeserverimpl.h"
-
-#include <glog/logging.h>
-#include <grpc++/grpc++.h>
 
 // #define TRACE_TASKS
 

@@ -44,10 +44,11 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aCommandsEndpoint,
+EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
+                                         const std::string& aCommandsEndpoint,
                                          const std::string& aControllerEndpoint,
                                          const support::Conf& aRouterConf)
-    : EdgeServer()
+    : EdgeServer(aLambdaEndpoint)
     , theCommandsEndpoint(aCommandsEndpoint)
     , theControllerEndpoint(aControllerEndpoint)
     , theFakeProcessor(aRouterConf.count("fake") > 0 and
@@ -73,7 +74,7 @@ void EdgeLambdaProcessor::init() {
   if (theControllerClient) {
     LOG(INFO) << "Announcing to " << theControllerEndpoint;
     controllerCommand([this](EdgeControllerClient& aClient) {
-      // aClient.announceRouter(theServerEndpoint, theCommandsEndpoint); //the serverendpoint era un membro protetto di edgeservergrpc -> lo devo mettere anche in edge server?
+      aClient.announceRouter(theServerEndpoint, theCommandsEndpoint);
     });
   }
 }

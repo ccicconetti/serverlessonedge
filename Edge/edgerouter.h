@@ -69,7 +69,7 @@ class EdgeRouter final : public EdgeLambdaProcessor
 {
  public:
   /**
-   * 
+   *
    * \param aCommandsEndpoint the end-point to receive commands from the
    * controller.
    *
@@ -82,7 +82,8 @@ class EdgeRouter final : public EdgeLambdaProcessor
    *
    * \param aLocalOptimizerConf the configuration of the weight updater object.
    */
-  explicit EdgeRouter(const std::string&   aCommandsEndpoint,
+  explicit EdgeRouter(const std::string&   aLambdaEndpoint,
+                      const std::string&   aCommandsEndpoint,
                       const std::string&   aControllerEndpoint,
                       const support::Conf& aProcessorConf,
                       const support::Conf& aTableConf,

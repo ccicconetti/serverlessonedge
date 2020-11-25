@@ -38,14 +38,14 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeRouter::EdgeRouter(const std::string& aCommandsEndpoint,
-                       const std::string& aControllerEndpoint,
+EdgeRouter::EdgeRouter(const std::string&   aLambdaEndpoint,
+                       const std::string&   aCommandsEndpoint,
+                       const std::string&   aControllerEndpoint,
                        const support::Conf& aProcessorConf,
                        const support::Conf& aTableConf,
                        const support::Conf& aLocalOptimizerConf)
-    : EdgeLambdaProcessor(aCommandsEndpoint,
-                          aControllerEndpoint,
-                          aProcessorConf)
+    : EdgeLambdaProcessor(
+          aLambdaEndpoint, aCommandsEndpoint, aControllerEndpoint, aProcessorConf)
     , theOverallTable(ForwardingTableFactory::make(aTableConf))
     , theOverallOptimizer(
           LocalOptimizerFactory::make(*theOverallTable, aLocalOptimizerConf))

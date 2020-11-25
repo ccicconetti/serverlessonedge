@@ -32,8 +32,9 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeServer::EdgeServer()
-    : theMutex() {
+EdgeServer::EdgeServer(const std::string& aServerEndpoint)
+    : theMutex()
+    , theServerEndpoint(aServerEndpoint) {
 }
 
 } // namespace edge

@@ -38,7 +38,6 @@ namespace edge {
 struct LambdaResponse;
 
 /**
- * TODO: correct documentation
  * Generic edge server base class for the
  * processing of lambda functions.
  */
@@ -48,8 +47,8 @@ class EdgeServer
  public:
   NONCOPYABLE_NONMOVABLE(EdgeServer);
 
-  //! Create an edge server with just a mutex.
-  explicit EdgeServer();
+  //! Create an edge server with just a mutex and an endpoint
+  explicit EdgeServer(const std::string& aServerEndpoint);
 
   virtual ~EdgeServer(){};
 
@@ -58,6 +57,7 @@ class EdgeServer
 
  protected:
   mutable std::mutex theMutex;
+  const std::string theServerEndpoint;
 
 }; // end class EdgeServer
 
