@@ -29,37 +29,12 @@ SOFTWARE.
 
 #include "edgeserver.h"
 
-#include "Support/chrono.h"
-#include "edgemessages.h"
-
-#include <glog/logging.h>
-#include <grpc++/grpc++.h>
-
-// #define TRACE_TASKS
-
 namespace uiiit {
 namespace edge {
 
 EdgeServer::EdgeServer()
     : theMutex() {
 }
-
-// void EdgeServer::run() {
-//   //[..]
-//   init();
-// }
-
-// void EdgeServer::wait() {
-// }
-
-// EdgeServer::~EdgeServer() {
-// }
-
-// void EdgeServer::handle() {
-// }
-
-// std::set<std::thread::id> EdgeServer::threadIds() const {
-// }
 
 } // namespace edge
 } // namespace uiiit

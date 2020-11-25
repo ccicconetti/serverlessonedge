@@ -32,22 +32,13 @@ SOFTWARE.
 #include "Support/macros.h"
 #include "edgeserver.grpc.pb.h"
 
-#include <cassert>
-#include <condition_variable>
-#include <list>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <thread>
-
 namespace uiiit {
 namespace edge {
 
 struct LambdaResponse;
 
 /**
- * TODO: correct documentation 
+ * TODO: correct documentation
  * Generic edge server base class for the
  * processing of lambda functions.
  */
@@ -60,36 +51,14 @@ class EdgeServer
   //! Create an edge server with just a mutex.
   explicit EdgeServer();
 
-  virtual ~EdgeServer();
-
-  //! Start the server. No more configuration allowed after this call.
-  // void run();
-
-  //! Wait until termination of the server.
-  // void wait();
-
- protected:
-  /**
-   * \return the set of the identifiers of the
-   * threads that have been spawned during the call to run(). The cardinality of
-   * this set if equal to the number of threads specified in the ctor. If run()
-   * has not (yet) been called, then an empty set is returned.
-   */
-  // std::set<std::thread::id> threadIds() const;
-
- private:
-  //! Thread execution body.
-  // void handle();
-
-  //! Execute initialization logic immediately after run().
-  //virtual void init() {}
+  virtual ~EdgeServer(){};
 
   //! Perform actual processing of a lambda request.
   virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
 
  protected:
   mutable std::mutex theMutex;
-  
+
 }; // end class EdgeServer
 
 } // end namespace edge

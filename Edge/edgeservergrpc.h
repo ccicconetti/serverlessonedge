@@ -126,7 +126,7 @@ class EdgeServerGrpc final: public EdgeServerImpl
   }
 
   //! Perform actual processing of a lambda request.
-  virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
+  rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
 
  protected:
   mutable std::mutex theMutex;

@@ -57,33 +57,24 @@ class EdgeServerImpl : public EdgeServer
  public:
   NONCOPYABLE_NONMOVABLE(EdgeServerImpl);
 
-  //! Create an edge server with just a mutex.
+  //! Create a base class with a reference to an edge server.
   explicit EdgeServerImpl(EdgeServer& aEdgeServer);
 
   virtual ~EdgeServerImpl();
 
-//   //! Start the server. No more configuration allowed after this call.
-//   void run();
+  //! Start the server. No more configuration allowed after this call.
+  virtual void run() = 0;
 
-//   //! Wait until termination of the server.
-//   void wait();
+  //! Wait until termination of the server.
+  virtual void wait() = 0;
 
-//  protected:
-//   /**
-//    * \return the set of the identifiers of the
-//    * threads that have been spawned during the call to run(). The cardinality of
-//    * this set if equal to the number of threads specified in the ctor. If run()
-//    * has not (yet) been called, then an empty set is returned.
-//    */
-//   std::set<std::thread::id> threadIds() const;
+  //  private:
+  //   //! Thread execution body.
+  //   void handle();
 
-//  private:
-//   //! Thread execution body.
-//   void handle();
-
-//   //! Execute initialization logic immediately after run().
-//   virtual void init() {
-//   }
+  //   //! Execute initialization logic immediately after run().
+  //   virtual void init() {
+  //   }
 
   //! Perform actual processing of a lambda request.
   virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
