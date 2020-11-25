@@ -50,16 +50,16 @@ TEST_F(TestForwardingTable, test_ctor) {
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::LeastImpedance)));
   
   std::unique_ptr<ForwardingTable> myTable1(ForwardingTableFactory::make(support::Conf("type=random,alpha=2,beta=1")));
-  ASSERT_NE(myTable1, nullptr);
+  ASSERT_TRUE(static_cast<bool>(myTable1));
   std::unique_ptr<ForwardingTable> myTable2(ForwardingTableFactory::make(support::Conf("type=least-impedance,alpha=2,beta=1")));
-  ASSERT_NE(myTable2, nullptr);
+  ASSERT_TRUE(static_cast<bool>(myTable2));
 }
 
 TEST_F(TestForwardingTable, test_pf_ctor) {
   ASSERT_NO_THROW(
       (ForwardingTable(ForwardingTable::Type::ProportionalFairness)));
   std::unique_ptr<ForwardingTable> myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
-  ASSERT_NE(myTable, nullptr);
+  ASSERT_TRUE(static_cast<bool>(myTable));
 }
 
 TEST_F(TestForwardingTable, test_pf_operations) {

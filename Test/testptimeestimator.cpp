@@ -162,17 +162,16 @@ TEST_F(TestPtimeEstimator, test_add_remove) {
   ASSERT_EQ(Set(), myEst.lambdas());
 
   using Command = TrivialPtimeEstimator::Command;
-  ASSERT_EQ(std::list<Command>({
-                Command{Command::ADDED, "lambda1", "dest1"},
-                Command{Command::ADDED, "lambda2", "dest2"},
-                Command{Command::ADDED, "lambda2", "dest3"},
-                Command{Command::REMOVED, "lambda2", "dest2"},
-                Command{Command::REMOVED, "lambda2", "dest3"},
-                Command{Command::ADDED, "lambda1", "dest9"},
-                Command{Command::REMOVED, "lambda1", "dest9"},
-                Command{Command::REMOVED, "lambda1", "dest1"},
-            }),
-            myEst.theCommands);
+  ASSERT_TRUE(std::list<Command>({
+                  Command{Command::ADDED, "lambda1", "dest1"},
+                  Command{Command::ADDED, "lambda2", "dest2"},
+                  Command{Command::ADDED, "lambda2", "dest3"},
+                  Command{Command::REMOVED, "lambda2", "dest2"},
+                  Command{Command::REMOVED, "lambda2", "dest3"},
+                  Command{Command::ADDED, "lambda1", "dest9"},
+                  Command{Command::REMOVED, "lambda1", "dest9"},
+                  Command{Command::REMOVED, "lambda1", "dest1"},
+              }) == myEst.theCommands);
 }
 
 TEST_F(TestPtimeEstimator, test_print) {
@@ -183,7 +182,8 @@ TEST_F(TestPtimeEstimator, test_print) {
   myEst.change("lambda1", "dest2", -42.0f, false);
   myEst.change("lambda2", "dest1", -42.0f, true);
   ASSERT_EQ(
-      std::string("lambda1 [1] dest1 (F)\n        [1] dest2\nlambda2 [1] dest1 (F)\n"),
+      std::string(
+          "lambda1 [1] dest1 (F)\n        [1] dest2\nlambda2 [1] dest1 (F)\n"),
       ::toString(myEst));
 }
 
