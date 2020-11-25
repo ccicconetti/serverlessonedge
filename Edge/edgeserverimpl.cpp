@@ -27,38 +27,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeserverquic.h"
+#include "edgeservergrpc.h"
+
+#include "Support/chrono.h"
+#include "edgemessages.h"
+#include "edgeserverimpl.h"
 
 #include <glog/logging.h>
+#include <grpc++/grpc++.h>
 
-#include <proxygen/httpserver/samples/hq/HQParams.h>
-#include <proxygen/httpserver/samples/hq/HQServer.h>
+// #define TRACE_TASKS
 
 namespace uiiit {
 namespace edge {
 
-EdgeServerQuic::EdgeServerQuic(){
-    LOG(INFO) << "EdgeServerQuic CTOR" <<'\n';
+EdgeServerImpl::EdgeServerImpl(EdgeServer& aEdgeServer)
+    : theEdgeServer(aEdgeServer) {
 }
-
-void EdgeServerQuic::run() {
-  // XXX
-
-  init();
-}
-
-void EdgeServerQuic::wait() {
-  // XXX
-}
-
-EdgeServerQuic::~EdgeServerQuic() {
-}
-
-std::set<std::thread::id> EdgeServerQuic::threadIds() const {
-  return std::set<std::thread::id>();
-}
-
-void process(const std::string& aReq){}; // std::string
 
 } // namespace edge
 } // namespace uiiit

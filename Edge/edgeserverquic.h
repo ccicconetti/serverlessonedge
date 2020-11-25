@@ -30,6 +30,7 @@ SOFTWARE.
 #pragma once
 
 #include "Support/macros.h"
+#include "edgeserverimpl.h"
 
 #include <set>
 #include <string>
@@ -38,25 +39,14 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-// using HTTPTransactionHandlerProvider =
-//     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
-//                                                     const quic::samples::HQParams&)>;
-
-/**
- * Generic edge server providing a multi-threaded gRPC server interface for the
- * processing of lambda functions.
- */
-class EdgeServerQuic
+class EdgeServerQuic final : public EdgeServerImpl
 {
 
  public:
   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
   //! Create an edge server with a given number of threads.
-  explicit EdgeServerQuic(const std::string& aServerEndpoint, 
-                          const size_t       aNumThreads);
-                          // const quic::samples::HQParams& params,
-                          // HTTPTransactionHandlerProvider httpTransactionHandlerProvider); // VERIFY is is ok to use it this way
+  explicit EdgeServerQuic(EdgeServer& aEdgeServer); //poi avremo gli HQParams 
 
   virtual ~EdgeServerQuic();
 
@@ -67,33 +57,23 @@ class EdgeServerQuic
   void wait();
 
  protected:
-  /**
-   * \return the set of the identifiers of the threads that have been
-   * spawned during the call to run(). The cardinality of this set
-   * if equal to the number of threads specified in the ctor. If
-   * run() has not (yet) been called, then an empty set is returned.
-   */
   std::set<std::thread::id> threadIds() const;
 
  private:
-  //****************** private members HQServer.h
-  // quic::samples::HQParams theParams; //params_ //CONST E REF<<<<<<<<<<<<<<<<<
-  // folly::EventBase theEventBase; //eventbase_
-  // std::shared_ptr<quic::QuicServer> theServer; //server_
-  // folly::Baton<> theSemaphore; //cv_ 
-  //******************
-
   //! Execute initialization logic immediately after run().
   virtual void init() {
   }
 
   //! Perform actual processing of a lambda request.
-  //virtual std::string process(const std::string& aReq) = 0;
+  std::string process(const std::string& aReq); //<<<<<<< virtual [..] =0 deve
+  // essere virtuale pura
 
  protected:
-  const std::string theServerEndpoint;
-  const size_t      theNumThreads;
+  //const std::string theServerEndpoint;
+  //const size_t      theNumThreads;
 }; // end class EdgeServer
+
+// void startServer(const quic::samples::HQParams& params);
 
 } // namespace edge
 } // namespace uiiit

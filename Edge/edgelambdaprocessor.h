@@ -80,10 +80,8 @@ class EdgeLambdaProcessor : public EdgeServer
    *   we add an artificial process time randomly drawn from U[A, B].
    *   A and B are in fractional seconds.
    */
-  explicit EdgeLambdaProcessor(const std::string&   aLambdaEndpoint,
-                               const std::string&   aCommandsEndpoint,
+  explicit EdgeLambdaProcessor(const std::string&   aCommandsEndpoint,
                                const std::string&   aControllerEndpoint,
-                               const size_t         aNumThreads,
                                const support::Conf& aRouterConf);
 
   ~EdgeLambdaProcessor() override;
@@ -129,7 +127,7 @@ class EdgeLambdaProcessor : public EdgeServer
    * If the end-point of a controller was specified in the ctor, announce this
    * element to it.
    */
-  void init() override;
+  void init();
 
   //! Send a command to the controller.
   void controllerCommand(
