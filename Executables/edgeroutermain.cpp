@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
     const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
     if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(myEdgeRouter, myServerImplConf("server-endpoint"), myServerImplConf("num-threads")));
+      myServerImpl.reset(new ec::EdgeServerGrpc(myEdgeRouter, myServerImplConf("server-endpoint"), myServerImplConf.getInt("num-threads")));
     } else if (myServerImplConf("type") == "quic") {
       // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
       LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';

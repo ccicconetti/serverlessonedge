@@ -38,5 +38,8 @@ EdgeServerImpl::EdgeServerImpl(EdgeServer& aEdgeServer)
     : theEdgeServer(aEdgeServer) {
 }
 
+EdgeServerImpl::~EdgeServerImpl(){
+}
+
 } // namespace edge
 } // namespace uiiit

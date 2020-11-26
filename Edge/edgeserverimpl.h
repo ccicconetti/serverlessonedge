@@ -47,7 +47,6 @@ namespace edge {
 struct LambdaResponse;
 
 /**
- * TODO: correct documentation
  * Generic edge server base class for the
  * processing of lambda functions.
  */

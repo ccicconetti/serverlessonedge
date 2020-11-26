@@ -189,7 +189,7 @@ void EdgeServerGrpc::handle() {
 }
 
 rpc::LambdaResponse EdgeServerGrpc::process(const rpc::LambdaRequest& aReq){
-  theEdgeServer.process(aReq);
+  return theEdgeServer.process(aReq);
 }
 
 std::set<std::thread::id> EdgeServerGrpc::threadIds() const {
