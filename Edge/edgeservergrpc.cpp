@@ -119,6 +119,9 @@ EdgeServerGrpc::EdgeServerGrpc(EdgeServer&        aEdgeServer,
   if (aNumThreads == 0) {
     throw std::runtime_error("Cannot spawn 0 threads");
   }
+  if (aServerEndpoint.empty()) {
+    throw std::runtime_error("Invalid request to bind to an empty end-point");
+  }
 }
 
 void EdgeServerGrpc::run() {
