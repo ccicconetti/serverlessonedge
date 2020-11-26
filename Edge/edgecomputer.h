@@ -65,11 +65,9 @@ class EdgeComputer final : public EdgeServer
    * Create an edge server with a given number of threads.
    *
    * \param aServerEndpoint the listening end-point of this server.
-   * \param aNumThreads the number of threads to spawn.
    * \param aCallback the function called as new load values are available.
    */
   explicit EdgeComputer(const std::string&  aServerEndpoint,
-                        const size_t        aNumThreads,
                         const UtilCallback& aCallback);
 
   //! \return The computer inside this edge server.

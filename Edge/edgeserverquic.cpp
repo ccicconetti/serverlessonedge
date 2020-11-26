@@ -37,28 +37,28 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeServerQuic::EdgeServerQuic(){
-    LOG(INFO) << "EdgeServerQuic CTOR" <<'\n';
-}
+// EdgeServerQuic::EdgeServerQuic(){
+//     LOG(INFO) << "EdgeServerQuic CTOR" <<'\n';
+// }
 
-void EdgeServerQuic::run() {
-  // XXX
+// void EdgeServerQuic::run() {
+//   // XXX
 
-  init();
-}
+//   init();
+// }
 
-void EdgeServerQuic::wait() {
-  // XXX
-}
+// void EdgeServerQuic::wait() {
+//   // XXX
+// }
 
-EdgeServerQuic::~EdgeServerQuic() {
-}
+// EdgeServerQuic::~EdgeServerQuic() {
+// }
 
-std::set<std::thread::id> EdgeServerQuic::threadIds() const {
-  return std::set<std::thread::id>();
-}
+// std::set<std::thread::id> EdgeServerQuic::threadIds() const {
+//   return std::set<std::thread::id>();
+// }
 
-void process(const std::string& aReq){}; // std::string
+// void process(const std::string& aReq){}; // std::string
 
 } // namespace edge
 } // namespace uiiit

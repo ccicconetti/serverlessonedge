@@ -39,39 +39,39 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-class EdgeServerQuic final : public EdgeServerImpl
-{
+// class EdgeServerQuic final : public EdgeServerImpl
+// {
 
- public:
-  NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
+//  public:
+//   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
-  //! Create an edge server with a given number of threads.
-  explicit EdgeServerQuic(EdgeServer& aEdgeServer); //poi avremo gli HQParams 
+//   //! Create an edge server with a given number of threads.
+//   explicit EdgeServerQuic(EdgeServer& aEdgeServer); //poi avremo gli HQParams 
 
-  virtual ~EdgeServerQuic();
+//   virtual ~EdgeServerQuic();
 
-  //! Start the server. No more configuration allowed after this call.
-  void run();
+//   //! Start the server. No more configuration allowed after this call.
+//   void run();
 
-  //! Wait until termination of the server.
-  void wait();
+//   //! Wait until termination of the server.
+//   void wait();
 
- protected:
-  std::set<std::thread::id> threadIds() const;
+//  protected:
+//   std::set<std::thread::id> threadIds() const;
 
- private:
-  //! Execute initialization logic immediately after run().
-  virtual void init() {
-  }
+//  private:
+//   //! Execute initialization logic immediately after run().
+//   virtual void init() {
+//   }
 
-  //! Perform actual processing of a lambda request.
-  std::string process(const std::string& aReq); //<<<<<<< virtual [..] =0 deve
-  // essere virtuale pura
+//   //! Perform actual processing of a lambda request.
+//   std::string process(const std::string& aReq); //<<<<<<< virtual [..] =0 deve
+//   // essere virtuale pura
 
- protected:
-  //const std::string theServerEndpoint;
-  //const size_t      theNumThreads;
-}; // end class EdgeServer
+//  protected:
+//   //const std::string theServerEndpoint;
+//   //const size_t      theNumThreads;
+// }; // end class EdgeServer
 
 // void startServer(const quic::samples::HQParams& params);
 

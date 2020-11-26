@@ -31,6 +31,7 @@ SOFTWARE.
 #include "Edge/edgedispatcher.h"
 #include "Edge/edgelambdaprocessoroptions.h"
 #include "Edge/forwardingtableserver.h"
+#include "Edge/edgeservergrpc.h"
 #include "Edge/ptimeestimator.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
@@ -48,10 +49,14 @@ int main(int argc, char* argv[]) {
   uiiit::support::GlogRaii myGlogRaii(argv[0]);
 
   std::string myPtimeEstimatorConf;
+  std::string myServerConf;
 
   po::options_description myDesc("Allowed options");
   // clang-format off
   myDesc.add_options()
+  ("server-conf",
+   po::value<std::string>(&myServerConf)->default_value("type=grpc"),
+   "Comma-separated configuration of the server.")
   ("ptimeest-conf",
    po::value<std::string>(&myPtimeEstimatorConf)->default_value("type=rtt,window-size=50,stale-period=10"),
    "Comma-separated configuration of the processing time estimator.")
@@ -74,9 +79,22 @@ int main(int argc, char* argv[]) {
         myCli.serverEndpoint(),
         myCli.forwardingEndpoint(),
         myCli.controllerEndpoint(),
-        myCli.numThreads(),
         uiiit::support::Conf(myCli.routerConf()),
         uiiit::support::Conf(myPtimeEstimatorConf));
+  
+    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
+    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
+
+    if (myServerImplConf("type") == "grpc") {
+      myServerImpl.reset(new ec::EdgeServerGrpc(myEdgeDispatcher, myServerImplConf("server-endpoint"), myServerImplConf.getInt("num-threads")));
+    } else if (myServerImplConf("type") == "quic") {
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
+      LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
+    } else {
+      throw std::runtime_error("EdgeServer type not allowed: " +
+                               myServerImplConf("type"));
+    }
+    assert(myServerImpl != nullptr);
 
     auto myTables = myEdgeDispatcher.tables();
     assert(myTables.size() == 1);
@@ -88,8 +106,9 @@ int main(int argc, char* argv[]) {
         myCli.forwardingEndpoint(), *myTables[0]);
 
     myForwardingTableServer.run(false); // non-blocking
-    myEdgeDispatcher.run();             // non-blocking
-    myEdgeDispatcher.wait();            // blocking
+    
+    myServerImpl -> run();
+    myServerImpl -> wait();
 
     return EXIT_SUCCESS;
 

@@ -45,14 +45,11 @@ class EdgeComputerWsk final : public EdgeServer
   /**
    * \param aServerEndpoint the listening end-point of this server.
    *
-   * \param aNumThreads the number of threads to spawn.
-   *
    * \param aWskApiRoot the OpenWhisk API root URL.
    *
    * \param aWskAuth the OpenWhisk basic authentication token.
    */
   explicit EdgeComputerWsk(const std::string& aServerEndpoint,
-                           const size_t       aNumThreads,
                            const std::string& aWskApiRoot,
                            const std::string& aWskAuth);
 

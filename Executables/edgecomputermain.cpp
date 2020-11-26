@@ -32,6 +32,8 @@ SOFTWARE.
 #include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerserver.h"
 #include "Edge/edgecontrollerclient.h"
+#include "Edge/edgeservergrpc.h"
+//#include "Edge/edgeserverquic"
 #include "Edge/edgeserveroptions.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
@@ -52,10 +54,14 @@ int main(int argc, char* argv[]) {
 
   std::string myUtilServerEndpoint;
   std::string myConf;
+  std::string myServerConf;
 
   po::options_description myDesc("Allowed options");
   // clang-format off
   myDesc.add_options()
+  ("server-conf",
+   po::value<std::string>(&myServerConf)->default_value("type=grpc"),
+   "Comma-separated configuration of the server.") // endpoint, numthreads OR string of conf parameters to build HQParams
   ("utilization-endpoint",
    po::value<std::string>(&myUtilServerEndpoint)->default_value("0.0.0.0:6476"),
    "Utilization server end-point. If empty utilization is not computed.")
@@ -95,7 +101,22 @@ int main(int argc, char* argv[]) {
     }
 
     ec::EdgeComputer myServer(
-        myCli.serverEndpoint(), myCli.numThreads(), myUtilCallback);
+        myCli.serverEndpoint(), myUtilCallback);
+    
+    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
+    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
+
+    if (myServerImplConf("type") == "grpc") {
+      myServerImpl.reset(new ec::EdgeServerGrpc(myServer, myServerImplConf("server-endpoint"), myServerImplConf.getInt("num-threads")));
+    } else if (myServerImplConf("type") == "quic") {
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
+      LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
+    } else {
+      throw std::runtime_error("EdgeServer type not allowed: " +
+                               myServerImplConf("type"));
+    }
+    assert(myServerImpl != nullptr);
+    
     ec::Composer()(uiiit::support::Conf(myConf), myServer.computer());
 
     if (myCli.controllerEndpoint().empty()) {
@@ -107,7 +128,8 @@ int main(int argc, char* argv[]) {
       LOG(INFO) << "Announced to " << myCli.controllerEndpoint();
     }
 
-    myServer.run(); // non-blocking
+    myServerImpl -> run();
+    //myServer.run(); // non-blocking
     // myServer.wait(); // blocking
     mySignalHandler.wait(); // blocking
 
