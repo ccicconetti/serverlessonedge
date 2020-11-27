@@ -37,14 +37,16 @@ SOFTWARE.
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrolleretsibalanced.h"
 #include "Edge/edgecontrollerserver.h"
+#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserverimpl.h"
 #include "Edge/etsiedgeclient.h"
 #include "EtsiMec/appcontextmanager.h"
 #include "EtsiMec/applistclient.h"
 #include "EtsiMec/grpcueapplcmproxy.h"
 #include "EtsiMec/staticueapplcmproxy.h"
-#include "Support/tostring.h"
 #include "Support/chrono.h"
 #include "Support/conf.h"
+#include "Support/tostring.h"
 #include "Support/wait.h"
 
 #include <memory>
@@ -67,10 +69,8 @@ struct TestEtsiTransaction : public ::testing::Test {
         , theProxyServer(theProxyEndpoint, theProxy)
         , theController(theControllerEndpoint)
         , theComputer1(theComputer1Endpoint,
-                       theNumThreads,
                        [](const std::map<std::string, double>&) {})
         , theComputer2(theComputer2Endpoint,
-                       theNumThreads,
                        [](const std::map<std::string, double>&) {}) {
       // configure the computers
       Composer()(
@@ -89,10 +89,21 @@ struct TestEtsiTransaction : public ::testing::Test {
           new EdgeControllerEtsiBalanced(theProxyEndpoint, 5.0));
       theController.subscribe(std::move(myEdgeControllerEtsi));
 
+      // create the EdgeServerGrpc to handle lambda requests
+      std::unique_ptr<EdgeServerImpl> myServerImpl1;
+      std::unique_ptr<EdgeServerImpl> myServerImpl2;
+
+      myServerImpl1.reset(
+          new EdgeServerGrpc(theComputer1, theComputer1Endpoint, 1));
+      myServerImpl2.reset(
+          new EdgeServerGrpc(theComputer2, theComputer2Endpoint, 1));
+
       // then, start the edge servers (non-blocking)
       theController.run(false);
-      theComputer1.run();
-      theComputer2.run();
+      // theComputer1.run();
+      // theComputer2.run();
+      myServerImpl1->run();
+      myServerImpl2->run();
 
       // announce the computers to the controller
       EdgeControllerClient myControllerClient(theControllerEndpoint);

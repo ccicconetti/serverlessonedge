@@ -52,7 +52,7 @@ struct LambdaResponse;
  * Generic edge server providing a multi-threaded gRPC server interface for the
  * processing of lambda functions.
  */
-class EdgeServerGrpc final: public EdgeServerImpl
+class EdgeServerGrpc final : public EdgeServerImpl
 {
   // Class encompassing the state and logic needed to serve a request.
   class CallData
@@ -96,7 +96,7 @@ class EdgeServerGrpc final: public EdgeServerImpl
   NONCOPYABLE_NONMOVABLE(EdgeServerGrpc);
 
   //! Create an edge server with a given number of threads.
-  explicit EdgeServerGrpc(EdgeServer&  aEdgeServer,
+  explicit EdgeServerGrpc(EdgeServer&        aEdgeServer,
                           const std::string& aServerEndpoint,
                           const size_t       aNumThreads);
 
