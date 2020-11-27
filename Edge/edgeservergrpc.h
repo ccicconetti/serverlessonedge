@@ -31,6 +31,8 @@ SOFTWARE.
 
 #include "Support/macros.h"
 
+#include <grpc++/grpc++.h>
+
 #include <cassert>
 #include <condition_variable>
 #include <list>
@@ -136,7 +138,7 @@ class EdgeServerGrpc final : public EdgeServerImpl
  private:
   std::unique_ptr<grpc::ServerCompletionQueue> theCq;
   rpc::EdgeServer::AsyncService                theService;
-  std::unique_ptr<grpc_impl::Server>           theServer;
+  std::unique_ptr<grpc::Server>                theServer;
   std::list<std::thread>                       theHandlers;
 }; // end class EdgeServer
 

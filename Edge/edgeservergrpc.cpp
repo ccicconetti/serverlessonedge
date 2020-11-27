@@ -33,7 +33,6 @@ SOFTWARE.
 #include "edgemessages.h"
 
 #include <glog/logging.h>
-#include <grpc++/grpc++.h>
 
 // #define TRACE_TASKS
 
