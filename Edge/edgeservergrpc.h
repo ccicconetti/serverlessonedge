@@ -105,10 +105,10 @@ class EdgeServerGrpc final : public EdgeServerImpl
   virtual ~EdgeServerGrpc();
 
   //! Start the server. No more configuration allowed after this call.
-  void run();
+  void run() override;
 
   //! Wait until termination of the server.
-  void wait();
+  void wait() override;
 
  protected:
   /**

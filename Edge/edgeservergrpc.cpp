@@ -36,6 +36,9 @@ SOFTWARE.
 
 // #define TRACE_TASKS
 
+GPRAPI void gpr_log(const char*, int, gpr_log_severity, const char*, ...) {
+}
+
 namespace uiiit {
 namespace edge {
 
@@ -190,7 +193,7 @@ void EdgeServerGrpc::handle() {
   }
 }
 
-rpc::LambdaResponse EdgeServerGrpc::process(const rpc::LambdaRequest& aReq){
+rpc::LambdaResponse EdgeServerGrpc::process(const rpc::LambdaRequest& aReq) {
   return theEdgeServer.process(aReq);
 }
 
