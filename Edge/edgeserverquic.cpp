@@ -27,15 +27,38 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeserver.h"
+#include "edgeserverquic.h"
+
+#include <glog/logging.h>
+
+#include <proxygen/httpserver/samples/hq/HQParams.h>
+#include <proxygen/httpserver/samples/hq/HQServer.h>
 
 namespace uiiit {
 namespace edge {
 
-EdgeServer::EdgeServer(const std::string& aServerEndpoint)
-    : theMutex()
-    , theServerEndpoint(aServerEndpoint) {
-}
+// EdgeServerQuic::EdgeServerQuic(){
+//     LOG(INFO) << "EdgeServerQuic CTOR" <<'\n';
+// }
+
+// void EdgeServerQuic::run() {
+//   // XXX
+
+//   init();
+// }
+
+// void EdgeServerQuic::wait() {
+//   // XXX
+// }
+
+// EdgeServerQuic::~EdgeServerQuic() {
+// }
+
+// std::set<std::thread::id> EdgeServerQuic::threadIds() const {
+//   return std::set<std::thread::id>();
+// }
+
+// void process(const std::string& aReq){}; // std::string
 
 } // namespace edge
 } // namespace uiiit

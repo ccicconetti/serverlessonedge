@@ -28,8 +28,9 @@ SOFTWARE.
 */
 
 #include "Edge/edgecomputerwsk.h"
-#include "Edge/edgecontrollermessages.h"  // ContainerList
 #include "Edge/edgecontrollerclient.h"
+#include "Edge/edgecontrollermessages.h" // ContainerList
+#include "Edge/edgeservergrpc.h"
 #include "Edge/edgeserveroptions.h"
 #include "OpenWhisk/lister.h"
 #include "Support/conf.h"
@@ -52,10 +53,14 @@ int main(int argc, char* argv[]) {
 
   std::string myWskApiRoot;
   std::string myWskAuth;
+  std::string myServerConf;
 
   po::options_description myDesc("Allowed options");
   // clang-format off
   myDesc.add_options()
+  ("server-conf",
+   po::value<std::string>(&myServerConf)->default_value("type=grpc"),
+   "Comma-separated configuration of the server.")
   ("wsk-api-root",
    po::value<std::string>(&myWskApiRoot)->default_value("https://127.0.0.1:80"),
    "OpenWhisk API root")
@@ -127,9 +132,25 @@ int main(int argc, char* argv[]) {
     }
 
     ec::EdgeComputerWsk myServer(
-        myCli.serverEndpoint(), myCli.numThreads(), myWskApiRoot, myWskAuth);
+        myCli.serverEndpoint(), myWskApiRoot, myWskAuth);
 
-    myServer.run();         // non-blocking
+    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
+    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
+
+    if (myServerImplConf("type") == "grpc") {
+      myServerImpl.reset(new ec::EdgeServerGrpc(
+          myServer, myCli.serverEndpoint(), myCli.numThreads()));
+    } else if (myServerImplConf("type") == "quic") {
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
+      // parametri makeHqParams(myImplConf)
+      LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
+    } else {
+      throw std::runtime_error("EdgeServer type not allowed: " +
+                               myServerImplConf("type"));
+    }
+    assert(myServerImpl != nullptr);
+
+    myServerImpl->run();
     mySignalHandler.wait(); // blocking
 
     // perform clean exit by removing this computer from the controller

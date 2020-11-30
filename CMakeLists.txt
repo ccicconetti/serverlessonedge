@@ -3,7 +3,7 @@ cmake_policy(SET CMP0048 NEW)
 project(edge_computing VERSION 0.1.6)
 cmake_minimum_required(VERSION 3.2)
 
-set (CMAKE_CXX_STANDARD 14) # c++14
+set (CMAKE_CXX_STANDARD 17)
 
 # Cmake find modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -28,6 +28,8 @@ if(WITH_OPENCV)
   find_package(OpenCV REQUIRED) # http://opencv.org
 endif()
 find_package(CppREST REQUIRED) # populates CPP_REST_INCLUDE_DIR and CPP_REST_LIBRARY
+
+set(PROXYGEN_ROOT "${PROJECT_SOURCE_DIR}/thirdparty/proxygen")
 
 set (DISABLE_WARNINGS "-Wno-missing-field-initializers -Wno-unused-parameter -Wnon-virtual-dtor")
 set (COMPILER_COMMON_FLAGS "-Wall -Wextra -Werror -DGTEST_CREATE_SHARED_LIBRARY=1 -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -fPIC ${DISABLE_WARNINGS}")
@@ -65,6 +67,10 @@ file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
 include_directories(${PROTO_SRC_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(SYSTEM ${PROXYGEN_ROOT})
+include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/deps/include")
+include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/generated")
+link_directories("${PROXYGEN_ROOT}/proxygen/_build/deps/lib")
 
 # executables
 add_subdirectory(Executables)
@@ -77,6 +83,8 @@ endif()
 add_subdirectory(Rpc)
 add_subdirectory(Simulation)
 
+#add_subdirectory(hq)
+
 # external repos
 add_subdirectory(etsimec/Executables)
 add_subdirectory(etsimec/EtsiMec)
@@ -86,8 +94,8 @@ add_subdirectory(etsimec/rest/support/RpcSupport)
 add_subdirectory(etsimec/rest/support/Support)
 
 # unit tests
-string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type_lower)
-if (${build_type_lower} STREQUAL "debug")
+string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
+if (${CMAKE_BUILD_TYPE_LOWER} STREQUAL "debug")
   add_subdirectory(Test)
   set(skip_google_test TRUE)
   add_subdirectory(etsimec/Test)

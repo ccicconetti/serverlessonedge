@@ -47,9 +47,8 @@ namespace edge {
 EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
                                          const std::string& aCommandsEndpoint,
                                          const std::string& aControllerEndpoint,
-                                         const size_t       aNumThreads,
                                          const support::Conf& aRouterConf)
-    : EdgeServer(aLambdaEndpoint, aNumThreads)
+    : EdgeServer(aLambdaEndpoint)
     , theCommandsEndpoint(aCommandsEndpoint)
     , theControllerEndpoint(aControllerEndpoint)
     , theFakeProcessor(aRouterConf.count("fake") > 0 and

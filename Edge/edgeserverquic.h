@@ -27,15 +27,50 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeserver.h"
+#pragma once
+
+#include "Support/macros.h"
+#include "edgeserverimpl.h"
+
+#include <set>
+#include <string>
+#include <thread>
 
 namespace uiiit {
 namespace edge {
 
-EdgeServer::EdgeServer(const std::string& aServerEndpoint)
-    : theMutex()
-    , theServerEndpoint(aServerEndpoint) {
-}
+// class EdgeServerQuic final : public EdgeServerImpl
+// {
+
+//  public:
+//   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
+
+//   //! Create an edge server with a given number of threads.
+//   explicit EdgeServerQuic(EdgeServer& aEdgeServer); //poi avremo gli HQParams
+
+//   virtual ~EdgeServerQuic();
+
+//   //! Start the server. No more configuration allowed after this call.
+//   void run();
+
+//   //! Wait until termination of the server.
+//   void wait();
+
+//  protected:
+//   std::set<std::thread::id> threadIds() const;
+
+//  private:
+//   //! Perform actual processing of a lambda request.
+//   std::string process(const std::string& aReq); //<<<<<<< virtual [..] =0
+//   deve
+//   // essere virtuale pura
+
+//  protected:
+//   //const std::string theServerEndpoint;
+//   //const size_t      theNumThreads;
+// }; // end class EdgeServer
+
+// void startServer(const quic::samples::HQParams& params);
 
 } // namespace edge
 } // namespace uiiit

@@ -27,15 +27,57 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
+#include "Support/macros.h"
 #include "edgeserver.h"
+
+#include <cassert>
+#include <condition_variable>
+#include <list>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <thread>
 
 namespace uiiit {
 namespace edge {
 
-EdgeServer::EdgeServer(const std::string& aServerEndpoint)
-    : theMutex()
-    , theServerEndpoint(aServerEndpoint) {
-}
+struct LambdaResponse;
 
-} // namespace edge
-} // namespace uiiit
+/**
+ * Generic edge server base class for the
+ * processing of lambda functions.
+ */
+class EdgeServerImpl
+{
+
+ public:
+  NONCOPYABLE_NONMOVABLE(EdgeServerImpl);
+
+  //! Create a base class with a reference to an edge server.
+  explicit EdgeServerImpl(EdgeServer& aEdgeServer);
+
+  virtual ~EdgeServerImpl();
+
+  //! Start the server. No more configuration allowed after this call.
+  virtual void run() = 0;
+
+  //! Wait until termination of the server.
+  virtual void wait() = 0;
+
+  //  private:
+  //   //! Thread execution body.
+  //   void handle();
+
+  //! Perform actual processing of a lambda request.
+  virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
+
+ protected:
+  EdgeServer& theEdgeServer;
+
+}; // end class EdgeServer
+
+} // end namespace edge
+} // end namespace uiiit

@@ -1,3 +1,7 @@
+set(PROXYGENLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/lib/libproxygen.a")
+set(PROXYGENCURLLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpclient/samples/curl/libproxygencurl.a")
+set(PROXYGENHTTPSERVERLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpserver/libproxygenhttpserver.a")
+
 add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/Detail/printtable.cpp
 
@@ -32,6 +36,8 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/edgemessages.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgerouter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverimpl.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeservergrpc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserveroptions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/etsiedgeclient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/forwardingtable.cpp
@@ -66,4 +72,86 @@ target_link_libraries(uiiitedge
   uiiitopenwhisk
   uiiitrpc
   uiiitsupport
+)
+
+add_library(uiiitedgequic STATIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquic.cpp
+)
+
+target_link_libraries(uiiitedgequic
+    ${PROXYGENLIB}
+    ${PROXYGENCURLLIB}
+    ${PROXYGENHTTPSERVERLIB}
+    mvfst_transport
+    mvfst_client
+    mvfst_server
+    ${PROXYGENLIB}
+    mvfst_server
+    wangle
+    zstd
+    boost_iostreams
+    boost_regex
+    mvfst_fizz_client
+    mvfst_client
+    mvfst_transport
+    mvfst_buf_accessor
+    mvfst_cc_algo
+    mvfst_codec_pktrebuilder
+    mvfst_looper
+    mvfst_happyeyeballs
+    mvfst_socketutil
+    mvfst_state_ack_handler
+    mvfst_loss
+    mvfst_state_simple_frame_functions
+    mvfst_state_qpr_functions
+    mvfst_d6d_state_functions
+    mvfst_state_functions
+    mvfst_codec_pktbuilder
+    mvfst_state_stream
+    mvfst_flowcontrol
+    mvfst_qlogger
+    mvfst_state_stream_functions
+    mvfst_state_pacing_functions
+    mvfst_fizz_handshake
+    mvfst_state_machine
+    mvfst_codec
+    mvfst_handshake
+    mvfst_codec_packet_number_cipher
+    mvfst_codec_decode
+    mvfst_d6d_types
+    mvfst_codec_types
+    mvfst_bufutil
+    mvfst_constants
+    mvfst_exception
+    fizz
+    folly
+    event
+    fmt
+
+    pthread
+    z
+    bz2
+    lzma
+    lz4
+    zstd
+    snappy
+    iberty.a
+    ssl
+    crypto
+    sodium
+    glog
+    gflags
+    double-conversion
+    dl
+    rt
+    boost_context
+    boost_filesystem
+    boost_program_options
+    boost_regex
+    boost_system
+    boost_thread
+    pthread
+    boost_chrono
+    boost_date_time
+    boost_atomic
 )

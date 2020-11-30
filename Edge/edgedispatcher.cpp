@@ -42,13 +42,11 @@ namespace edge {
 EdgeDispatcher::EdgeDispatcher(const std::string&   aLambdaEndpoint,
                                const std::string&   aCommandsEndpoint,
                                const std::string&   aControllerEndpoint,
-                               const size_t         aNumThreads,
                                const support::Conf& aProcessorConf,
                                const support::Conf& aPtimeEstimatorConf)
     : EdgeLambdaProcessor(aLambdaEndpoint,
                           aCommandsEndpoint,
                           aControllerEndpoint,
-                          aNumThreads,
                           aProcessorConf)
     , thePtimeEstimator(PtimeEstimatorFactory::make(aPtimeEstimatorConf)) {
 }

@@ -69,15 +69,12 @@ class EdgeRouter final : public EdgeLambdaProcessor
 {
  public:
   /**
-   * \param aLambdaEndpoint the end-point to receive lambda requests.
    *
    * \param aCommandsEndpoint the end-point to receive commands from the
    * controller.
    *
    * \param aControllerEndpoint the end-point of the edge controller. Can be
    * empty, in which case it is assumed that there is no controller.
-   *
-   * \param aNumThreads the number of threads to spawn.
    *
    * \param aProcessorConf the configuration of the parent object.
    *
@@ -88,7 +85,6 @@ class EdgeRouter final : public EdgeLambdaProcessor
   explicit EdgeRouter(const std::string&   aLambdaEndpoint,
                       const std::string&   aCommandsEndpoint,
                       const std::string&   aControllerEndpoint,
-                      const size_t         aNumThreads,
                       const support::Conf& aProcessorConf,
                       const support::Conf& aTableConf,
                       const support::Conf& aLocalOptimizerConf);

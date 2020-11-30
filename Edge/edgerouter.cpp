@@ -31,9 +31,9 @@ SOFTWARE.
 
 #include "Support/conf.h"
 #include "edgemessages.h"
+#include "forwardingtablefactory.h"
 #include "localoptimizer.h"
 #include "localoptimizerfactory.h"
-#include "forwardingtablefactory.h"
 
 namespace uiiit {
 namespace edge {
@@ -41,15 +41,11 @@ namespace edge {
 EdgeRouter::EdgeRouter(const std::string&   aLambdaEndpoint,
                        const std::string&   aCommandsEndpoint,
                        const std::string&   aControllerEndpoint,
-                       const size_t         aNumThreads,
                        const support::Conf& aProcessorConf,
                        const support::Conf& aTableConf,
                        const support::Conf& aLocalOptimizerConf)
-    : EdgeLambdaProcessor(aLambdaEndpoint,
-                          aCommandsEndpoint,
-                          aControllerEndpoint,
-                          aNumThreads,
-                          aProcessorConf)
+    : EdgeLambdaProcessor(
+          aLambdaEndpoint, aCommandsEndpoint, aControllerEndpoint, aProcessorConf)
     , theOverallTable(ForwardingTableFactory::make(aTableConf))
     , theOverallOptimizer(
           LocalOptimizerFactory::make(*theOverallTable, aLocalOptimizerConf))

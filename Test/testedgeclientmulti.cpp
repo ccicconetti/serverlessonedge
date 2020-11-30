@@ -30,6 +30,8 @@ SOFTWARE.
 #include "Edge/computer.h"
 #include "Edge/edgeclientmulti.h"
 #include "Edge/edgecomputer.h"
+#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserverimpl.h"
 #include "Edge/lambda.h"
 #include "Edge/processortype.h"
 #include "Support/conf.h"
@@ -52,7 +54,7 @@ struct TestEdgeClientMulti : public ::testing::Test {
   static std::unique_ptr<EdgeComputer>
   makeComputer(const std::string& aEndpoint, const double aCpuSpeed = 1e9) {
     auto ret =
-        std::make_unique<EdgeComputer>(aEndpoint, 1, Computer::UtilCallback());
+        std::make_unique<EdgeComputer>(aEndpoint, Computer::UtilCallback());
     ret->computer().addProcessor(
         "cpu", ProcessorType::GenericCpu, aCpuSpeed, 1, 1);
     ret->computer().addContainer(
@@ -84,7 +86,12 @@ TEST_F(TestEdgeClientMulti, test_one_destination) {
   ASSERT_NE("OK", myClient.RunLambda(myReq, true).theRetCode);
 
   // start computer: now lambda exec succeeds
-  myComputer->run();
+  // myComputer->run();
+  std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl;
+  myComputerEdgeServerImpl.reset(
+      new EdgeServerGrpc(*myComputer, theEndpoint1, 1));
+  myComputerEdgeServerImpl->run();
+
   ASSERT_TRUE(support::waitFor<std::string>(
       [&]() { return myClient.RunLambda(myReq, false).theRetCode; },
       "OK",
@@ -104,9 +111,22 @@ TEST_F(TestEdgeClientMulti, test_three_destinations) {
   auto myComputer1 = makeComputer(theEndpoint1, 1e9);
   auto myComputer2 = makeComputer(theEndpoint2, 1e9);
   auto myComputer3 = makeComputer(theEndpoint3, 1e8);
-  myComputer1->run();
-  myComputer2->run();
-  myComputer3->run();
+
+  // create three EdgeServerGrpc to handle lambda requests
+  std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl1;
+  std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl2;
+  std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl3;
+
+  myComputerEdgeServerImpl1.reset(
+      new EdgeServerGrpc(*myComputer1, theEndpoint1, 1));
+  myComputerEdgeServerImpl2.reset(
+      new EdgeServerGrpc(*myComputer2, theEndpoint2, 1));
+  myComputerEdgeServerImpl3.reset(
+      new EdgeServerGrpc(*myComputer3, theEndpoint3, 1));
+
+  myComputerEdgeServerImpl1->run();
+  myComputerEdgeServerImpl2->run();
+  myComputerEdgeServerImpl3->run();
 
   // create the multi-client
   EdgeClientMulti myClient({theEndpoint1, theEndpoint2, theEndpoint3}, 0.5f);
@@ -154,8 +174,8 @@ TEST_F(TestEdgeClientMulti, test_three_destinations) {
   LOG(INFO) << "delta = " << myDelta;
 
   // both destinations are used evenly
-  //ASSERT_LT(myDelta, 20);
- 
+  // ASSERT_LT(myDelta, 20);
+
   // both destinations are used
   ASSERT_GT(myCounter[theEndpoint1], 0u);
   ASSERT_GT(myCounter[theEndpoint2], 0u);

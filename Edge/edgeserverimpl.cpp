@@ -27,14 +27,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeserver.h"
+#include "edgeserverimpl.h"
+
+// #define TRACE_TASKS
 
 namespace uiiit {
 namespace edge {
 
-EdgeServer::EdgeServer(const std::string& aServerEndpoint)
-    : theMutex()
-    , theServerEndpoint(aServerEndpoint) {
+EdgeServerImpl::EdgeServerImpl(EdgeServer& aEdgeServer)
+    : theEdgeServer(aEdgeServer) {
+}
+
+EdgeServerImpl::~EdgeServerImpl(){
 }
 
 } // namespace edge

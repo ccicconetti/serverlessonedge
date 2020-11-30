@@ -38,9 +38,8 @@ namespace uiiit {
 namespace edge {
 
 EdgeComputer::EdgeComputer(const std::string&  aServerEndpoint,
-                           const size_t        aNumThreads,
                            const UtilCallback& aUtilCallback)
-    : EdgeServer(aServerEndpoint, aNumThreads)
+    : EdgeServer(aServerEndpoint)
     , theComputer(
           "computer@" + aServerEndpoint,
           [this](const uint64_t                               aId,

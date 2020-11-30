@@ -33,12 +33,14 @@ SOFTWARE.
 #include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerclient.h"
 #include "Edge/edgecomputerserver.h"
-#include "Edge/edgecontrollerrpc.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrollerflat.h"
+#include "Edge/edgecontrollerrpc.h"
 #include "Edge/edgecontrollerserver.h"
 #include "Edge/edgedispatcher.h"
 #include "Edge/edgerouter.h"
+#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserverimpl.h"
 #include "Edge/forwardingtableserver.h"
 #include "Edge/ptimeestimatorfactory.h"
 #include "Support/chrono.h"
@@ -68,7 +70,6 @@ struct TestLambdaTransaction : public ::testing::Test {
         , theController(theControllerEndpoint)
         , theUtilServer(theUtilEndpoint)
         , theComputer(theComputerEndpoint,
-                      theNumThreads,
                       [this](const std::map<std::string, double>& aUtil) {
                         theUtilServer.add(aUtil);
                       })
@@ -77,7 +78,6 @@ struct TestLambdaTransaction : public ::testing::Test {
                             theRouterEndpoint,
                             theForwardingEndpoint,
                             theControllerEndpoint,
-                            theNumThreads,
                             support::Conf(EdgeLambdaProcessor::defaultConf()),
                             support::Conf("type=random"),
                             support::Conf("type=trivial,period=10,stat=mean")) :
@@ -88,7 +88,6 @@ struct TestLambdaTransaction : public ::testing::Test {
                       theRouterEndpoint,
                       theForwardingEndpoint,
                       theControllerEndpoint,
-                      theNumThreads,
                       support::Conf(EdgeLambdaProcessor::defaultConf()),
                       support::Conf(
                           PtimeEstimatorFactory::defaultConf(aSubtype))) :
@@ -106,18 +105,26 @@ struct TestLambdaTransaction : public ::testing::Test {
       theController.subscribe(std::move(myEdgeControllerRpc));
 
       // start all the servers (in a non-blocking fashion, obviously)
+      theComputerServerImpl.reset(
+          new EdgeServerGrpc(theComputer, theComputerEndpoint, theNumThreads));
+
       theController.run(false);
       theUtilServer.run(false);
-      theComputer.run();
+      theComputerServerImpl->run();
+
       if (theRouter) {
-        theRouter->run();
+        theEdgeServerImpl.reset(
+            new EdgeServerGrpc(*theRouter, theRouterEndpoint, theNumThreads));
+        theEdgeServerImpl->run();
         theForwardingTableServer.reset(
             new ForwardingTableServer(theForwardingEndpoint,
                                       *theRouter->tables()[0],
                                       *theRouter->tables()[1]));
       }
       if (theDispatcher) {
-        theDispatcher->run();
+        theEdgeServerImpl.reset(new EdgeServerGrpc(
+            *theDispatcher, theRouterEndpoint, theNumThreads));
+        theEdgeServerImpl->run();
         theForwardingTableServer.reset(new ForwardingTableServer(
             theForwardingEndpoint, *theDispatcher->tables()[0]));
       }
@@ -165,8 +172,10 @@ struct TestLambdaTransaction : public ::testing::Test {
     EdgeControllerServer                   theController;
     EdgeComputerServer                     theUtilServer;
     EdgeComputer                           theComputer;
+    std::unique_ptr<EdgeServerImpl>        theComputerServerImpl;
     std::unique_ptr<EdgeRouter>            theRouter;
     std::unique_ptr<EdgeDispatcher>        theDispatcher;
+    std::unique_ptr<EdgeServerImpl>        theEdgeServerImpl;
     std::unique_ptr<ForwardingTableServer> theForwardingTableServer;
     std::deque<float>                      theUtils;
     std::thread                            theUtilThread;

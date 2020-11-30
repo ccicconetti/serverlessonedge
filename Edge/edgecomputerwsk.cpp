@@ -40,10 +40,9 @@ namespace uiiit {
 namespace edge {
 
 EdgeComputerWsk::EdgeComputerWsk(const std::string& aServerEndpoint,
-                                 const size_t       aNumThreads,
                                  const std::string& aWskApiRoot,
                                  const std::string& aWskAuth)
-    : EdgeServer(aServerEndpoint, aNumThreads)
+    : EdgeServer(aServerEndpoint) //aNumThreads
     , theWskInvoker(aWskApiRoot, aWskAuth) {
   // noop
 }
