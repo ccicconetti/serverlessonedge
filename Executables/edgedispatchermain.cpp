@@ -30,8 +30,8 @@ SOFTWARE.
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgedispatcher.h"
 #include "Edge/edgelambdaprocessoroptions.h"
-#include "Edge/forwardingtableserver.h"
 #include "Edge/edgeservergrpc.h"
+#include "Edge/forwardingtableserver.h"
 #include "Edge/ptimeestimator.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
@@ -81,14 +81,16 @@ int main(int argc, char* argv[]) {
         myCli.controllerEndpoint(),
         uiiit::support::Conf(myCli.routerConf()),
         uiiit::support::Conf(myPtimeEstimatorConf));
-  
+
     std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
     const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
     if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(myEdgeDispatcher, myServerImplConf("server-endpoint"), myServerImplConf.getInt("num-threads")));
+      myServerImpl.reset(new ec::EdgeServerGrpc(
+          myEdgeDispatcher, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
+      // parametri makeHqParams(myImplConf)
       LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
@@ -106,9 +108,9 @@ int main(int argc, char* argv[]) {
         myCli.forwardingEndpoint(), *myTables[0]);
 
     myForwardingTableServer.run(false); // non-blocking
-    
-    myServerImpl -> run();
-    myServerImpl -> wait();
+
+    myServerImpl->run();
+    myServerImpl->wait();
 
     return EXIT_SUCCESS;
 

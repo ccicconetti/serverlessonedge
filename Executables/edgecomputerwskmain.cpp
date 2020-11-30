@@ -28,10 +28,10 @@ SOFTWARE.
 */
 
 #include "Edge/edgecomputerwsk.h"
-#include "Edge/edgecontrollermessages.h"  // ContainerList
 #include "Edge/edgecontrollerclient.h"
-#include "Edge/edgeserveroptions.h"
+#include "Edge/edgecontrollermessages.h" // ContainerList
 #include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserveroptions.h"
 #include "OpenWhisk/lister.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
@@ -138,9 +138,11 @@ int main(int argc, char* argv[]) {
     const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
     if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(myServer, myServerImplConf("server-endpoint"), myServerImplConf.getInt("num-threads")));
+      myServerImpl.reset(new ec::EdgeServerGrpc(
+          myServer, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
+      // parametri makeHqParams(myImplConf)
       LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
@@ -148,7 +150,7 @@ int main(int argc, char* argv[]) {
     }
     assert(myServerImpl != nullptr);
 
-    myServerImpl -> run();
+    myServerImpl->run();
     mySignalHandler.wait(); // blocking
 
     // perform clean exit by removing this computer from the controller
