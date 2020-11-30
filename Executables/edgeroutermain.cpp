@@ -94,9 +94,11 @@ int main(int argc, char* argv[]) {
     const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
     if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(myEdgeRouter, myServerImplConf("server-endpoint"), myServerImplConf.getInt("num-threads")));
+      myServerImpl.reset(new ec::EdgeServerGrpc(
+          myEdgeRouter, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
+      // parametri makeHqParams(myImplConf)
       LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
@@ -116,8 +118,8 @@ int main(int argc, char* argv[]) {
 
     myForwardingTableServer.run(false); // non-blocking
 
-    myServerImpl -> run();
-    myServerImpl -> wait();
+    myServerImpl->run();
+    myServerImpl->wait();
 
     return EXIT_SUCCESS;
 

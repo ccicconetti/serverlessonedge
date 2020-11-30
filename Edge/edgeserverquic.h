@@ -46,7 +46,7 @@ namespace edge {
 //   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
 //   //! Create an edge server with a given number of threads.
-//   explicit EdgeServerQuic(EdgeServer& aEdgeServer); //poi avremo gli HQParams 
+//   explicit EdgeServerQuic(EdgeServer& aEdgeServer); //poi avremo gli HQParams
 
 //   virtual ~EdgeServerQuic();
 
@@ -60,12 +60,9 @@ namespace edge {
 //   std::set<std::thread::id> threadIds() const;
 
 //  private:
-//   //! Execute initialization logic immediately after run().
-//   virtual void init() {
-//   }
-
 //   //! Perform actual processing of a lambda request.
-//   std::string process(const std::string& aReq); //<<<<<<< virtual [..] =0 deve
+//   std::string process(const std::string& aReq); //<<<<<<< virtual [..] =0
+//   deve
 //   // essere virtuale pura
 
 //  protected:

@@ -55,9 +55,18 @@ class EdgeServer
   //! Perform actual processing of a lambda request.
   virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
 
+  /**
+   * This method is invoked by the implementation class immediately after the
+   * communication interface has been set up. It can be overriden by
+   * specialized classes, if needed.
+   */
+  virtual void init() {
+    // noop
+  }
+
  protected:
   mutable std::mutex theMutex;
-  const std::string theServerEndpoint;
+  const std::string  theServerEndpoint;
 
 }; // end class EdgeServer
 

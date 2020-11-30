@@ -123,10 +123,6 @@ class EdgeServerGrpc final : public EdgeServerImpl
   //! Thread execution body.
   void handle();
 
-  //! Execute initialization logic immediately after run().
-  virtual void init() {
-  }
-
   //! Perform actual processing of a lambda request.
   rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
 

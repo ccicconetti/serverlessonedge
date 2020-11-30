@@ -105,29 +105,26 @@ struct TestLambdaTransaction : public ::testing::Test {
       theController.subscribe(std::move(myEdgeControllerRpc));
 
       // start all the servers (in a non-blocking fashion, obviously)
-      std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl;
-      myComputerEdgeServerImpl.reset(
+      theComputerServerImpl.reset(
           new EdgeServerGrpc(theComputer, theComputerEndpoint, theNumThreads));
 
       theController.run(false);
       theUtilServer.run(false);
-      myComputerEdgeServerImpl->run();
+      theComputerServerImpl->run();
 
       if (theRouter) {
-        std::unique_ptr<EdgeServerImpl> theRouterEdgeServerImpl;
-        theRouterEdgeServerImpl.reset(
+        theEdgeServerImpl.reset(
             new EdgeServerGrpc(*theRouter, theRouterEndpoint, theNumThreads));
-        theRouterEdgeServerImpl->run();
+        theEdgeServerImpl->run();
         theForwardingTableServer.reset(
             new ForwardingTableServer(theForwardingEndpoint,
                                       *theRouter->tables()[0],
                                       *theRouter->tables()[1]));
       }
       if (theDispatcher) {
-        std::unique_ptr<EdgeServerImpl> theDispatcherEdgeServerImpl;
-        theDispatcherEdgeServerImpl.reset(new EdgeServerGrpc(
+        theEdgeServerImpl.reset(new EdgeServerGrpc(
             *theDispatcher, theRouterEndpoint, theNumThreads));
-        theDispatcherEdgeServerImpl->run();
+        theEdgeServerImpl->run();
         theForwardingTableServer.reset(new ForwardingTableServer(
             theForwardingEndpoint, *theDispatcher->tables()[0]));
       }
@@ -175,8 +172,10 @@ struct TestLambdaTransaction : public ::testing::Test {
     EdgeControllerServer                   theController;
     EdgeComputerServer                     theUtilServer;
     EdgeComputer                           theComputer;
+    std::unique_ptr<EdgeServerImpl>        theComputerServerImpl;
     std::unique_ptr<EdgeRouter>            theRouter;
     std::unique_ptr<EdgeDispatcher>        theDispatcher;
+    std::unique_ptr<EdgeServerImpl>        theEdgeServerImpl;
     std::unique_ptr<ForwardingTableServer> theForwardingTableServer;
     std::deque<float>                      theUtils;
     std::thread                            theUtilThread;

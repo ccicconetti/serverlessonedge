@@ -126,7 +126,7 @@ class EdgeLambdaProcessor : public EdgeServer
    * If the end-point of a controller was specified in the ctor, announce this
    * element to it.
    */
-  void init();
+  void init() override;
 
   //! Send a command to the controller.
   void controllerCommand(

@@ -90,20 +90,15 @@ struct TestEtsiTransaction : public ::testing::Test {
       theController.subscribe(std::move(myEdgeControllerEtsi));
 
       // create the EdgeServerGrpc to handle lambda requests
-      std::unique_ptr<EdgeServerImpl> myServerImpl1;
-      std::unique_ptr<EdgeServerImpl> myServerImpl2;
-
-      myServerImpl1.reset(
+      theServerImpl1.reset(
           new EdgeServerGrpc(theComputer1, theComputer1Endpoint, 1));
-      myServerImpl2.reset(
+      theServerImpl2.reset(
           new EdgeServerGrpc(theComputer2, theComputer2Endpoint, 1));
 
       // then, start the edge servers (non-blocking)
       theController.run(false);
-      // theComputer1.run();
-      // theComputer2.run();
-      myServerImpl1->run();
-      myServerImpl2->run();
+      theServerImpl1->run();
+      theServerImpl2->run();
 
       // announce the computers to the controller
       EdgeControllerClient myControllerClient(theControllerEndpoint);
@@ -131,6 +126,8 @@ struct TestEtsiTransaction : public ::testing::Test {
     EdgeControllerServer                theController;
     EdgeComputer                        theComputer1;
     EdgeComputer                        theComputer2;
+    std::unique_ptr<EdgeServerImpl>     theServerImpl1;
+    std::unique_ptr<EdgeServerImpl>     theServerImpl2;
   };
 };
 

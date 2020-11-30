@@ -100,23 +100,24 @@ int main(int argc, char* argv[]) {
       myUtilServer->run(false); // non-blocking
     }
 
-    ec::EdgeComputer myServer(
-        myCli.serverEndpoint(), myUtilCallback);
-    
+    ec::EdgeComputer myServer(myCli.serverEndpoint(), myUtilCallback);
+
     std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
     const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
     if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(myServer, myServerImplConf("server-endpoint"), myServerImplConf.getInt("num-threads")));
+      myServerImpl.reset(new ec::EdgeServerGrpc(
+          myServer, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere parametri makeHqParams(myImplConf)
+      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
+      // parametri makeHqParams(myImplConf)
       LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
                                myServerImplConf("type"));
     }
     assert(myServerImpl != nullptr);
-    
+
     ec::Composer()(uiiit::support::Conf(myConf), myServer.computer());
 
     if (myCli.controllerEndpoint().empty()) {
@@ -128,8 +129,8 @@ int main(int argc, char* argv[]) {
       LOG(INFO) << "Announced to " << myCli.controllerEndpoint();
     }
 
-    myServerImpl -> run();
-    //myServer.run(); // non-blocking
+    myServerImpl->run();
+    // myServer.run(); // non-blocking
     // myServer.wait(); // blocking
     mySignalHandler.wait(); // blocking
 

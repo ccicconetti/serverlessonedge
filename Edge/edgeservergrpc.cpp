@@ -144,7 +144,7 @@ void EdgeServerGrpc::run() {
     theHandlers.emplace_back(std::thread([this]() { handle(); }));
   }
 
-  init();
+  theEdgeServer.init();
 }
 
 void EdgeServerGrpc::wait() {
