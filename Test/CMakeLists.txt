@@ -31,7 +31,6 @@ include_directories(${CMAKE_BINARY_DIR}/googletest-src/googletest/include)
 
 add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/trivialedgecontrollerinstaller.cpp
-
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomputer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomposer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcontainer.cpp
@@ -59,10 +58,25 @@ target_link_libraries(testedgelib
   ${Boost_LIBRARIES}
 )
 
+add_library(testedgelibquic STATIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/testedgeserverquic.cpp
+)
+
+target_link_libraries(testedgelibquic
+  uiiitedge
+  uiiitedgequic
+  uiiitetsimec
+  uiiitrest
+
+  gtest
+  ${Boost_LIBRARIES}
+)
+
 add_executable(testedge
   ${CMAKE_CURRENT_SOURCE_DIR}/testmain.cpp
 )
 
 target_link_libraries(testedge
   testedgelib
+  testedgelibquic
 )
