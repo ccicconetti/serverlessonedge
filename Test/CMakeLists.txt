@@ -78,5 +78,5 @@ add_executable(testedge
 
 target_link_libraries(testedge
   testedgelib
-  testedgelibquic
+  -Wl,--whole-archive testedgelibquic -Wl,--no-whole-archive
 )
