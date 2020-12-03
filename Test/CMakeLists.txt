@@ -76,7 +76,13 @@ add_executable(testedge
   ${CMAKE_CURRENT_SOURCE_DIR}/testmain.cpp
 )
 
+if(APPLE)
+  set(TESTEDGEQUICLIB "testedgelibquic")
+else()
+  set(TESTEDGEQUICLIB "-Wl,--whole-archive testedgelibquic -Wl,--no-whole-archive")
+endif()
+
 target_link_libraries(testedge
   testedgelib
-  -Wl,--whole-archive testedgelibquic -Wl,--no-whole-archive
+  ${TESTEDGEQUICLIB}
 )
