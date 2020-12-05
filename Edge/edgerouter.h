@@ -69,6 +69,7 @@ class EdgeRouter final : public EdgeLambdaProcessor
 {
  public:
   /**
+   * \param aLambdaEndpoint the end-point to receive Lambda request
    *
    * \param aCommandsEndpoint the end-point to receive commands from the
    * controller.

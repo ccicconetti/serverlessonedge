@@ -111,6 +111,7 @@ add_executable(edgerouter
 
 target_link_libraries(edgerouter
   uiiitedge
+  uiiitedgequic
   ${GLOG}
   ${Boost_LIBRARIES}
 )
