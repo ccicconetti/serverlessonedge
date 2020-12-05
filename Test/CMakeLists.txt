@@ -85,6 +85,7 @@ else()
   target_link_libraries(testedge
     testedgelib
     -Wl,--whole-archive testedgelibquic -Wl,--no-whole-archive
+    zstd
   )
 endif()
 

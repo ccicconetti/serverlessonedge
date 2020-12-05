@@ -296,7 +296,7 @@ H2Server::run(const qs::HQParams&            params,
 
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-      // proxygen::HTTPServer server(std::move(*serverOptions));
+      proxygen::HTTPServer server(std::move(*serverOptions));
 
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
