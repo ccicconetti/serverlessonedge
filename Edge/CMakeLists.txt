@@ -76,6 +76,7 @@ target_link_libraries(uiiitedge
 
 add_library(uiiitedgequic STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientquic.cpp
 )
 
 if(APPLE)
