@@ -216,6 +216,24 @@ HQServer::HQServer(
   }
 }
 
+void HQServer::start() {
+  server_->start(params_.localAddress.value(),
+                 std::thread::hardware_concurrency());
+}
+
+const folly::SocketAddress HQServer::getAddress() const {
+  server_->waitUntilInitialized();
+  const auto& boundAddr = server_->getAddress();
+  LOG(INFO) << "HQ server started at: " << boundAddr.describe();
+  return boundAddr;
+}
+
+void HQServer::run() {
+  LOG(INFO) << "HQServer::run\n";
+  eventbase_.loopForever();
+  LOG(INFO) << "POST eventbase loopForever()\n";
+}
+
 //*****************************************************************
 
 H2Server::SampleHandlerFactory::SampleHandlerFactory(
@@ -231,7 +249,7 @@ H2Server::SampleHandlerFactory::~SampleHandlerFactory() {
 
 void H2Server::SampleHandlerFactory::onServerStart(
     folly::EventBase* /*evb*/) noexcept {
-  LOG(INFO) << "H2Server::onServerStart\n";
+  // LOG(INFO) << "H2Server::onServerStart\n";
 }
 
 void H2Server::SampleHandlerFactory::onServerStop() noexcept {
@@ -285,6 +303,7 @@ std::thread
 H2Server::run(const qs::HQParams&            params,
               HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
 
+  LOG(INFO) << "H2Server::run\n";
   // Start HTTPServer mainloop in a separate thread
   std::thread t([params = folly::copy(params),
                  httpTransactionHandlerProvider =
@@ -293,19 +312,14 @@ H2Server::run(const qs::HQParams&            params,
       auto acceptorConfig = createServerAcceptorConfig(params);
       auto serverOptions  = createServerOptions(
           params, std::move(httpTransactionHandlerProvider));
-
-      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
       proxygen::HTTPServer server(std::move(*serverOptions));
-
-      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-      // server.bind(std::move(*acceptorConfig));
-      // server.start();
+      server.bind(std::move(*acceptorConfig));
+      server.start();
     }
     // HTTPServer traps the SIGINT.  resignal HQServer
     raise(SIGINT);
   });
+  LOG(INFO) << "POST THREAD SPAWNING\n";
 
   return t;
 }
@@ -330,24 +344,37 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&        aEdgeServer,
     , theQuicTransportServer(theQuicParamsConf, Dispatcher::getRequestHandler) {
 }
 
-void EdgeServerQuic::run() { // starts the server (it cannot be configured
-                             // anymore)
-  // H2Server::run() <- vedi come passare parametri e getRequestHandler
-  // theQuicTranportServer.start();
-  // theQuicTranportServer.getAddress(); // per attendere sia inizializzato
-  // theQuicTranportServer.run();
-
-  theEdgeServer.init();
+void EdgeServerQuic::run() {
+  auto h2ServerThread =
+      H2Server::run(theQuicParamsConf, Dispatcher::getRequestHandler);
+  theQuicTransportServer.start();
+  theQuicTransportServer.getAddress();
+  theQuicTransportServer.run();
+  /**
+   * In this implemenentation the HQServer blocks the current thread execution
+   * in the function HQServer::run with the eventBase.loopForever(), so the
+   * control flow never reaches the next two commented statements
+   *
+   * We need to execute the http2server and the hqserver in separate threads,
+   * then in order to not get out of scope without joining or detaching these
+   * threads we need to add two private std::thread members. Finally we need to
+   * call the join in the EdgeServerQuic destructor (in order to not call the
+   * "terminate without any active exception")
+   */
+  // theEdgeServer.init();
+  // h2ServerThread.join();
 }
 
 void EdgeServerQuic::wait() { // wait for the server termination
-  // h2server.join(); <- h2server fuori scope => membro?
+  LOG(INFO) << "EdgeServerQuic::wait()\n";
 }
 
 EdgeServerQuic::~EdgeServerQuic() {
+  LOG(INFO) << "EdgeServerQuic::DTOR()\n";
 }
 
 rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
+  LOG(INFO) << "EdgeServerQuic::PROCESS\n";
   return theEdgeServer.process(aReq);
 }
 

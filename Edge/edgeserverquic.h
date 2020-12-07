@@ -272,6 +272,14 @@ class HQServer
       const qs::HQParams&            params,
       HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
+  // Starts the QUIC transport in background thread
+  void start();
+
+  // Starts the HTTP server handling loop on the current EVB
+  void run();
+
+  const folly::SocketAddress getAddress() const;
+
  private:
   const qs::HQParams&               params_;
   folly::EventBase                  eventbase_;
@@ -363,11 +371,6 @@ class EdgeServerQuic final : public EdgeServerImpl
   const size_t       theNumThreads;
 
  private:
-  /* MEBRI PRIVATI DI EDGE SERVER GRPC
-    std::unique_ptr<grpc::ServerCompletionQueue> theCq;
-    rpc::EdgeServer::AsyncService                theService;
-    std::unique_ptr<grpc::Server>                theServer;
-  */
   std::list<std::thread> theHandlers;
   const qs::HQParams     theQuicParamsConf;
   HQServer               theQuicTransportServer;
