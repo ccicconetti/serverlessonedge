@@ -27,22 +27,9 @@ struct TestEdgeServerQuic : public ::testing::Test {
   struct System {
 
     System(qs::HQParams& myEdgeServerQuicParams,
-           qs::HQParams& myEdgeClientQuicParams)
-        : theRouter(new EdgeRouter(
-              "127.0.0.1:6473",
-              "127.0.0.1:6474",
-              "",
-              support::Conf(EdgeLambdaProcessor::defaultConf()),
-              support::Conf("type=random"),
-              support::Conf("type=trivial,period=10,stat=mean"))) {
+           qs::HQParams& myEdgeClientQuicParams) {
       initializeEdgeQuicParams(myEdgeServerQuicParams, true);
       initializeEdgeQuicParams(myEdgeClientQuicParams, false);
-
-      std::unique_ptr<EdgeServerImpl> myServerImpl;
-      myServerImpl.reset(
-          new EdgeServerQuic(*theRouter, myEdgeServerQuicParams));
-      assert(myServerImpl != nullptr);
-      myServerImpl->run();
 
       LOG(INFO) << "Starting Test\n";
     }
@@ -52,7 +39,8 @@ struct TestEdgeServerQuic : public ::testing::Test {
     }
 
     void initializeEdgeQuicParams(qs::HQParams& myQuicParams, bool isServer) {
-      // *** General Section ***
+
+      // *** Common Settings Section ***
       myQuicParams.host = "127.0.0.1";
       myQuicParams.port = 6473;
       if (isServer) {
@@ -65,7 +53,7 @@ struct TestEdgeServerQuic : public ::testing::Test {
         myQuicParams.logprefix = "client";
         myQuicParams.remoteAddress =
             folly::SocketAddress(myQuicParams.host, myQuicParams.port, true);
-        // local_address vuoto di default quindi non imposto local address
+        // local_address empty by default, local_address not set
       }
       myQuicParams.logdir      = "/tmp/logs";
       myQuicParams.logResponse = true;
@@ -77,8 +65,8 @@ struct TestEdgeServerQuic : public ::testing::Test {
                                    quic::QuicVersion::MVFST_EXPERIMENTAL,
                                    quic::QuicVersion::QUIC_DRAFT,
                                    quic::QuicVersion::QUIC_DRAFT_LEGACY};
-      // draft_version = 0 di default
-      // protocol = "" di default -> entro nell'else
+      // draft_version = 0 by default -> no if branch
+      // protocol = "" by default -> else branch
       myQuicParams.supportedAlpns = {"h1q-fb",
                                      "h1q-fb-v2",
                                      proxygen::kH3FBCurrentDraft,
@@ -120,25 +108,20 @@ struct TestEdgeServerQuic : public ::testing::Test {
       if (!isServer) {
         myQuicParams.transportSettings.shouldDrain = false;
         myQuicParams.transportSettings.attemptEarlyData =
-            false; // CONTROLLA (WHETHER TO USE 0-RTT)
+            false; // CHECK!!! (WHETHER TO USE 0-RTT)
       }
       myQuicParams.transportSettings.connectUDP   = false;
       myQuicParams.transportSettings.maxCwndInMss = quic::kLargeMaxCwndInMss;
       myQuicParams.transportSettings.disableMigration = false;
-      /*
-       FLAGS_use_inplace_write = false default, so we do not enter in the if
-       branch and we do not set
-       myQuicParams.transportSettings.dataPathType
-      */
-      // FLAGS_rate_limit = -1 default so we do not set
-      // myQuicParams.rateLimitPerThread
+      // FLAGS_use_inplace_write = false by default, no if branch
+      // FLAGS_rate_limit = -1 by default, no if branch
       myQuicParams.connectTimeout = std::chrono::milliseconds(2000);
       myQuicParams.ccpConfig      = "";
       myQuicParams.sendKnobFrame  = false;
-      // sendKnobFrame default is false, so we do not enter in if branch
+      // sendKnobFrame = false by default, no if branch
       myQuicParams.transportSettings.d6dConfig.enabled = false;
       myQuicParams.transportSettings.d6dConfig.probeRaiserConstantStepSize = 10;
-      // d6d_probe_raiser_type = 0 default so
+      // d6d_probe_raiser_type = 0 default so we can use the following
       myQuicParams.transportSettings.d6dConfig.raiserType =
           quic::ProbeSizeRaiserType::ConstantStep;
       myQuicParams.transportSettings.d6dConfig.blackholeDetectionWindow =
@@ -167,7 +150,7 @@ struct TestEdgeServerQuic : public ::testing::Test {
       myQuicParams.h2cEnabled                         = false;
       // myQuicParams.httpVersion.parse("1.1");
       myQuicParams.txnTimeout = std::chrono::milliseconds(120000);
-      folly::split(',', "", myQuicParams.httpPaths);
+      folly::split(',', "/", myQuicParams.httpPaths);
       myQuicParams.httpBody   = "";
       myQuicParams.httpMethod = myQuicParams.httpBody.empty() ?
                                     proxygen::HTTPMethod::GET :
@@ -197,24 +180,17 @@ struct TestEdgeServerQuic : public ::testing::Test {
       myQuicParams.staticRoot = "";
 
       // *** FizzSettings***
-      myQuicParams.earlyData           = false; // controlla il significato
+      myQuicParams.earlyData           = false; // CHECK the function of this
       myQuicParams.certificateFilePath = "";
       myQuicParams.keyFilePath         = "";
       myQuicParams.pskFilePath         = "";
-      // psk_file default empty, PersistentQuicPskCache not initialized
-      // we use the else branch
-
+      // psk_file is empty by default, else branch
       myQuicParams.pskCache =
           std::make_shared<proxygen::SynchronizedLruQuicPskCache>(1000);
-
-      // client_auth_mode = "" default, so noone of the branches is called
-      myQuicParams.clientAuth =
-          fizz::server::ClientAuthMode::None; // verifica, in base al valore del
-                                              // flag non doveva essere
-                                              // richiamato
+      // client_auth_mode = "" by default, so none of the branches is called
+      myQuicParams.clientAuth = fizz::server::ClientAuthMode::None; // CHECK!!!
     }
 
-    std::unique_ptr<EdgeRouter> theRouter;
   }; // struct System
 };
 
@@ -224,18 +200,30 @@ TEST_F(TestEdgeServerQuic, test_ctor) {
   qs::HQParams myEdgeServerQuicParams; // HQParams for edgeserverquic
   qs::HQParams myEdgeClientQuicParams; // HQParams for edgeclientquic
 
-  LOG(INFO) << "PRE SYSTEM CTOR \n";
   System mySystem(myEdgeServerQuicParams, myEdgeClientQuicParams);
   LOG(INFO) << "POST SYSTEM CTOR \n";
 
-  LOG(INFO) << "PRE EDGECLIENTQUIC\n";
+  std::unique_ptr<EdgeRouter> theRouter;
+  theRouter.reset(
+      new EdgeRouter(myEdgeServerQuicParams.host + ':' +
+                         std::to_string(myEdgeServerQuicParams.port),
+                     myEdgeServerQuicParams.host + ":6474",
+                     "",
+                     support::Conf(EdgeLambdaProcessor::defaultConf()),
+                     support::Conf("type=random"),
+                     support::Conf("type=trivial,period=10,stat=mean")));
+
+  std::unique_ptr<EdgeServerImpl> myServerImpl;
+  myServerImpl.reset(new EdgeServerQuic(*theRouter, myEdgeServerQuicParams));
+  assert(myServerImpl != nullptr);
+  myServerImpl->run();
+
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
   EdgeClientQuic myClient(myEdgeClientQuicParams);
-  LOG(INFO) << "POST EDGECLIENTQUIC\n";
+  myClient.startClient();
 
-  /*
-    myServerImpl->wait();
-  */
-
+  LOG(INFO) << "Terminating test\n";
 } // namespace edge
 
 } // namespace edge
