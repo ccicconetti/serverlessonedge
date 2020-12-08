@@ -109,6 +109,9 @@ void HQSessionController::onDestroy(const proxygen::HTTPSessionBase&) {
   LOG(INFO) << "HQSessionController::onDestroy\n";
 }
 
+/**
+ * SendKnobFrame is false by default so we cannot invoke the following method
+ *
 // void HQSessionController::sendKnobFrame(const folly::StringPiece str) {
 //   if (str.empty()) {
 //     return;
@@ -127,6 +130,7 @@ void HQSessionController::onDestroy(const proxygen::HTTPSessionBase&) {
 //                << knobSent.error();
 //   }
 // }
+*/
 
 proxygen::HTTPTransactionHandler*
 HQSessionController::getRequestHandler(proxygen::HTTPTransaction& /*txn*/,
@@ -216,22 +220,17 @@ HQServer::HQServer(
   }
 }
 
-void HQServer::start() {
-  server_->start(params_.localAddress.value(),
-                 std::thread::hardware_concurrency());
-}
-
-const folly::SocketAddress HQServer::getAddress() const {
-  server_->waitUntilInitialized();
-  const auto& boundAddr = server_->getAddress();
-  LOG(INFO) << "HQ server started at: " << boundAddr.describe();
-  return boundAddr;
-}
-
-void HQServer::run() {
-  LOG(INFO) << "HQServer::run\n";
-  eventbase_.loopForever();
-  LOG(INFO) << "POST eventbase loopForever()\n";
+std::thread HQServer::start() {
+  LOG(INFO) << "HQServer::start\n";
+  std::thread t = std::thread([this]() mutable {
+    server_->start(params_.localAddress.value(),
+                   std::thread::hardware_concurrency());
+    server_->waitUntilInitialized();
+    const auto& boundAddr = server_->getAddress();
+    LOG(INFO) << "HQ server started at: " << boundAddr.describe();
+    eventbase_.loopForever();
+  });
+  return t;
 }
 
 //*****************************************************************
@@ -339,30 +338,16 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&        aEdgeServer,
     , theMutex()
     , theServerEndpoint(aQuicParamsConf.host)
     , theNumThreads(aQuicParamsConf.httpServerThreads)
-    , theHandlers()
+    //, theHandlers()
     , theQuicParamsConf(aQuicParamsConf)
     , theQuicTransportServer(theQuicParamsConf, Dispatcher::getRequestHandler) {
 }
 
 void EdgeServerQuic::run() {
-  auto h2ServerThread =
+  theH2ServerThread =
       H2Server::run(theQuicParamsConf, Dispatcher::getRequestHandler);
-  theQuicTransportServer.start();
-  theQuicTransportServer.getAddress();
-  theQuicTransportServer.run();
-  /**
-   * In this implemenentation the HQServer blocks the current thread execution
-   * in the function HQServer::run with the eventBase.loopForever(), so the
-   * control flow never reaches the next two commented statements
-   *
-   * We need to execute the http2server and the hqserver in separate threads,
-   * then in order to not get out of scope without joining or detaching these
-   * threads we need to add two private std::thread members. Finally we need to
-   * call the join in the EdgeServerQuic destructor (in order to not call the
-   * "terminate without any active exception")
-   */
-  // theEdgeServer.init();
-  // h2ServerThread.join();
+
+  theQuicServerThread = theQuicTransportServer.start();
 }
 
 void EdgeServerQuic::wait() { // wait for the server termination
@@ -370,7 +355,11 @@ void EdgeServerQuic::wait() { // wait for the server termination
 }
 
 EdgeServerQuic::~EdgeServerQuic() {
+  // eventuali stop dei server
   LOG(INFO) << "EdgeServerQuic::DTOR()\n";
+  theH2ServerThread.join();
+  theQuicServerThread.join();
+  LOG(INFO) << "POST EdgeServerQuic::DTOR()\n";
 }
 
 rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
@@ -380,9 +369,11 @@ rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
 
 std::set<std::thread::id> EdgeServerQuic::threadIds() const {
   std::set<std::thread::id> ret;
-  for (const auto& myThread : theHandlers) {
-    ret.insert(myThread.get_id());
-  }
+  // for (const auto& myThread : theHandlers) {
+  //   ret.insert(myThread.get_id());
+  // }
+  ret.insert(theH2ServerThread.get_id());
+  ret.insert(theQuicServerThread.get_id());
   return ret;
 }
 

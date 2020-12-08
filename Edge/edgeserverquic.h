@@ -273,12 +273,13 @@ class HQServer
       HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
   // Starts the QUIC transport in background thread
-  void start();
+  std::thread start();
+  // void start();
 
   // Starts the HTTP server handling loop on the current EVB
-  void run();
+  // void run();
 
-  const folly::SocketAddress getAddress() const;
+  // const folly::SocketAddress getAddress() const;
 
  private:
   const qs::HQParams&               params_;
@@ -371,9 +372,11 @@ class EdgeServerQuic final : public EdgeServerImpl
   const size_t       theNumThreads;
 
  private:
-  std::list<std::thread> theHandlers;
-  const qs::HQParams     theQuicParamsConf;
-  HQServer               theQuicTransportServer;
+  // std::list<std::thread> theHandlers;
+  std::thread        theH2ServerThread;
+  std::thread        theQuicServerThread;
+  const qs::HQParams theQuicParamsConf;
+  HQServer           theQuicTransportServer;
 
 }; // end class EdgeServer
 
