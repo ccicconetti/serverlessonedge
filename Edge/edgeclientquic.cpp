@@ -156,15 +156,18 @@ class InsecureVerifierDangerousDoNotUseInProduction
 };
 
 EdgeClientQuic::EdgeClientQuic(const qs::HQParams& aQuicParamsConf)
-    : // EdgeClientInterface(),
-    theQuicParamsConf(aQuicParamsConf) {
-  // pacing è false di default, supponiamo per ora non serva
-  LOG(INFO) << "EdgeClientQuic::ctor\n";
-  LOG(INFO) << "PRE EdgeClientQuic::initializeQuicTransportClint\n";
-  initializeQuicTransportClient();
-  LOG(INFO) << "POST EdgeClientQuic::initializeQuicTransportClint\n";
+    : /* EdgeClientInterface(),*/ theQuicParamsConf(aQuicParamsConf) {
+  // pacingEnabled false by default, no need for timer
+}
 
-  // VERIFICA SE IL FATTO DI NON AVERE IMPOSTATO IL QLOGGER CREI PROBLEMI
+EdgeClientQuic::~EdgeClientQuic() {
+  // nihil
+}
+
+void EdgeClientQuic::startClient() {
+
+  initializeQuicTransportClient();
+  CHECK(quicClient_);
 
   wangle::TransportInfo tinfo;
   session_ = new proxygen::HQUpstreamSession(theQuicParamsConf.txnTimeout,
@@ -176,12 +179,21 @@ EdgeClientQuic::EdgeClientQuic(const qs::HQParams& aQuicParamsConf)
   // Need this for Interop since we use HTTP0.9
   session_->setForceUpstream1_1(false);
 
-  // TODO: this could now be moved back in the ctor
   session_->setSocket(quicClient_);
+  CHECK(session_->getQuicSocket());
+
   session_->setConnectCallback(this);
 
   LOG(INFO) << "HQClient connecting to "
             << theQuicParamsConf.remoteAddress->describe();
+
+  /**
+   * <<<<<<
+   * Despite the CHECK at LoC 183, when we call HQSession::startNow()
+   * (nested in the following session_->startNow()) the CHECK on the sock fails
+   * <<<<<<
+   */
+
   session_->startNow();
   quicClient_->start(session_);
 
@@ -189,13 +201,9 @@ EdgeClientQuic::EdgeClientQuic(const qs::HQParams& aQuicParamsConf)
   // complete.
   evb_.loopForever();
 
-  // if (theQuicParamsConf.migrateClient) NON MESSO
+  // migrateClient false by default, no if branch
 
   evb_.loop();
-}
-
-EdgeClientQuic::~EdgeClientQuic() {
-  // nihil
 }
 
 void EdgeClientQuic::sendRequests(bool     closeSession,
@@ -235,8 +243,7 @@ EdgeClientQuic::sendRequest(const proxygen::URL& requestUrl) {
   if (!txn) {
     return nullptr;
   }
-  // theQuicParamsConf.outdir is empty by default so we do not enter in if
-  // branch
+  // theQuicParamsConf.outdir empty by default, no if branch
   client->sendRequest(txn);
   curls_.emplace_back(std::move(client));
   return txn;
@@ -254,11 +261,12 @@ void EdgeClientQuic::connectSuccess() {
                     theQuicParamsConf.httpPaths.begin(),
                     theQuicParamsConf.httpPaths.end());
   sendRequests(!theQuicParamsConf.migrateClient, numOpenableStreams);
+
   // If there are still pending requests, schedule a callback on the first EOM
   // to try to make some more. That callback will keep scheduling itself until
   // there are no more requests.
 
-  // NOI PER ORA NE MANDIAMO UNA
+  // For now, we need to send one request
   /*
   if (!httpPaths_.empty()) {
     selfSchedulingRequestRunner = [&]() {
@@ -306,6 +314,7 @@ void EdgeClientQuic::initializeQuicTransportClient() {
   client->setPacingTimer(pacingTimer_);
   client->setHostname(theQuicParamsConf.host);
   client->addNewPeerAddress(theQuicParamsConf.remoteAddress.value());
+  // this if should not be invoked since local address is empty
   if (theQuicParamsConf.localAddress.has_value()) {
     client->setLocalAddress(*theQuicParamsConf.localAddress);
   }
@@ -337,12 +346,17 @@ EdgeClientQuic::createFizzClientContext(const qs::HQParams& params) {
   ctx->setSendEarlyData(params.earlyData);
   return ctx;
 }
-// LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
-//                                          const bool           aDry) {
-//   LOG(INFO) << "EdgeClientQuic::process()\n";
-//   rpc::LambdaResponse myRep;
-//   return LambdaResponse(myRep);
-// }
+
+/**
+ * This function will be compulsory when the EdgeClientInterface will be added
+ *
+ * LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
+ *                                          const bool           aDry) {
+ *   LOG(INFO) << "EdgeClientQuic::process()\n";
+ *   rpc::LambdaResponse myRep;
+ *   return LambdaResponse(myRep);
+ * }
+ */
 
 } // namespace edge
 } // namespace uiiit

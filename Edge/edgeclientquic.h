@@ -52,17 +52,18 @@ namespace qs = quic::samples;
 
 using FizzClientContextPtr = std::shared_ptr<fizz::client::FizzClientContext>;
 
-class EdgeClientQuic final
-    : private proxygen::HQSession::ConnectCallback // , public
-                                                   // EdgeClientInterface
+class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback
+//, public EdgeClientInterface
 {
  public:
   /**
-   * \param aServerEndpoint the edge server
+   * \param aQuicParamsConf the EdgeClientQuic parameters configuration
    */
   explicit EdgeClientQuic(const qs::HQParams& aQuicParamsConf);
 
   ~EdgeClientQuic(); // override;
+
+  void startClient();
 
   // LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry)
   // override;
@@ -75,7 +76,7 @@ class EdgeClientQuic final
 
   void sendRequests(bool closeSession, uint64_t numOpenableStreams);
 
-  // these 3 functions come from the pure virtual ones in ConnectCallback
+  // these 3 functions override the pure virtual ones in ConnectCallback
   void connectSuccess() override;
 
   void onReplaySafe() override;
@@ -83,17 +84,15 @@ class EdgeClientQuic final
   void connectError(std::pair<quic::QuicErrorCode, std::string> error) override;
 
  private:
-  const qs::HQParams&                        theQuicParamsConf;
-  std::shared_ptr<quic::QuicClientTransport> quicClient_;
-  quic::TimerHighRes::SharedPtr
-      pacingTimer_; // verifica se nella initializeQuicClient puoi non settarlo
-                    // in caso
+  const qs::HQParams&                                 theQuicParamsConf;
+  std::shared_ptr<quic::QuicClientTransport>          quicClient_;
+  quic::TimerHighRes::SharedPtr                       pacingTimer_;
   folly::EventBase                                    evb_;
   proxygen::HQUpstreamSession*                        session_;
   std::list<std::unique_ptr<CurlService::CurlClient>> curls_;
   std::deque<folly::StringPiece>                      httpPaths_;
 
-}; // end class EdgeClient
+}; // end class EdgeClientQuic
 
 } // end namespace edge
 } // end namespace uiiit
