@@ -143,7 +143,8 @@ struct TestEdgeServerQuic : public ::testing::Test {
       myQuicParams.h2port = 6667; // "HTTP/2 server port"
       myQuicParams.localH2Address =
           folly::SocketAddress(myQuicParams.host, myQuicParams.h2port, true);
-      myQuicParams.httpServerThreads     = std::thread::hardware_concurrency();
+      // std::thread::hardware_concurrency() << can be quite a lot...
+      myQuicParams.httpServerThreads     = 5;
       myQuicParams.httpServerIdleTimeout = std::chrono::milliseconds(60000);
       myQuicParams.httpServerShutdownOn  = {SIGINT, SIGTERM};
       myQuicParams.httpServerEnableContentCompression = false;

@@ -37,3 +37,5 @@
 # build artifacts
 build
 .vscode
+rbuild
+workspace.code-workspace
