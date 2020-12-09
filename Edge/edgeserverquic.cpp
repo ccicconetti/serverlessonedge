@@ -203,6 +203,7 @@ HQServer::HQServer(
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
     : params_(params)
     , server_(quic::QuicServer::createQuicServer()) {
+  server_->setBindV6Only(false);
   server_->setCongestionControllerFactory(
       std::make_shared<quic::ServerCongestionControllerFactory>());
   server_->setTransportSettings(params_.transportSettings);
@@ -399,7 +400,8 @@ FizzServerContextPtr createFizzServerContext(const qs::HQParams& params) {
   auto serverCtx = std::make_shared<fizz::server::FizzServerContext>();
   serverCtx->setCertManager(std::move(certManager));
   auto ticketCipher = std::make_shared<fizz::server::Aead128GCMTicketCipher<
-      fizz::server::TicketCodec<fizz::server::CertificateStorage::X509>>>();
+      fizz::server::TicketCodec<fizz::server::CertificateStorage::X509>>>(
+      serverCtx->getFactoryPtr(), std::move(certManager));
   std::array<uint8_t, 32> ticketSeed;
   folly::Random::secureRandom(ticketSeed.data(), ticketSeed.size());
   ticketCipher->setTicketSecrets({{folly::range(ticketSeed)}});

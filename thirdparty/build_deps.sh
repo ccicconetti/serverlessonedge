@@ -5,7 +5,7 @@ if [ ! -d proxygen ] ; then
   echo "BUILDING PROXYGEN"
   git clone https://github.com/facebook/proxygen.git
   pushd proxygen
-  git checkout v2020.10.12.00
+  git checkout v2020.12.07.00 #v2020.10.12.00
   pushd proxygen
   ./build.sh -q >& build.log
   RET=$?
