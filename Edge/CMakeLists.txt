@@ -174,6 +174,7 @@ target_link_libraries(uiiitedgequic
     mvfst_fizz_client
     mvfst_client
     mvfst_transport
+    mvfst_transport_knobs
     mvfst_buf_accessor
     mvfst_cc_algo
     mvfst_codec_pktrebuilder
