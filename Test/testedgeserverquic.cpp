@@ -11,10 +11,8 @@
 
 #include <folly/ssl/Init.h>
 #include <proxygen/httpserver/samples/hq/HQParams.h>
-#include <proxygen/httpserver/samples/hq/HQServer.h>
 
 #include <proxygen/lib/http/SynchronizedLruQuicPskCache.h>
-#include <proxygen/lib/http/session/HQSession.h>
 #include <quic/QuicConstants.h>
 
 namespace uiiit {
@@ -41,8 +39,8 @@ struct TestEdgeServerQuic : public ::testing::Test {
     void initializeEdgeQuicParams(qs::HQParams& myQuicParams, bool isServer) {
 
       // *** Common Settings Section ***
-      myQuicParams.host = "127.0.0.1";
-      myQuicParams.port = 6473;
+      myQuicParams.host = "127.0.0.1"; // ::1
+      myQuicParams.port = 6473;        // HQServer Port
       if (isServer) {
         myQuicParams.mode      = qs::HQMode::SERVER;
         myQuicParams.logprefix = "server";
@@ -86,16 +84,16 @@ struct TestEdgeServerQuic : public ::testing::Test {
           quic::congestionControlStrToType("cubic");
       // since congestion control cannot be null since we are using default
       // values
-      myQuicParams.transportSettings.defaultCongestionController =
-          quic::CongestionControlType::Cubic;
-
+      if (myQuicParams.congestionControl) {
+        myQuicParams.transportSettings.defaultCongestionController =
+            myQuicParams.congestionControl.value();
+      }
       myQuicParams.transportSettings.maxRecvPacketSize =
           quic::kDefaultUDPReadBufferSize;
       myQuicParams.transportSettings.numGROBuffers_ =
           quic::kDefaultNumGROBuffers;
       myQuicParams.transportSettings.pacingEnabled = false;
-      // pacingEnabled false di default, non entro nell'if e non setto
-      // myQuicParams.transportSettings.pacingTimerTickInterval
+      // pacingEnabled false by default, no if branch
       myQuicParams.transportSettings.batchingMode = quic::getQuicBatchingMode(
           static_cast<uint32_t>(quic::QuicBatchingMode::BATCHING_MODE_NONE));
       myQuicParams.transportSettings.useThreadLocalBatching = false;
@@ -205,6 +203,9 @@ TEST_F(TestEdgeServerQuic, test_ctor) {
   LOG(INFO) << "POST SYSTEM CTOR \n";
 
   std::unique_ptr<EdgeRouter> theRouter;
+  LOG(INFO) << myEdgeServerQuicParams.host + ':' +
+                   std::to_string(myEdgeServerQuicParams.port) + '\n';
+
   theRouter.reset(
       new EdgeRouter(myEdgeServerQuicParams.host + ':' +
                          std::to_string(myEdgeServerQuicParams.port),

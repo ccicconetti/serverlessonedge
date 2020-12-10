@@ -41,17 +41,11 @@ SOFTWARE.
 #include <thread>
 
 #include "edgeserverimpl.h"
-#include "h2server.h"
-#include "hqserver.h"
-#include "hqservertransportfactory.h"
-#include "hqsessioncontroller.h"
-
 #include <proxygen/httpserver/samples/hq/HQParams.h>
+#include <proxygen/httpserver/samples/hq/HQServer.h>
 
 namespace uiiit {
 namespace edge {
-
-struct LambdaResponse;
 
 namespace qs = quic::samples;
 
@@ -59,65 +53,48 @@ using HTTPTransactionHandlerProvider =
     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
                                                     const qs::HQParams&)>;
 
-class Dispatcher
+class H2Server
 {
+  class SampleHandlerFactory : public proxygen::RequestHandlerFactory
+  {
+   public:
+    explicit SampleHandlerFactory(
+        const qs::HQParams&            params,
+        HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
+
+    virtual ~SampleHandlerFactory();
+
+    void onServerStart(folly::EventBase* /*evb*/) noexcept override;
+
+    void onServerStop() noexcept override;
+
+    proxygen::RequestHandler*
+    onRequest(proxygen::RequestHandler* /* handler */,
+              proxygen::HTTPMessage* /* msg */) noexcept override;
+
+   private:
+    const qs::HQParams&            params_;
+    HTTPTransactionHandlerProvider httpTransactionHandlerProvider_;
+  }; // SampleHandlerFactory
+
  public:
-  static proxygen::HTTPTransactionHandler*
-  getRequestHandler(proxygen::HTTPMessage* /* msg */,
-                    const qs::HQParams& /* params */);
-};
+  static std::unique_ptr<proxygen::HTTPServerOptions> createServerOptions(
+      const qs::HQParams& /* params */,
+      HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
-/**
- * Generic edge server providing a multi-threaded QUIC server interface for the
- * processing of lambda functions.
- */
-class EdgeServerQuic final : public EdgeServerImpl
-{
+  using AcceptorConfig = std::vector<proxygen::HTTPServer::IPConfig>;
 
- public:
-  NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
+  static std::unique_ptr<AcceptorConfig>
+  createServerAcceptorConfig(const qs::HQParams& /* params */);
 
-  //! Create an edge server with a given number of threads.
-  explicit EdgeServerQuic(EdgeServer&        aEdgeServer,
-                          const qs::HQParams aQuicParamsConf);
+  // Starts H2 server in a background thread
+  static std::thread
+  run(const qs::HQParams&            params,
+      HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
-  virtual ~EdgeServerQuic();
+}; // class H2Server
 
-  //! Start the server. No more configuration allowed after this call.
-  void run() override;
-
-  //! Wait until termination of the server.
-  void wait() override;
-
- protected:
-  /**
-   * \return the set of the identifiers of the threads that have been
-   * spawned during the call to run(). The cardinality of this set
-   * if equal to the number of threads specified in the ctor. If
-   * run() has not (yet) been called, then an empty set is returned.
-   */
-  std::set<std::thread::id> threadIds() const;
-
- private:
-  //! Thread execution body.
-  void handle();
-
-  //! Perform actual processing of a lambda request.
-  rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
-
- protected:
-  mutable std::mutex theMutex;
-  const std::string  theServerEndpoint;
-  const size_t       theNumThreads;
-
- private:
-  // std::list<std::thread> theHandlers;
-  std::thread        theH2ServerThread;
-  std::thread        theQuicServerThread;
-  const qs::HQParams theQuicParamsConf;
-  HQServer           theQuicTransportServer;
-
-}; // end class EdgeServer
+wangle::SSLContextConfig createSSLContext(const qs::HQParams& params);
 
 } // namespace edge
-} // end namespace uiiit
+} // namespace uiiit

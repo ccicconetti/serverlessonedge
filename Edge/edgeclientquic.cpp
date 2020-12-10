@@ -168,6 +168,7 @@ void EdgeClientQuic::startClient() {
 
   initializeQuicTransportClient();
   CHECK(quicClient_);
+  // initializeQLogger();
 
   wangle::TransportInfo tinfo;
   session_ = new proxygen::HQUpstreamSession(theQuicParamsConf.txnTimeout,
@@ -223,9 +224,7 @@ void EdgeClientQuic::sendRequests(bool     closeSession,
 
 proxygen::HTTPTransaction* FOLLY_NULLABLE
 EdgeClientQuic::sendRequest(const proxygen::URL& requestUrl) {
-
-  // the CurlService is initialized based on partialReliabilityEnabled
-  // this is false by default so we initialize as follows
+  // partialReliabilityEnabled false by default
   std::unique_ptr<CurlService::CurlClient> client =
       std::make_unique<CurlService::CurlClient>(
           &evb_,
@@ -252,7 +251,7 @@ EdgeClientQuic::sendRequest(const proxygen::URL& requestUrl) {
 static std::function<void()> selfSchedulingRequestRunner;
 
 void EdgeClientQuic::connectSuccess() {
-  // operations due to sendKnobFrame (set to false in our case)
+  // sendKnobFrame false by default, no if branch
   LOG(INFO) << "EdgeClientQuic::connectSuccess\n";
   uint64_t numOpenableStreams =
       quicClient_->getNumOpenableBidirectionalStreams();
