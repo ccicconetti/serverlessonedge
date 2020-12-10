@@ -29,7 +29,11 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/edgeserverimpl.h"
 #include "Support/macros.h"
+
+#include <proxygen/httpserver/samples/hq/HQParams.h>
+#include <proxygen/httpserver/samples/hq/HQServer.h>
 
 #include <cassert>
 #include <condition_variable>
@@ -40,18 +44,12 @@ SOFTWARE.
 #include <string>
 #include <thread>
 
-#include "edgeserverimpl.h"
-#include <proxygen/httpserver/samples/hq/HQParams.h>
-#include <proxygen/httpserver/samples/hq/HQServer.h>
-
 namespace uiiit {
 namespace edge {
 
-namespace qs = quic::samples;
-
 using HTTPTransactionHandlerProvider =
-    std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
-                                                    const qs::HQParams&)>;
+    std::function<proxygen::HTTPTransactionHandler*(
+        proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class H2Server
 {
@@ -59,7 +57,7 @@ class H2Server
   {
    public:
     explicit SampleHandlerFactory(
-        const qs::HQParams&            params,
+        const quic::samples::HQParams& params,
         HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
     virtual ~SampleHandlerFactory();
@@ -73,28 +71,29 @@ class H2Server
               proxygen::HTTPMessage* /* msg */) noexcept override;
 
    private:
-    const qs::HQParams&            params_;
+    const quic::samples::HQParams& params_;
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider_;
   }; // SampleHandlerFactory
 
  public:
   static std::unique_ptr<proxygen::HTTPServerOptions> createServerOptions(
-      const qs::HQParams& /* params */,
+      const quic::samples::HQParams& /* params */,
       HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
   using AcceptorConfig = std::vector<proxygen::HTTPServer::IPConfig>;
 
   static std::unique_ptr<AcceptorConfig>
-  createServerAcceptorConfig(const qs::HQParams& /* params */);
+  createServerAcceptorConfig(const quic::samples::HQParams& /* params */);
 
   // Starts H2 server in a background thread
   static std::thread
-  run(const qs::HQParams&            params,
+  run(const quic::samples::HQParams& params,
       HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
 }; // class H2Server
 
-wangle::SSLContextConfig createSSLContext(const qs::HQParams& params);
+wangle::SSLContextConfig
+createSSLContext(const quic::samples::HQParams& params);
 
 } // namespace edge
 } // namespace uiiit

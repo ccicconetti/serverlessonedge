@@ -32,9 +32,6 @@ SOFTWARE.
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
 
-#include <glog/logging.h>
-#include <string>
-
 #include <proxygen/httpclient/samples/curl/CurlClient.h>
 #include <proxygen/httpserver/samples/hq/HQParams.h>
 #include <proxygen/lib/http/session/HQUpstreamSession.h>
@@ -45,10 +42,12 @@ SOFTWARE.
 #include <quic/congestion_control/CongestionControllerFactory.h>
 #include <quic/fizz/client/handshake/FizzClientQuicHandshakeContext.h>
 
+#include <glog/logging.h>
+
+#include <string>
+
 namespace uiiit {
 namespace edge {
-
-namespace qs = quic::samples;
 
 using FizzClientContextPtr = std::shared_ptr<fizz::client::FizzClientContext>;
 
@@ -59,7 +58,7 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback
   /**
    * \param aQuicParamsConf the EdgeClientQuic parameters configuration
    */
-  explicit EdgeClientQuic(const qs::HQParams& aQuicParamsConf);
+  explicit EdgeClientQuic(const quic::samples::HQParams& aQuicParamsConf);
 
   ~EdgeClientQuic(); // override;
 
@@ -70,7 +69,8 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback
 
   void initializeQuicTransportClient();
 
-  FizzClientContextPtr createFizzClientContext(const qs::HQParams& params);
+  FizzClientContextPtr
+  createFizzClientContext(const quic::samples::HQParams& params);
 
   proxygen::HTTPTransaction* sendRequest(const proxygen::URL& requestUrl);
 
@@ -84,7 +84,7 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback
   void connectError(std::pair<quic::QuicErrorCode, std::string> error) override;
 
  private:
-  const qs::HQParams&                                 theQuicParamsConf;
+  const quic::samples::HQParams&                      theQuicParamsConf;
   std::shared_ptr<quic::QuicClientTransport>          quicClient_;
   quic::TimerHighRes::SharedPtr                       pacingTimer_;
   folly::EventBase                                    evb_;

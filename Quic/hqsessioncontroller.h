@@ -38,11 +38,9 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-namespace qs = quic::samples;
-
 using HTTPTransactionHandlerProvider =
-    std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
-                                                    const qs::HQParams&)>;
+    std::function<proxygen::HTTPTransactionHandler*(
+        proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class HQSessionController : public proxygen::HTTPSessionController,
                             proxygen::HTTPSession::InfoCallback
@@ -50,7 +48,7 @@ class HQSessionController : public proxygen::HTTPSessionController,
  public:
   using StreamData = std::pair<folly::IOBufQueue, bool>;
 
-  explicit HQSessionController(const qs::HQParams& /* params */,
+  explicit HQSessionController(const quic::samples::HQParams& /* params */,
                                const HTTPTransactionHandlerProvider&);
 
   ~HQSessionController() override = default;
@@ -90,7 +88,7 @@ class HQSessionController : public proxygen::HTTPSessionController,
   // avoid circular references
   proxygen::HQSession* session_{nullptr};
   // Configuration params
-  const qs::HQParams& params_;
+  const quic::samples::HQParams& params_;
   // Provider of HTTPTransactionHandler, owned by HQServerTransportFactory
   const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider_;
 

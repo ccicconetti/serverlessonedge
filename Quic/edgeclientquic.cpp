@@ -135,6 +135,8 @@ CzoemuHOSmcvQpU604U+J20FO2gaiYJFxz1h1v+Z/9edY9R9NCwmyFa3LfI=
 )";
 } // namespace
 
+namespace qs = quic::samples;
+
 namespace uiiit {
 namespace edge {
 

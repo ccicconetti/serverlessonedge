@@ -30,12 +30,10 @@ SOFTWARE.
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgelambdaprocessoroptions.h"
 #include "Edge/edgerouter.h"
-
 #include "Edge/edgeservergrpc.h"
 #include "Edge/edgeserverimpl.h"
-#include "Edge/edgeserverquic.h"
-
 #include "Edge/forwardingtableserver.h"
+#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 

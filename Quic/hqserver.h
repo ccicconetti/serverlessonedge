@@ -1,4 +1,36 @@
-#include "h2server.h"
+/*
+ ___ ___ __     __ ____________
+|   |   |  |   |__|__|__   ___/   Ubiquitout Internet @ IIT-CNR
+|   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
+|   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
+|_______|__|__/__/   /__/
+
+Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
+
+Permission is hereby  granted, free of charge, to any  person obtaining a copy
+of this software and associated  documentation files (the "Software"), to deal
+in the Software  without restriction, including without  limitation the rights
+to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#pragma once
+
+#include <proxygen/httpserver/samples/hq/HQParams.h>
+#include <quic/server/QuicServer.h>
 
 namespace {
 const std::string kDefaultCertData = R"(
@@ -94,111 +126,70 @@ IN+p06Nnnm2ZVTRebTx/WnnG+lTXSOuBuGAGpuOSa3yi84kFfYxBFgGcgUQt4i1M
 CzoemuHOSmcvQpU604U+J20FO2gaiYJFxz1h1v+Z/9edY9R9NCwmyFa3LfI=
 -----END RSA PRIVATE KEY-----
 )";
+
+const std::string kPrime256v1CertData = R"(
+-----BEGIN CERTIFICATE-----
+MIICkDCCAjWgAwIBAgIJAOILJQbZxXtaMAoGCCqGSM49BAMCMIGjMQswCQYDVQQG
+EwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTETMBEGA1UEBwwKTWVubG8gUGFyazER
+MA8GA1UECgwIUHJveHlnZW4xETAPBgNVBAsMCFByb3h5Z2VuMREwDwYDVQQDDAhQ
+cm94eWdlbjExMC8GCSqGSIb3DQEJARYiZmFjZWJvb2stcHJveHlnZW5AZ29vZ2xl
+Z3JvdXBzLmNvbTAeFw0yMDA0MDcyMDMyMDRaFw0zMDA0MDUyMDMyMDRaMIGjMQsw
+CQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTETMBEGA1UEBwwKTWVubG8g
+UGFyazERMA8GA1UECgwIUHJveHlnZW4xETAPBgNVBAsMCFByb3h5Z2VuMREwDwYD
+VQQDDAhQcm94eWdlbjExMC8GCSqGSIb3DQEJARYiZmFjZWJvb2stcHJveHlnZW5A
+Z29vZ2xlZ3JvdXBzLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABB5MtBjA
+TaKYREMWTIbzK6utt7Jjb3xWcWowKeN14WFz8sDqvHcAufaN8OP2NBHRAZGi4UDs
+1thkXHtSPcc7DT+jUDBOMB0GA1UdDgQWBBSWhUXpZWkCj6YywA8iZIvl52GvzDAf
+BgNVHSMEGDAWgBSWhUXpZWkCj6YywA8iZIvl52GvzDAMBgNVHRMEBTADAQH/MAoG
+CCqGSM49BAMCA0kAMEYCIQCduzLSWUJ2RgxYvNiApmmH9Yml/s7T2bB2r6+1wlPw
+OgIhAPfLxzClQvbpPvchgQkWEJTsMgmI/CgNWX02SIzeg934
+-----END CERTIFICATE-----
+)";
+
+const std::string kPrime256v1KeyData = R"(
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/NeWSkmQEmaO2f0T
+5ogGmfvwGId3k5i8o8hJOoV9pOuhRANCAAQeTLQYwE2imERDFkyG8yurrbeyY298
+VnFqMCnjdeFhc/LA6rx3ALn2jfDj9jQR0QGRouFA7NbYZFx7Uj3HOw0/
+-----END PRIVATE KEY-----
+)";
 } // namespace
 
 namespace uiiit {
 namespace edge {
 
-H2Server::SampleHandlerFactory::SampleHandlerFactory(
-    const qs::HQParams&            params,
-    HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
-    : params_(params)
-    , httpTransactionHandlerProvider_(
-          std::move(httpTransactionHandlerProvider)) {
-}
+using HTTPTransactionHandlerProvider =
+    std::function<proxygen::HTTPTransactionHandler*(
+        proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
-H2Server::SampleHandlerFactory::~SampleHandlerFactory() {
-}
+using FizzServerContextPtr =
+    std::shared_ptr<const fizz::server::FizzServerContext>;
 
-void H2Server::SampleHandlerFactory::onServerStart(
-    folly::EventBase* /*evb*/) noexcept {
-  LOG(INFO) << "H2Server::onServerStart\n";
-}
+class HQServer
+{
+ public:
+  explicit HQServer(
+      const quic::samples::HQParams& params,
+      HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
-void H2Server::SampleHandlerFactory::onServerStop() noexcept {
-  LOG(INFO) << "H2Server::onServerStop\n";
-}
+  // Starts the QUIC transport in background thread
+  std::thread start();
+  // void start();
 
-proxygen::RequestHandler*
-H2Server::SampleHandlerFactory::onRequest(proxygen::RequestHandler*,
-                                          proxygen::HTTPMessage* msg) noexcept {
-  LOG(INFO) << "H2Server::onRequest\n";
-  return new proxygen::HTTPTransactionHandlerAdaptor(
-      httpTransactionHandlerProvider_(msg, params_));
-}
+  // Starts the HTTP server handling loop on the current EVB
+  // void run();
 
-std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
-    const qs::HQParams&            params,
-    HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
+  // const folly::SocketAddress getAddress() const;
 
-  auto serverOptions = std::make_unique<proxygen::HTTPServerOptions>();
+ private:
+  const quic::samples::HQParams&    params_;
+  folly::EventBase                  eventbase_;
+  std::shared_ptr<quic::QuicServer> server_;
+  folly::Baton<>                    cv_;
+};
 
-  serverOptions->threads     = params.httpServerThreads;
-  serverOptions->idleTimeout = params.httpServerIdleTimeout;
-  serverOptions->shutdownOn  = params.httpServerShutdownOn;
-  serverOptions->enableContentCompression =
-      params.httpServerEnableContentCompression;
-  serverOptions->initialReceiveWindow =
-      params.transportSettings.advertisedInitialBidiLocalStreamWindowSize;
-  serverOptions->receiveStreamWindowSize =
-      params.transportSettings.advertisedInitialBidiLocalStreamWindowSize;
-  serverOptions->receiveSessionWindowSize =
-      params.transportSettings.advertisedInitialConnectionWindowSize;
-  serverOptions->handlerFactories =
-      proxygen::RequestHandlerChain()
-          .addThen<SampleHandlerFactory>(
-              params, std::move(httpTransactionHandlerProvider))
-          .build();
-  return serverOptions;
-}
-
-std::unique_ptr<H2Server::AcceptorConfig>
-H2Server::createServerAcceptorConfig(const qs::HQParams& params) {
-  auto acceptorConfig = std::make_unique<AcceptorConfig>();
-  proxygen::HTTPServer::IPConfig ipConfig(
-      params.localH2Address.value(), proxygen::HTTPServer::Protocol::HTTP2);
-  ipConfig.sslConfigs.emplace_back(createSSLContext(params));
-  acceptorConfig->push_back(ipConfig);
-  return acceptorConfig;
-}
-
-std::thread
-H2Server::run(const qs::HQParams&            params,
-              HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
-
-  LOG(INFO) << "H2Server::run\n";
-  // Start HTTPServer mainloop in a separate thread
-  std::thread t([params = folly::copy(params),
-                 httpTransactionHandlerProvider =
-                     std::move(httpTransactionHandlerProvider)]() mutable {
-    {
-      auto acceptorConfig = createServerAcceptorConfig(params);
-      auto serverOptions  = createServerOptions(
-          params, std::move(httpTransactionHandlerProvider));
-      proxygen::HTTPServer server(std::move(*serverOptions));
-      server.bind(std::move(*acceptorConfig));
-      server.start();
-    }
-    // HTTPServer traps the SIGINT.  resignal HQServer
-    raise(SIGINT);
-  });
-  LOG(INFO) << "POST THREAD SPAWNING\n";
-
-  return t;
-}
-
-wangle::SSLContextConfig createSSLContext(const qs::HQParams& params) {
-  wangle::SSLContextConfig sslCfg;
-  sslCfg.isDefault          = true;
-  sslCfg.clientVerification = folly::SSLContext::SSLVerifyPeerEnum::VERIFY;
-  if (!params.certificateFilePath.empty() && !params.keyFilePath.empty()) {
-    sslCfg.setCertificate(params.certificateFilePath, params.keyFilePath, "");
-  } else {
-    sslCfg.setCertificateBuf(kDefaultCertData, kDefaultKeyData);
-  }
-  sslCfg.setNextProtocols({"h2"});
-  return sslCfg;
-}
+FizzServerContextPtr
+createFizzServerContext(const quic::samples::HQParams& params);
 
 } // namespace edge
 } // namespace uiiit

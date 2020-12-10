@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeserverquic.h"
+#include "Quic/edgeserverquic.h"
 
 #include <glog/logging.h>
 
@@ -36,6 +36,8 @@ SOFTWARE.
 #include <folly/io/async/EventBaseManager.h>
 #include <proxygen/httpserver/samples/hq/HQParams.h>
 #include <quic/logging/FileQLogger.h>
+
+namespace qs = quic::samples;
 
 namespace uiiit {
 namespace edge {

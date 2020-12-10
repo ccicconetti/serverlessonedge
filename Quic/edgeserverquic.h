@@ -29,7 +29,14 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/edgeserverimpl.h"
+#include "Quic/h2server.h"
+#include "Quic/hqserver.h"
+#include "Quic/hqservertransportfactory.h"
+#include "Quic/hqsessioncontroller.h"
 #include "Support/macros.h"
+
+#include <proxygen/httpserver/samples/hq/HQParams.h>
 
 #include <cassert>
 #include <condition_variable>
@@ -40,31 +47,21 @@ SOFTWARE.
 #include <string>
 #include <thread>
 
-#include "edgeserverimpl.h"
-#include "h2server.h"
-#include "hqserver.h"
-#include "hqservertransportfactory.h"
-#include "hqsessioncontroller.h"
-
-#include <proxygen/httpserver/samples/hq/HQParams.h>
-
 namespace uiiit {
 namespace edge {
 
 struct LambdaResponse;
 
-namespace qs = quic::samples;
-
 using HTTPTransactionHandlerProvider =
-    std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
-                                                    const qs::HQParams&)>;
+    std::function<proxygen::HTTPTransactionHandler*(
+        proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class Dispatcher
 {
  public:
   static proxygen::HTTPTransactionHandler*
   getRequestHandler(proxygen::HTTPMessage* /* msg */,
-                    const qs::HQParams& /* params */);
+                    const quic::samples::HQParams& /* params */);
 };
 
 /**
@@ -78,8 +75,8 @@ class EdgeServerQuic final : public EdgeServerImpl
   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
   //! Create an edge server with a given number of threads.
-  explicit EdgeServerQuic(EdgeServer&        aEdgeServer,
-                          const qs::HQParams aQuicParamsConf);
+  explicit EdgeServerQuic(EdgeServer&                   aEdgeServer,
+                          const quic::samples::HQParams aQuicParamsConf);
 
   virtual ~EdgeServerQuic();
 
@@ -112,10 +109,10 @@ class EdgeServerQuic final : public EdgeServerImpl
 
  private:
   // std::list<std::thread> theHandlers;
-  std::thread        theH2ServerThread;
-  std::thread        theQuicServerThread;
-  const qs::HQParams theQuicParamsConf;
-  HQServer           theQuicTransportServer;
+  std::thread                   theH2ServerThread;
+  std::thread                   theQuicServerThread;
+  const quic::samples::HQParams theQuicParamsConf;
+  HQServer                      theQuicTransportServer;
 
 }; // end class EdgeServer
 

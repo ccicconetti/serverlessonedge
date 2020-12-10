@@ -80,6 +80,7 @@ add_subdirectory(Edge)
 if(WITH_OPENCV)
   add_subdirectory(OpenCV)
 endif()
+add_subdirectory(Quic)
 add_subdirectory(Rpc)
 add_subdirectory(Simulation)
 

@@ -37,17 +37,15 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-namespace qs = quic::samples;
-
 using HTTPTransactionHandlerProvider =
-    std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
-                                                    const qs::HQParams&)>;
+    std::function<proxygen::HTTPTransactionHandler*(
+        proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class HQServerTransportFactory : public quic::QuicServerTransportFactory
 {
  public:
   explicit HQServerTransportFactory(
-      const qs::HQParams&                   params,
+      const quic::samples::HQParams&        params,
       const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider);
   ~HQServerTransportFactory() override = default;
 
@@ -61,7 +59,7 @@ class HQServerTransportFactory : public quic::QuicServerTransportFactory
 
  private:
   // Configuration params
-  const qs::HQParams& params_;
+  const quic::samples::HQParams& params_;
   // Provider of HTTPTransactionHandler
   HTTPTransactionHandlerProvider httpTransactionHandlerProvider_;
 };
