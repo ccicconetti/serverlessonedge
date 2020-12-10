@@ -83,6 +83,8 @@ add_library(uiiitedgequic STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/hqservertransportfactory.cpp
 )
 
+target_compile_options(uiiitedgequic PRIVATE "-DNDEBUG")
+
 if(APPLE)
 target_link_libraries(uiiitedgequic
     ${PROXYGENLIB}
