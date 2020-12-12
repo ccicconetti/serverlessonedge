@@ -30,13 +30,10 @@ SOFTWARE.
 #include "Quic/hqservertransportfactory.h"
 #include "Quic/hqsessioncontroller.h"
 
-// namespace qs = quic::samples;
-
 namespace uiiit {
 namespace edge {
 
 HQServerTransportFactory::HQServerTransportFactory(
-    // const qs::HQParams&                   params,
     const HQParams&                       params,
     const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider)
     : params_(params)

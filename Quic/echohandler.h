@@ -36,7 +36,6 @@ namespace edge {
 class EchoHandler : public BaseHandler
 {
  public:
-  // explicit EchoHandler(const quic::samples::HQParams& params)
   explicit EchoHandler(const HQParams& params)
       : BaseHandler(params) {
   }

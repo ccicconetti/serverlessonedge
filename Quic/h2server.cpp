@@ -127,13 +127,10 @@ CzoemuHOSmcvQpU604U+J20FO2gaiYJFxz1h1v+Z/9edY9R9NCwmyFa3LfI=
 )";
 } // namespace
 
-// namespace qs = quic::samples;
-
 namespace uiiit {
 namespace edge {
 
 H2Server::SampleHandlerFactory::SampleHandlerFactory(
-    // const qs::HQParams&            params,
     const HQParams&                params,
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
     : params_(params)
@@ -162,7 +159,6 @@ H2Server::SampleHandlerFactory::onRequest(proxygen::RequestHandler*,
 }
 
 std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
-    // const qs::HQParams&            params,
     const HQParams&                params,
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
 
@@ -188,7 +184,6 @@ std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
 }
 
 std::unique_ptr<H2Server::AcceptorConfig>
-// H2Server::createServerAcceptorConfig(const qs::HQParams& params) {
 H2Server::createServerAcceptorConfig(const HQParams& params) {
   auto acceptorConfig = std::make_unique<AcceptorConfig>();
   proxygen::HTTPServer::IPConfig ipConfig(
@@ -199,7 +194,6 @@ H2Server::createServerAcceptorConfig(const HQParams& params) {
 }
 
 std::thread
-// H2Server::run(const qs::HQParams&            params,
 H2Server::run(const HQParams&                params,
               HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
 
@@ -224,7 +218,6 @@ H2Server::run(const HQParams&                params,
   return t;
 }
 
-// wangle::SSLContextConfig createSSLContext(const qs::HQParams& params) {
 wangle::SSLContextConfig createSSLContext(const HQParams& params) {
   wangle::SSLContextConfig sslCfg;
   sslCfg.isDefault          = true;

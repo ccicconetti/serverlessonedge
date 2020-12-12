@@ -37,8 +37,6 @@ SOFTWARE.
 #include "Quic/quicparams.h"
 #include "Support/macros.h"
 
-//#include <proxygen/httpserver/samples/hq/HQParams.h>
-
 #include <cassert>
 #include <condition_variable>
 #include <list>
@@ -56,7 +54,6 @@ struct LambdaResponse;
 using HTTPTransactionHandlerProvider =
     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
                                                     const HQParams&)>;
-// proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class Dispatcher
 {
@@ -64,7 +61,6 @@ class Dispatcher
   static proxygen::HTTPTransactionHandler*
   getRequestHandler(proxygen::HTTPMessage* /* msg */,
                     const HQParams& /* params */);
-  // const quic::samples::HQParams& /* params */);
 };
 
 /**
@@ -78,8 +74,7 @@ class EdgeServerQuic final : public EdgeServerImpl
   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
   //! Create an edge server with a given number of threads.
-  explicit EdgeServerQuic(EdgeServer& aEdgeServer,
-                          // const quic::samples::HQParams aQuicParamsConf);
+  explicit EdgeServerQuic(EdgeServer&    aEdgeServer,
                           const HQParams aQuicParamsConf);
 
   virtual ~EdgeServerQuic();
@@ -112,10 +107,8 @@ class EdgeServerQuic final : public EdgeServerImpl
   const size_t       theNumThreads;
 
  private:
-  // std::list<std::thread> theHandlers;
-  std::thread theH2ServerThread;
-  std::thread theQuicServerThread;
-  // const quic::samples::HQParams theQuicParamsConf;
+  std::thread    theH2ServerThread;
+  std::thread    theQuicServerThread;
   const HQParams theQuicParamsConf;
   HQServer       theQuicTransportServer;
 

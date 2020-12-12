@@ -34,17 +34,13 @@ SOFTWARE.
 #include "Quic/quicparams.h"
 
 #include <proxygen/httpclient/samples/curl/CurlClient.h>
-//#include <proxygen/httpserver/samples/hq/HQParams.h>
 #include <proxygen/lib/http/session/HQUpstreamSession.h>
-
-#include <quic/common/Timers.h>
-
 #include <quic/client/QuicClientTransport.h>
+#include <quic/common/Timers.h>
 #include <quic/congestion_control/CongestionControllerFactory.h>
 #include <quic/fizz/client/handshake/FizzClientQuicHandshakeContext.h>
 
 #include <glog/logging.h>
-
 #include <string>
 
 namespace uiiit {

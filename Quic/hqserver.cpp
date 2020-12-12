@@ -34,18 +34,14 @@ SOFTWARE.
 #include <fizz/server/AeadTicketCipher.h>
 #include <fizz/server/CertManager.h>
 #include <fizz/server/TicketCodec.h>
-
 #include <quic/congestion_control/ServerCongestionControllerFactory.h>
 #include <quic/server/QuicServerTransport.h>
 #include <quic/server/QuicSharedUDPSocketFactory.h>
-
-// namespace qs = quic::samples;
 
 namespace uiiit {
 namespace edge {
 
 HQServer::HQServer(
-    // const qs::HQParams&            params,
     const HQParams&                params,
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
     : params_(params)
@@ -83,7 +79,6 @@ std::thread HQServer::start() {
   return t;
 }
 
-// FizzServerContextPtr createFizzServerContext(const qs::HQParams& params) {
 FizzServerContextPtr createFizzServerContext(const HQParams& params) {
 
   std::string certData = kDefaultCertData;

@@ -35,9 +35,6 @@ SOFTWARE.
 
 #include <proxygen/httpserver/HTTPServer.h>
 
-//#include <proxygen/httpserver/samples/hq/HQParams.h>
-//#include <proxygen/httpserver/samples/hq/HQServer.h>
-
 #include <cassert>
 #include <condition_variable>
 #include <list>
@@ -53,7 +50,6 @@ namespace edge {
 using HTTPTransactionHandlerProvider =
     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
                                                     const HQParams&)>;
-// proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class H2Server
 {
@@ -61,8 +57,7 @@ class H2Server
   {
    public:
     explicit SampleHandlerFactory(
-        const HQParams& params,
-        // const quic::samples::HQParams& params,
+        const HQParams&                params,
         HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
     virtual ~SampleHandlerFactory();
@@ -76,14 +71,12 @@ class H2Server
               proxygen::HTTPMessage* /* msg */) noexcept override;
 
    private:
-    // const quic::samples::HQParams& params_;
     const HQParams&                params_;
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider_;
   }; // SampleHandlerFactory
 
  public:
   static std::unique_ptr<proxygen::HTTPServerOptions> createServerOptions(
-      // const quic::samples::HQParams& /* params */,
       const HQParams& /* params */,
       HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
@@ -91,18 +84,15 @@ class H2Server
 
   static std::unique_ptr<AcceptorConfig>
   createServerAcceptorConfig(const HQParams& /* params */);
-  // createServerAcceptorConfig(const quic::samples::HQParams& /* params */);
 
   // Starts H2 server in a background thread
   static std::thread
-  // run(const quic::samples::HQParams& params,
   run(const HQParams&                params,
       HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
 }; // class H2Server
 
 wangle::SSLContextConfig createSSLContext(const HQParams& params);
-// createSSLContext(const quic::samples::HQParams& params);
 
 } // namespace edge
 } // namespace uiiit

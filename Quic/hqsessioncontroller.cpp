@@ -31,13 +31,10 @@ SOFTWARE.
 
 #include <proxygen/lib/http/session/HQDownstreamSession.h>
 
-// namespace qs = quic::samples;
-
 namespace uiiit {
 namespace edge {
 
 HQSessionController::HQSessionController(
-    // const qs::HQParams&                   params,
     const HQParams&                       params,
     const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider)
     : params_(params)

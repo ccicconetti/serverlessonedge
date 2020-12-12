@@ -27,21 +27,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
 #include "Quic/edgeserverquic.h"
 #include "Quic/echohandler.h"
 #include "Quic/lambdarequesthandler.h"
 
-#include <glog/logging.h>
-
 #include <boost/algorithm/string.hpp>
-
 #include <folly/io/async/EventBaseManager.h>
-//#include <proxygen/httpserver/samples/hq/HQParams.h>
-//#include <proxygen/httpserver/samples/hq/HQServer.h>
 #include <quic/logging/FileQLogger.h>
 
-// namespace qs = quic::samples;
+#include <glog/logging.h>
 
 namespace uiiit {
 namespace edge {
@@ -50,8 +44,7 @@ using namespace std::chrono_literals;
 
 proxygen::HTTPTransactionHandler*
 Dispatcher::getRequestHandler(proxygen::HTTPMessage* msg,
-                              // const qs::HQParams&    params) {
-                              const HQParams& params) {
+                              const HQParams&        params) {
   DCHECK(msg);
   auto path = msg->getPathAsStringPiece();
   if (path == "/" || path == "/echo") {
@@ -71,8 +64,7 @@ Dispatcher::getRequestHandler(proxygen::HTTPMessage* msg,
 theMutex, theServerEndpoint, theNumThreads
 */
 
-EdgeServerQuic::EdgeServerQuic(EdgeServer& aEdgeServer,
-                               // const qs::HQParams aQuicParamsConf)
+EdgeServerQuic::EdgeServerQuic(EdgeServer&    aEdgeServer,
                                const HQParams aQuicParamsConf)
     : EdgeServerImpl(aEdgeServer)
     , theMutex()

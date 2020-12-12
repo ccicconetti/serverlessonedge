@@ -36,7 +36,6 @@ namespace edge {
 class LambdaRequestHandler : public BaseHandler
 {
  public:
-  // explicit LambdaRequestHandler(const quic::samples::HQParams& params)
   explicit LambdaRequestHandler(const HQParams& params)
       : BaseHandler(params) {
     LOG(INFO) << "LambdaRequestHandler::CTOR\n";

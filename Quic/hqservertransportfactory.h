@@ -30,7 +30,6 @@ SOFTWARE.
 #pragma once
 
 #include "Quic/quicparams.h"
-//#include <proxygen/httpserver/samples/hq/HQParams.h>
 
 #include <quic/server/QuicServerTransport.h>
 #include <quic/server/QuicServerTransportFactory.h>
@@ -41,13 +40,11 @@ namespace edge {
 using HTTPTransactionHandlerProvider =
     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
                                                     const HQParams&)>;
-// proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class HQServerTransportFactory : public quic::QuicServerTransportFactory
 {
  public:
   explicit HQServerTransportFactory(
-      // const quic::samples::HQParams&        params,
       const HQParams&                       params,
       const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider);
   ~HQServerTransportFactory() override = default;
@@ -63,7 +60,6 @@ class HQServerTransportFactory : public quic::QuicServerTransportFactory
  private:
   // Configuration params
   const HQParams& params_;
-  // const quic::samples::HQParams& params_;
   // Provider of HTTPTransactionHandler
   HTTPTransactionHandlerProvider httpTransactionHandlerProvider_;
 };

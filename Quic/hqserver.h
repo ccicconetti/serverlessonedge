@@ -31,7 +31,6 @@ SOFTWARE.
 
 #include "Quic/quicparams.h"
 
-//#include <proxygen/httpserver/samples/hq/HQParams.h>
 #include <quic/server/QuicServer.h>
 
 namespace {
@@ -163,7 +162,6 @@ namespace edge {
 using HTTPTransactionHandlerProvider =
     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
                                                     const HQParams&)>;
-// proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 using FizzServerContextPtr =
     std::shared_ptr<const fizz::server::FizzServerContext>;
@@ -172,21 +170,13 @@ class HQServer
 {
  public:
   explicit HQServer(
-      // const quic::samples::HQParams& params,
       const HQParams&                params,
       HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
 
   // Starts the QUIC transport in background thread
   std::thread start();
-  // void start();
-
-  // Starts the HTTP server handling loop on the current EVB
-  // void run();
-
-  // const folly::SocketAddress getAddress() const;
 
  private:
-  // const quic::samples::HQParams&    params_;
   const HQParams&                   params_;
   folly::EventBase                  eventbase_;
   std::shared_ptr<quic::QuicServer> server_;
@@ -194,7 +184,6 @@ class HQServer
 };
 
 FizzServerContextPtr createFizzServerContext(const HQParams& params);
-// createFizzServerContext(const quic::samples::HQParams& params);
 
 } // namespace edge
 } // namespace uiiit
