@@ -26,44 +26,63 @@ LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+#pragma once
 
-#include "Quic/hqservertransportfactory.h"
-#include "Quic/hqsessioncontroller.h"
-
-// namespace qs = quic::samples;
+#include "Quic/basehandler.h"
 
 namespace uiiit {
 namespace edge {
 
-HQServerTransportFactory::HQServerTransportFactory(
-    // const qs::HQParams&                   params,
-    const HQParams&                       params,
-    const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider)
-    : params_(params)
-    , httpTransactionHandlerProvider_(httpTransactionHandlerProvider) {
-  LOG(INFO) << "HQServerTransportFactory CTOR\n";
-}
+class EchoHandler : public BaseHandler
+{
+ public:
+  // explicit EchoHandler(const quic::samples::HQParams& params)
+  explicit EchoHandler(const HQParams& params)
+      : BaseHandler(params) {
+  }
 
-quic::QuicServerTransport::Ptr HQServerTransportFactory::make(
-    folly::EventBase*                      evb,
-    std::unique_ptr<folly::AsyncUDPSocket> socket,
-    const folly::SocketAddress& /* peerAddr */,
-    std::shared_ptr<const fizz::server::FizzServerContext> ctx) noexcept {
-  // Session controller is self owning
-  auto hqSessionController =
-      new HQSessionController(params_, httpTransactionHandlerProvider_);
-  auto session = hqSessionController->createSession();
-  CHECK_EQ(evb, socket->getEventBase());
-  auto transport =
-      quic::QuicServerTransport::make(evb, std::move(socket), *session, ctx);
-  // if (!params_.qLoggerPath.empty()) {
-  //   transport->setQLogger(std::make_shared<qs::HQLoggerHelper>(
-  //       params_.qLoggerPath, params_.prettyJson,
-  //       quic::VantagePoint::Server));
-  // }
-  hqSessionController->startSession(transport);
-  return transport;
-}
+  EchoHandler() = delete;
+
+  void onHeadersComplete(
+      std::unique_ptr<proxygen::HTTPMessage> msg) noexcept override {
+    VLOG(10) << "EchoHandler::onHeadersComplete";
+    proxygen::HTTPMessage resp;
+    VLOG(10) << "Setting http-version to " << getHttpVersion();
+    sendFooter_ =
+        (msg->getHTTPVersion() == proxygen::HTTPMessage::kHTTPVersion09);
+    resp.setVersionString(getHttpVersion());
+    resp.setStatusCode(200);
+    resp.setStatusMessage("Ok");
+    msg->getHeaders().forEach(
+        [&](const std::string& header, const std::string& val) {
+          resp.getHeaders().add(folly::to<std::string>("x-echo-", header), val);
+        });
+    resp.setWantsKeepalive(true);
+    maybeAddAltSvcHeader(resp);
+    txn_->sendHeaders(resp);
+  }
+
+  void onBody(std::unique_ptr<folly::IOBuf> chain) noexcept override {
+    VLOG(10) << "EchoHandler::onBody";
+    txn_->sendBody(std::move(chain));
+  }
+
+  void onEOM() noexcept override {
+    VLOG(10) << "EchoHandler::onEOM";
+    if (sendFooter_) {
+      auto& footer = getH1QFooter();
+      txn_->sendBody(folly::IOBuf::copyBuffer(footer.data(), footer.length()));
+    }
+    txn_->sendEOM();
+  }
+
+  void onError(const proxygen::HTTPException& /*error*/) noexcept override {
+    txn_->sendAbort();
+  }
+
+ private:
+  bool sendFooter_{false};
+};
 
 } // namespace edge
 } // namespace uiiit

@@ -135,7 +135,7 @@ CzoemuHOSmcvQpU604U+J20FO2gaiYJFxz1h1v+Z/9edY9R9NCwmyFa3LfI=
 )";
 } // namespace
 
-namespace qs = quic::samples;
+// namespace qs = quic::samples;
 
 namespace uiiit {
 namespace edge {
@@ -157,7 +157,8 @@ class InsecureVerifierDangerousDoNotUseInProduction
   }
 };
 
-EdgeClientQuic::EdgeClientQuic(const qs::HQParams& aQuicParamsConf)
+// EdgeClientQuic::EdgeClientQuic(const qs::HQParams& aQuicParamsConf)
+EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
     : /* EdgeClientInterface(),*/ theQuicParamsConf(aQuicParamsConf) {
   // pacingEnabled false by default, no need for timer
 }
@@ -328,7 +329,8 @@ void EdgeClientQuic::initializeQuicTransportClient() {
 }
 
 FizzClientContextPtr
-EdgeClientQuic::createFizzClientContext(const qs::HQParams& params) {
+// EdgeClientQuic::createFizzClientContext(const qs::HQParams& params) {
+EdgeClientQuic::createFizzClientContext(const HQParams& params) {
   auto ctx = std::make_shared<fizz::client::FizzClientContext>();
 
   std::string certData = kDefaultCertData;

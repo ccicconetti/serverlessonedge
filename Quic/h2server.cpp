@@ -29,6 +29,8 @@ SOFTWARE.
 
 #include "Quic/h2server.h"
 
+#include <proxygen/httpserver/HTTPTransactionHandlerAdaptor.h>
+
 namespace {
 const std::string kDefaultCertData = R"(
 -----BEGIN CERTIFICATE-----
@@ -125,13 +127,14 @@ CzoemuHOSmcvQpU604U+J20FO2gaiYJFxz1h1v+Z/9edY9R9NCwmyFa3LfI=
 )";
 } // namespace
 
-namespace qs = quic::samples;
+// namespace qs = quic::samples;
 
 namespace uiiit {
 namespace edge {
 
 H2Server::SampleHandlerFactory::SampleHandlerFactory(
-    const qs::HQParams&            params,
+    // const qs::HQParams&            params,
+    const HQParams&                params,
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
     : params_(params)
     , httpTransactionHandlerProvider_(
@@ -159,7 +162,8 @@ H2Server::SampleHandlerFactory::onRequest(proxygen::RequestHandler*,
 }
 
 std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
-    const qs::HQParams&            params,
+    // const qs::HQParams&            params,
+    const HQParams&                params,
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
 
   auto serverOptions = std::make_unique<proxygen::HTTPServerOptions>();
@@ -184,7 +188,8 @@ std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
 }
 
 std::unique_ptr<H2Server::AcceptorConfig>
-H2Server::createServerAcceptorConfig(const qs::HQParams& params) {
+// H2Server::createServerAcceptorConfig(const qs::HQParams& params) {
+H2Server::createServerAcceptorConfig(const HQParams& params) {
   auto acceptorConfig = std::make_unique<AcceptorConfig>();
   proxygen::HTTPServer::IPConfig ipConfig(
       params.localH2Address.value(), proxygen::HTTPServer::Protocol::HTTP2);
@@ -194,7 +199,8 @@ H2Server::createServerAcceptorConfig(const qs::HQParams& params) {
 }
 
 std::thread
-H2Server::run(const qs::HQParams&            params,
+// H2Server::run(const qs::HQParams&            params,
+H2Server::run(const HQParams&                params,
               HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
 
   LOG(INFO) << "H2Server::run\n";
@@ -218,7 +224,8 @@ H2Server::run(const qs::HQParams&            params,
   return t;
 }
 
-wangle::SSLContextConfig createSSLContext(const qs::HQParams& params) {
+// wangle::SSLContextConfig createSSLContext(const qs::HQParams& params) {
+wangle::SSLContextConfig createSSLContext(const HQParams& params) {
   wangle::SSLContextConfig sslCfg;
   sslCfg.isDefault          = true;
   sslCfg.clientVerification = folly::SSLContext::SSLVerifyPeerEnum::VERIFY;

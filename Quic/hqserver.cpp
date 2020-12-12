@@ -39,13 +39,14 @@ SOFTWARE.
 #include <quic/server/QuicServerTransport.h>
 #include <quic/server/QuicSharedUDPSocketFactory.h>
 
-namespace qs = quic::samples;
+// namespace qs = quic::samples;
 
 namespace uiiit {
 namespace edge {
 
 HQServer::HQServer(
-    const qs::HQParams&            params,
+    // const qs::HQParams&            params,
+    const HQParams&                params,
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
     : params_(params)
     , server_(quic::QuicServer::createQuicServer()) {
@@ -82,7 +83,8 @@ std::thread HQServer::start() {
   return t;
 }
 
-FizzServerContextPtr createFizzServerContext(const qs::HQParams& params) {
+// FizzServerContextPtr createFizzServerContext(const qs::HQParams& params) {
+FizzServerContextPtr createFizzServerContext(const HQParams& params) {
 
   std::string certData = kDefaultCertData;
   if (!params.certificateFilePath.empty()) {

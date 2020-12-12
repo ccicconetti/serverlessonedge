@@ -29,18 +29,21 @@ SOFTWARE.
 
 #pragma once
 
+#include "Quic/quicparams.h"
+
 #include <proxygen/lib/http/session/HQSession.h>
 #include <proxygen/lib/http/session/HTTPSession.h>
 #include <proxygen/lib/http/session/HTTPSessionController.h>
 
-#include <proxygen/httpserver/samples/hq/HQParams.h>
+//#include <proxygen/httpserver/samples/hq/HQParams.h>
 
 namespace uiiit {
 namespace edge {
 
 using HTTPTransactionHandlerProvider =
-    std::function<proxygen::HTTPTransactionHandler*(
-        proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
+    std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
+                                                    const HQParams&)>;
+// proxygen::HTTPMessage*, const quic::samples::HQParams&)>;
 
 class HQSessionController : public proxygen::HTTPSessionController,
                             proxygen::HTTPSession::InfoCallback
@@ -48,7 +51,8 @@ class HQSessionController : public proxygen::HTTPSessionController,
  public:
   using StreamData = std::pair<folly::IOBufQueue, bool>;
 
-  explicit HQSessionController(const quic::samples::HQParams& /* params */,
+  // explicit HQSessionController(const quic::samples::HQParams& /* params */,
+  explicit HQSessionController(const HQParams& /* params */,
                                const HTTPTransactionHandlerProvider&);
 
   ~HQSessionController() override = default;
@@ -88,7 +92,8 @@ class HQSessionController : public proxygen::HTTPSessionController,
   // avoid circular references
   proxygen::HQSession* session_{nullptr};
   // Configuration params
-  const quic::samples::HQParams& params_;
+  const HQParams& params_;
+  // const quic::samples::HQParams& params_;
   // Provider of HTTPTransactionHandler, owned by HQServerTransportFactory
   const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider_;
 
