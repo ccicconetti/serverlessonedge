@@ -40,6 +40,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrolleretsibalanced.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrollerflat.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrollerhier.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testedgeserverquic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testetsitransaction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testforwardingtable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambda.cpp
@@ -50,19 +51,6 @@ add_library(testedgelib SHARED
 )
 
 target_link_libraries(testedgelib
-  uiiitedge
-  uiiitetsimec
-  uiiitrest
-
-  gtest
-  ${Boost_LIBRARIES}
-)
-
-add_library(testedgelibquic STATIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/testedgeserverquic.cpp
-)
-
-target_link_libraries(testedgelibquic
   uiiitedge
   uiiitedgequic
   uiiitetsimec
@@ -76,16 +64,7 @@ add_executable(testedge
   ${CMAKE_CURRENT_SOURCE_DIR}/testmain.cpp
 )
 
-if(APPLE)
-  target_link_libraries(testedge
-    testedgelib
-    #testedgelibquic
-  )
-else()
-  target_link_libraries(testedge
-    testedgelib
-    -Wl,--whole-archive testedgelibquic -Wl,--no-whole-archive
-    zstd
-  )
-endif()
+target_link_libraries(testedge
+  testedgelib
+)
 
