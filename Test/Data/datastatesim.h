@@ -893,7 +893,7 @@ std::string theGraph =
     "Link(0x1196ed690){'type': 'downlink', 'name': "
     "'down_cloudlet_0'};switch_cloudlet_0\n";
 
-std::string theNodes = "0;1000;link_rpi3_0;node\n"
+std::string theLinks = "0;1000;link_rpi3_0;node\n"
                        "1;1000;link_rpi3_1;node\n"
                        "2;500;link_0;shared\n"
                        "3;1000;link_rpi3_2;node\n"
@@ -1034,7 +1034,7 @@ std::string theNodes = "0;1000;link_rpi3_0;node\n"
                        "138;1000;up_cloudlet_0;uplink\n"
                        "139;1000;down_cloudlet_0;downlink\n";
 
-std::string theLinks =
+std::string theNodes =
     "0;rpi3_0;1023012864;4000;arm32;sbc;rpi3b+\n"
     "1;rpi3_1;1023012864;4000;arm32;sbc;rpi3b+\n"
     "2;rpi3_2;1023012864;4000;arm32;sbc;rpi3b+\n"

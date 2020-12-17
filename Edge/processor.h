@@ -42,7 +42,7 @@ namespace edge {
 
 /**
  * Abstraction of a processor with associated memory.
- * Can be a multi-core CPU system or an accelaration board such as a GPU.
+ * Can be a multi-core CPU system or an acceleration board such as a GPU.
  */
 class Processor final
 {
