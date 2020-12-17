@@ -82,8 +82,7 @@ if(WITH_OPENCV)
 endif()
 add_subdirectory(Rpc)
 add_subdirectory(Simulation)
-
-#add_subdirectory(hq)
+add_subdirectory(StateSim)
 
 # external repos
 add_subdirectory(etsimec/Executables)

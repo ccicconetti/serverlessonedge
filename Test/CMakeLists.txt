@@ -47,6 +47,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdatransaction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testprocessor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testptimeestimator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/teststatesim.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testtopology.cpp
 )
 
