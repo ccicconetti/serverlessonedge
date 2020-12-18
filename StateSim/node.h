@@ -60,6 +60,14 @@ class Node
   //! \return a human-readable string.
   std::string toString() const;
 
+  // clang-format off
+  Type        type()     const noexcept { return theType;     }
+  std::string name()     const noexcept { return theName;     }
+  float       speed()    const noexcept { return theSpeed;    }
+  size_t      memory()   const noexcept { return theMemory;   }
+  Affinity    affinity() const noexcept { return theAffinity; }
+  // clang-format on
+
  private:
   const Type theType;
 

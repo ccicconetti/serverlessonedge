@@ -32,11 +32,17 @@ SOFTWARE.
 #include "gtest/gtest.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/property_map/property_map.hpp>
 
-#include "Test/Data/datastatesim.h"
+#include <glog/logging.h>
 
 namespace uiiit {
 namespace statesim {
+
+#include "Test/Data/datastatesim.h"
 
 struct TestStateSim : public ::testing::Test {
   TestStateSim()
@@ -72,6 +78,51 @@ struct TestStateSim : public ::testing::Test {
   const boost::filesystem::path theTestDir;
 };
 
+TEST_F(TestStateSim, test_boost_graph) {
+  typedef boost::adjacency_list<boost::listS,
+                                boost::vecS,
+                                boost::directedS,
+                                boost::no_property,
+                                boost::property<boost::edge_weight_t, float>,
+                                boost::no_property,
+                                boost::listS>
+                              Graph;
+  typedef std::pair<int, int> Edge;
+
+  std::vector<Edge>  myEdges({
+      {0, 1},
+      {1, 0},
+      {1, 2},
+      {2, 1},
+      {2, 3},
+      {3, 2},
+      {3, 4},
+      {4, 3},
+      {0, 4},
+      {4, 0},
+  });
+  std::vector<float> myWeights({1, 1, 1, 1, 1, 1, 0.5, 0.5, 0.5, 0.5});
+
+  Graph myGraph(
+      myEdges.data(), myEdges.data() + myEdges.size(), myWeights.data(), 5);
+
+  // vector for storing distance property
+  std::vector<float> myDistances(boost::num_vertices(myGraph));
+
+  // get the first vertex
+  const auto mySource = *(vertices(myGraph).first);
+  // invoke variant 2 of Dijkstra's algorithm
+  boost::dijkstra_shortest_paths(
+      myGraph, mySource, boost::distance_map(myDistances.data()));
+
+  std::vector<float> myExpectedDistances({0, 1, 2, 1, 0.5});
+  for (auto vi = boost::vertices(myGraph).first; vi != vertices(myGraph).second;
+       ++vi) {
+    EXPECT_FLOAT_EQ(myExpectedDistances[*vi], myDistances[*vi])
+        << "node " << *vi;
+  }
+}
+
 TEST_F(TestStateSim, test_network_files) {
   ASSERT_THROW(loadNodes((theTestDir / "nodes").string()), std::runtime_error);
   ASSERT_THROW(loadLinks((theTestDir / "links").string()), std::runtime_error);
@@ -86,6 +137,11 @@ TEST_F(TestStateSim, test_network_files) {
 
 TEST_F(TestStateSim, test_network) {
   ASSERT_TRUE(prepareNetworkFiles());
+  Network myNetwork((theTestDir / "nodes").string(),
+                    (theTestDir / "links").string(),
+                    (theTestDir / "edges").string());
+  ASSERT_EQ(140, myNetwork.links().size());
+  ASSERT_EQ(159, myNetwork.nodes().size());
 }
 
 } // namespace statesim

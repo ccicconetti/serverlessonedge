@@ -62,6 +62,12 @@ class Link
   //! \return a human-readable string.
   std::string toString() const;
 
+  // clang-format off
+  Type        type()     const noexcept { return theType;     }
+  std::string name()     const noexcept { return theName;     }
+  float       capacity() const noexcept { return theCapacity; }
+  // clang-format on
+
  private:
   const Type        theType;
   const std::string theName;

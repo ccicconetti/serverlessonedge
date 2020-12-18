@@ -33,6 +33,7 @@ SOFTWARE.
 #include "StateSim/node.h"
 #include "Support/macros.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -44,7 +45,30 @@ class Network
   NONCOPYABLE_NONMOVABLE(Network);
 
  public:
+  /**
+   * Create a network from a set of files.
+   *
+   * \param aNodesPath The file containing the nodes in the following format:
+   *        0;rpi3_0;1023012864;4000;arm32;sbc;rpi3b+
+   *
+   * \param aLinksPath The file containing the links in the following format:
+   *        0;1000;link_rpi3_0;node
+   *
+   * \param aEdgesPath The file containing the edges in the following format:
+   *        switch_lan_0 link_rpi3_0 link_rpi3_1 link_0
+   */
+  Network(const std::string& aNodesPath,
+          const std::string& aLinksPath,
+          const std::string& aEdgesPath);
+
+  // clang-format off
+  const std::map<std::string, Node>& nodes() const noexcept { return theNodes; }
+  const std::map<std::string, Link>& links() const noexcept { return theLinks; }
+  // clang-format on
+
  private:
+  std::map<std::string, Node> theNodes;
+  std::map<std::string, Link> theLinks;
 };
 
 std::vector<Node> loadNodes(const std::string& aPath);

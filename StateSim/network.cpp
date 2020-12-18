@@ -29,10 +29,24 @@ SOFTWARE.
 
 #include "StateSim/network.h"
 
+#include "Support/split.h"
+
+#include <glog/logging.h>
+
 #include <fstream>
 
 namespace uiiit {
 namespace statesim {
+
+struct NodeList : public std::vector<std::string> {
+  static NodeList make(const std::string& aString) {
+    const auto ret = support::split<NodeList>(aString, " ");
+    if (ret.size() <= 1) {
+      throw std::runtime_error("Invalid edge: " + aString);
+    }
+    return ret;
+  }
+};
 
 template <class T>
 std::vector<T> loadFile(const std::string& aPath) {
@@ -58,6 +72,44 @@ std::vector<Node> loadNodes(const std::string& aPath) {
 
 std::vector<Link> loadLinks(const std::string& aPath) {
   return loadFile<Link>(aPath);
+}
+
+std::vector<NodeList> loadNodeLists(const std::string& aPath) {
+  return loadFile<NodeList>(aPath);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// class Network
+
+Network::Network(const std::string& aNodesPath,
+                 const std::string& aLinksPath,
+                 const std::string& aEdgesPath)
+    : theNodes()
+    , theLinks() {
+  // read from files
+  auto       myNodes     = loadNodes(aNodesPath);
+  auto       myLinks     = loadLinks(aLinksPath);
+  const auto myNodeLists = loadNodeLists(aEdgesPath);
+
+  // copy into member maps
+  for (const auto& myNode : myNodes) {
+    theNodes.emplace(myNode.name(), myNode);
+  }
+  for (const auto& myLink : myLinks) {
+    theLinks.emplace(myLink.name(), myLink);
+  }
+
+  // augment theNodes with non-processing nodes
+  for (const auto& myNodeList : myNodeLists) {
+    for (const auto& myName : myNodeList) {
+      if (theNodes.find(myName) == theNodes.end() and
+          theLinks.find(myName) == theLinks.end()) {
+        [[maybe_unused]] const auto ret =
+            theNodes.emplace(myName, Node(myName));
+        assert(ret.second);
+      }
+    }
+  }
 }
 
 } // namespace statesim
