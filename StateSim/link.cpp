@@ -27,65 +27,58 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "StateSim/network.h"
+#include "StateSim/link.h"
 
-#include "gtest/gtest.h"
+#include "Support/split.h"
 
-#include <boost/filesystem.hpp>
-
-#include "Test/Data/datastatesim.h"
+#include <cassert>
+#include <map>
+#include <sstream>
+#include <vector>
 
 namespace uiiit {
 namespace statesim {
 
-struct TestStateSim : public ::testing::Test {
-  TestStateSim()
-      : theTestDir("TO_REMOVE_DIR") {
-  }
-
-  void SetUp() {
-    boost::filesystem::remove_all(theTestDir);
-    boost::filesystem::create_directories(theTestDir);
-  }
-
-  void TearDown() {
-    // boost::filesystem::remove_all(theTestDir);
-  }
-
-  bool prepareNetworkFiles() {
-    std::ofstream myEdges((theTestDir / "edges").string());
-    myEdges << theEdges;
-
-    std::ofstream myLinks((theTestDir / "links").string());
-    myLinks << theLinks;
-
-    std::ofstream myNodes((theTestDir / "nodes").string());
-    myNodes << theNodes;
-
-    std::ofstream myGraph((theTestDir / "graph").string());
-    myGraph << theGraph;
-
-    return static_cast<bool>(myEdges) and static_cast<bool>(myLinks) and
-           static_cast<bool>(myNodes) and static_cast<bool>(myGraph);
-  }
-
-  const boost::filesystem::path theTestDir;
-};
-
-TEST_F(TestStateSim, test_network_files) {
-  ASSERT_THROW(loadNodes((theTestDir / "nodes").string()), std::runtime_error);
-  ASSERT_THROW(loadLinks((theTestDir / "links").string()), std::runtime_error);
-
-  ASSERT_TRUE(prepareNetworkFiles());
-
-  const auto myNodes = loadNodes((theTestDir / "nodes").string());
-  ASSERT_EQ(123, myNodes.size());
-  const auto myLinks = loadLinks((theTestDir / "links").string());
-  ASSERT_EQ(140, myLinks.size());
+Link::Link(const Type aType, const std::string& aName, const float aCapacity)
+    : theType(aType)
+    , theName(aName)
+    , theCapacity(aCapacity) {
+  // noop
 }
 
-TEST_F(TestStateSim, test_network) {
-  ASSERT_TRUE(prepareNetworkFiles());
+Link Link::make(const std::string& aString) {
+  static const std::map<std::string, Type> myTypes({
+      {"node", Type::Node},
+      {"shared", Type::Shared},
+      {"downlink", Type::Downlink},
+      {"uplink", Type::Uplink},
+  });
+  const auto myTokens = support::split<std::vector<std::string>>(aString, ";");
+  if (myTokens.size() != 4) {
+    throw std::runtime_error("Invalid Link: " + aString);
+  }
+  const auto myType = myTypes.find(myTokens[3]);
+  if (myType == myTypes.end()) {
+    throw std::runtime_error("Invalid type in Link: " + aString);
+  }
+  return Link(myType->second, myTokens[2], std::stof(myTokens[1]));
+}
+
+std::string Link::toString() const {
+  static const std::map<Type, char> myTypes({
+      {Type::Node, 'N'},
+      {Type::Shared, 'S'},
+      {Type::Downlink, 'D'},
+      {Type::Uplink, 'U'},
+  });
+
+  const auto myType = myTypes.find(theType);
+  assert(myType != myTypes.end());
+
+  std::stringstream ret;
+  ret << myType->second << ' ' << theName << ", capacity " << theCapacity
+      << " Mb/s";
+  return ret.str();
 }
 
 } // namespace statesim

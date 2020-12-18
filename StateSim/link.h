@@ -27,66 +27,46 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "StateSim/network.h"
+#pragma once
 
-#include "gtest/gtest.h"
-
-#include <boost/filesystem.hpp>
-
-#include "Test/Data/datastatesim.h"
+#include <string>
 
 namespace uiiit {
 namespace statesim {
 
-struct TestStateSim : public ::testing::Test {
-  TestStateSim()
-      : theTestDir("TO_REMOVE_DIR") {
-  }
+class Link
+{
+ public:
+  enum class Type : int {
+    Node     = 0,
+    Shared   = 1,
+    Downlink = 2,
+    Uplink   = 3,
+  };
 
-  void SetUp() {
-    boost::filesystem::remove_all(theTestDir);
-    boost::filesystem::create_directories(theTestDir);
-  }
+  /**
+   *  Create a link.
+   *
+   * \param aType The link type.
+   *
+   * \param aName The link identifier.
+   *
+   * \param aCapacity The link capacity, in Mb/s.
+   */
+  explicit Link(const Type         aType,
+                const std::string& aName,
+                const float        aCapacity);
 
-  void TearDown() {
-    // boost::filesystem::remove_all(theTestDir);
-  }
+  //! \return a Node from a string.
+  static Link make(const std::string& aString);
+  //! \return a human-readable string.
+  std::string toString() const;
 
-  bool prepareNetworkFiles() {
-    std::ofstream myEdges((theTestDir / "edges").string());
-    myEdges << theEdges;
-
-    std::ofstream myLinks((theTestDir / "links").string());
-    myLinks << theLinks;
-
-    std::ofstream myNodes((theTestDir / "nodes").string());
-    myNodes << theNodes;
-
-    std::ofstream myGraph((theTestDir / "graph").string());
-    myGraph << theGraph;
-
-    return static_cast<bool>(myEdges) and static_cast<bool>(myLinks) and
-           static_cast<bool>(myNodes) and static_cast<bool>(myGraph);
-  }
-
-  const boost::filesystem::path theTestDir;
+ private:
+  const Type        theType;
+  const std::string theName;
+  const float       theCapacity;
 };
-
-TEST_F(TestStateSim, test_network_files) {
-  ASSERT_THROW(loadNodes((theTestDir / "nodes").string()), std::runtime_error);
-  ASSERT_THROW(loadLinks((theTestDir / "links").string()), std::runtime_error);
-
-  ASSERT_TRUE(prepareNetworkFiles());
-
-  const auto myNodes = loadNodes((theTestDir / "nodes").string());
-  ASSERT_EQ(123, myNodes.size());
-  const auto myLinks = loadLinks((theTestDir / "links").string());
-  ASSERT_EQ(140, myLinks.size());
-}
-
-TEST_F(TestStateSim, test_network) {
-  ASSERT_TRUE(prepareNetworkFiles());
-}
 
 } // namespace statesim
 } // namespace uiiit

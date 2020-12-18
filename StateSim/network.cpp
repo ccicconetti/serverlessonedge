@@ -56,5 +56,9 @@ std::vector<Node> loadNodes(const std::string& aPath) {
   return loadFile<Node>(aPath);
 }
 
+std::vector<Link> loadLinks(const std::string& aPath) {
+  return loadFile<Link>(aPath);
+}
+
 } // namespace statesim
 } // namespace uiiit

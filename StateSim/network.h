@@ -29,6 +29,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "StateSim/link.h"
 #include "StateSim/node.h"
 #include "Support/macros.h"
 
@@ -47,6 +48,7 @@ class Network
 };
 
 std::vector<Node> loadNodes(const std::string& aPath);
+std::vector<Link> loadLinks(const std::string& aPath);
 
 } // namespace statesim
 } // namespace uiiit
