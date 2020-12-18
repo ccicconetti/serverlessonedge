@@ -29,16 +29,32 @@ SOFTWARE.
 
 #include "StateSim/network.h"
 
-#include <glog/logging.h>
-
-#include <cassert>
+#include <fstream>
 
 namespace uiiit {
 namespace statesim {
 
-class A
-{
-};
+template <class T>
+std::vector<T> loadFile(const std::string& aPath) {
+  std::vector<T> ret;
+  std::ifstream  myFile(aPath);
+  if (not myFile) {
+    throw std::runtime_error("Cannot open file for reading: " + aPath);
+  }
+  std::string myLine;
+  while (myFile) {
+    std::getline(myFile, myLine);
+    if (myLine.empty() or myLine[0] == '#') {
+      continue;
+    }
+    ret.emplace_back(T::make(myLine));
+  }
+  return ret;
+}
+
+std::vector<Node> loadNodes(const std::string& aPath) {
+  return loadFile<Node>(aPath);
+}
 
 } // namespace statesim
 } // namespace uiiit

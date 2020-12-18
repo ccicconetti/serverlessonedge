@@ -49,7 +49,7 @@ struct TestStateSim : public ::testing::Test {
   }
 
   void TearDown() {
-    boost::filesystem::remove_all(theTestDir);
+    // boost::filesystem::remove_all(theTestDir);
   }
 
   bool prepareNetworkFiles() {
@@ -71,6 +71,15 @@ struct TestStateSim : public ::testing::Test {
 
   const boost::filesystem::path theTestDir;
 };
+
+TEST_F(TestStateSim, test_network_files) {
+  ASSERT_THROW(loadNodes((theTestDir / "nodes").string()), std::runtime_error);
+
+  ASSERT_TRUE(prepareNetworkFiles());
+  const auto myNodes = loadNodes((theTestDir / "nodes").string());
+
+  ASSERT_EQ(123, myNodes.size());
+}
 
 TEST_F(TestStateSim, test_network) {
   ASSERT_TRUE(prepareNetworkFiles());

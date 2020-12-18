@@ -55,6 +55,7 @@ target_link_libraries(testedgelib
   uiiitedge
   uiiitetsimec
   uiiitrest
+  uiiitstatesim
 
   gtest
   ${Boost_LIBRARIES}

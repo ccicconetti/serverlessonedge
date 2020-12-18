@@ -29,12 +29,24 @@ SOFTWARE.
 
 #pragma once
 
+#include "StateSim/node.h"
+#include "Support/macros.h"
+
+#include <string>
+#include <vector>
+
 namespace uiiit {
 namespace statesim {
 
 class Network
 {
+  NONCOPYABLE_NONMOVABLE(Network);
+
+ public:
+ private:
 };
+
+std::vector<Node> loadNodes(const std::string& aPath);
 
 } // namespace statesim
 } // namespace uiiit
