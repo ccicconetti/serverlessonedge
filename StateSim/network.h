@@ -29,12 +29,12 @@ SOFTWARE.
 
 #pragma once
 
+#include "StateSim/element.h"
 #include "StateSim/link.h"
 #include "StateSim/node.h"
 #include "Support/macros.h"
 
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/property_map/property_map.hpp>
 
@@ -58,7 +58,8 @@ class Network
                             boost::property<boost::edge_weight_t, float>,
                             boost::no_property,
                             boost::listS>;
-  using Edge = std::pair<int, int>;
+  using VertexDescriptor = boost::graph_traits<Graph>::vertex_descriptor;
+  using Edge             = std::pair<int, int>;
 
  public:
   /**
@@ -82,10 +83,30 @@ class Network
   const std::map<std::string, Link>& links() const noexcept { return theLinks; }
   // clang-format on
 
+  //! \return the distance and next hop identifier from aSrc to aDst.
+  std::pair<float, std::string> nextHop(const std::string& aSrc,
+                                        const std::string& aDst);
+
+ private:
+  //! Convert name to numeric identifier.
+  int id(const std::string& aName) const;
+  //! \return the capacity of the given element.
+  float capacity(const std::string& aName) const;
+
  private:
   std::map<std::string, Node> theNodes;
   std::map<std::string, Link> theLinks;
+  std::vector<Element*>       theElements;
   Graph                       theGraph;
+
+  //
+  // first index: source node id
+  // second index: <valid flag, destination node id>
+  // content: <distance from source to destination, next hop>
+  //
+  // lazy-initialized as needed
+  using PredVec = std::vector<std::pair<float, VertexDescriptor>>;
+  std::vector<std::pair<bool, PredVec>> theCache;
 };
 
 std::vector<Node> loadNodes(const std::string& aPath, Counter<int>& aCounter);

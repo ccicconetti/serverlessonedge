@@ -29,55 +29,38 @@ SOFTWARE.
 
 #pragma once
 
-#include "StateSim/counter.h"
-#include "StateSim/element.h"
-
 #include <string>
 
 namespace uiiit {
 namespace statesim {
 
-class Link : public Element
+/**
+ * A generic element in the architecture identified by a string and numeric ID.
+ */
+class Element
 {
  public:
-  enum class Type : int {
-    Node     = 0,
-    Shared   = 1,
-    Downlink = 2,
-    Uplink   = 3,
-  };
-
   /**
-   *  Create a link.
+   *  Create an Element.
    *
-   * \param aType The link type.
+   * \param aName The string identifier.
    *
-   * \param aName The link string identifier.
+   * \param aId The numeric identifier.
    *
-   * \param aId The link numeric identifier.
-   *
-   * \param aCapacity The link capacity, in Mb/s.
-   *
-   * \throw std::runtime_error if the name is empty of the capacity is null.
+   * \throw std::runtime_error if the name is empty.
    */
-  explicit Link(const Type         aType,
-                const std::string& aName,
-                const size_t       aId,
-                const float        aCapacity);
+  explicit Element(const std::string& aName, const size_t aId);
 
-  //! \return a Node from a string.
-  static Link make(const std::string& aString, Counter<int>& aCounter);
-  //! \return a human-readable string.
-  std::string toString() const;
+  virtual ~Element();
 
   // clang-format off
-  Type        type()     const noexcept { return theType;     }
-  float       capacity() const noexcept { return theCapacity; }
+  std::string name()     const noexcept { return theName;     }
+  size_t      id()       const noexcept { return theId;       }
   // clang-format on
 
- private:
-  const Type  theType;
-  const float theCapacity;
+ protected:
+  const std::string theName;
+  const size_t      theId;
 };
 
 } // namespace statesim

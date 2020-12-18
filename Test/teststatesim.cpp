@@ -87,8 +87,9 @@ TEST_F(TestStateSim, test_boost_graph) {
                                 boost::property<boost::edge_weight_t, float>,
                                 boost::no_property,
                                 boost::listS>
-                              Graph;
-  typedef std::pair<int, int> Edge;
+                                                        Graph;
+  typedef boost::graph_traits<Graph>::vertex_descriptor VertexDescriptor;
+  typedef std::pair<int, int>                           Edge;
 
   std::vector<Edge>  myEdges({
       {0, 1},
@@ -110,17 +111,29 @@ TEST_F(TestStateSim, test_boost_graph) {
   // vector for storing distance property
   std::vector<float> myDistances(boost::num_vertices(myGraph));
 
+  // vector for storing the predecessor map
+  std::vector<VertexDescriptor> myPredecessors(boost::num_vertices(myGraph));
+
   // get the first vertex
   const auto mySource = *(vertices(myGraph).first);
   // invoke variant 2 of Dijkstra's algorithm
   boost::dijkstra_shortest_paths(
-      myGraph, mySource, boost::distance_map(myDistances.data()));
+      myGraph,
+      mySource,
+      boost::predecessor_map(
+          boost::make_iterator_property_map(myPredecessors.begin(),
+                                            get(boost::vertex_index, myGraph)))
+          .distance_map(myDistances.data()));
 
-  std::vector<float> myExpectedDistances({0, 1, 2, 1, 0.5});
+  std::vector<float>            myExpectedDistances({0, 1, 2, 1, 0.5});
+  std::vector<VertexDescriptor> myExpectedPredecessors({0, 0, 1, 4, 0});
   for (auto vi = boost::vertices(myGraph).first; vi != vertices(myGraph).second;
        ++vi) {
     EXPECT_FLOAT_EQ(myExpectedDistances[*vi], myDistances[*vi])
         << "node " << *vi;
+    EXPECT_EQ(myExpectedPredecessors[*vi], myPredecessors[*vi])
+        << "node " << *vi;
+    VLOG(1) << *vi << ' ' << myDistances[*vi] << ' ' << myPredecessors[*vi];
   }
 }
 
@@ -137,6 +150,7 @@ TEST_F(TestStateSim, test_network_files) {
   ASSERT_EQ(123, myNodes.size());
   const auto myLinks = loadLinks((theTestDir / "links").string(), myCounter);
   ASSERT_EQ(140, myLinks.size());
+  ASSERT_EQ(myNodes.size() + myLinks.size() - 1, myLinks.back().id());
 }
 
 TEST_F(TestStateSim, test_network) {
@@ -146,6 +160,19 @@ TEST_F(TestStateSim, test_network) {
                     (theTestDir / "edges").string());
   ASSERT_EQ(140, myNetwork.links().size());
   ASSERT_EQ(159, myNetwork.nodes().size());
+
+  const auto myDesc = myNetwork.nextHop("rpi3_0", "rpi3_53");
+  ASSERT_FLOAT_EQ(0.216f, myDesc.first);
+  ASSERT_EQ("link_rpi3_53", myDesc.second);
+
+  for (const auto& mySrc : myNetwork.nodes()) {
+    for (const auto& myDst : myNetwork.nodes()) {
+      const auto myDesc = myNetwork.nextHop(mySrc.first, myDst.first);
+      ASSERT_GE(myDesc.first, 0.0f);
+      VLOG(1) << mySrc.first << " -> " << myDst.first << ": " << myDesc.first
+              << " (" << myDesc.second << ")";
+    }
+  }
 }
 
 } // namespace statesim

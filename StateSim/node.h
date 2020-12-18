@@ -30,13 +30,14 @@ SOFTWARE.
 #pragma once
 
 #include "StateSim/counter.h"
+#include "StateSim/element.h"
 
 #include <string>
 
 namespace uiiit {
 namespace statesim {
 
-class Node
+class Node : public Element
 {
  public:
   enum class Type : int {
@@ -49,11 +50,33 @@ class Node
     Gpu          = 1,
   };
 
-  //! Create a networking node.
-  explicit Node(const std::string& aName, const int aId);
-  //! Create a processing node.
+  /**
+   *
+   * Create a networking node with given identifiers.
+   *
+   * \throw std::runtime_error if empty name.
+   */
+  explicit Node(const std::string& aName, const size_t aId);
+
+  /**
+   * Create a processing node.
+   *
+   * \param aType The nodetype.
+   *
+   * \param aName The node string identifier.
+   *
+   * \param aId The node numeric identifier.
+   *
+   * \param aSpeed The node processing speed, in FLOPS.
+   *
+   * \param aMemory The node main memory, in bytes.
+   *
+   * \param aCapacity The link capacity, in Mb/s.
+   *
+   * \throw std::runtime_error if empty name or non-positive speed/memory.
+   */
   explicit Node(const std::string& aName,
-                const int          aId,
+                const size_t       aId,
                 const float        aSpeed,
                 const size_t       aMemory,
                 const Affinity     aAffinity);
@@ -65,17 +88,13 @@ class Node
 
   // clang-format off
   Type        type()     const noexcept { return theType;     }
-  int         id()       const noexcept { return theId;       }
-  std::string name()     const noexcept { return theName;     }
   float       speed()    const noexcept { return theSpeed;    }
   size_t      memory()   const noexcept { return theMemory;   }
   Affinity    affinity() const noexcept { return theAffinity; }
   // clang-format on
 
  private:
-  const Type        theType;
-  const std::string theName;
-  const int         theId;
+  const Type theType;
 
   // only valid if theType == Type::Processing
   const float    theSpeed;

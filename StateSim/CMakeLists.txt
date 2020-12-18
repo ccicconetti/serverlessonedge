@@ -1,4 +1,5 @@
 add_library(uiiitstatesim SHARED
+  ${CMAKE_CURRENT_SOURCE_DIR}/element.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/link.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/network.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/node.cpp

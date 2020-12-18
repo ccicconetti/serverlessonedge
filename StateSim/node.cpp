@@ -38,10 +38,9 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
-Node::Node(const std::string& aName, const int aId)
-    : theType(Type::Networking)
-    , theName(aName)
-    , theId(aId)
+Node::Node(const std::string& aName, const size_t aId)
+    : Element(aName, aId)
+    , theType(Type::Networking)
     , theSpeed(0)
     , theMemory(0)
     , theAffinity(Affinity::NotAvailable) {
@@ -49,17 +48,19 @@ Node::Node(const std::string& aName, const int aId)
 }
 
 Node::Node(const std::string& aName,
-           const int          aId,
+           const size_t       aId,
            const float        aSpeed,
            const size_t       aMemory,
            const Affinity     aAffinity)
-    : theType(Type::Processing)
-    , theName(aName)
-    , theId(aId)
+    : Element(aName, aId)
+    , theType(Type::Processing)
     , theSpeed(aSpeed)
     , theMemory(aMemory)
     , theAffinity(aAffinity) {
-  // noop
+  if (aSpeed <= 0) {
+    throw std::runtime_error("Invalid speed (" + std::to_string(aSpeed) +
+                             ") for Node name: " + aName);
+  }
 }
 
 Node Node::make(const std::string& aString, Counter<int>& aCounter) {
@@ -78,8 +79,8 @@ Node Node::make(const std::string& aString, Counter<int>& aCounter) {
     throw std::runtime_error("Invalid affinity in node: " + aString);
   }
   return Node(myTokens[1],
-              std::stof(myTokens[2]),
               aCounter(),
+              std::stof(myTokens[2]),
               std::stoull(myTokens[3]) * 1000000,
               myAffinity->second);
 }

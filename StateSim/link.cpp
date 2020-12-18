@@ -41,13 +41,15 @@ namespace statesim {
 
 Link::Link(const Type         aType,
            const std::string& aName,
-           const int          aId,
+           const size_t       aId,
            const float        aCapacity)
-    : theType(aType)
-    , theName(aName)
-    , theId(aId)
+    : Element(aName, aId)
+    , theType(aType)
     , theCapacity(aCapacity) {
-  // noop
+  if (aCapacity <= 0) {
+    throw std::runtime_error("Invalid capacity (" + std::to_string(aCapacity) +
+                             ") for Link name: " + aName);
+  }
 }
 
 Link Link::make(const std::string& aString, Counter<int>& aCounter) {

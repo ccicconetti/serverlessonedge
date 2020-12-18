@@ -27,58 +27,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
-#include "StateSim/counter.h"
 #include "StateSim/element.h"
-
-#include <string>
 
 namespace uiiit {
 namespace statesim {
 
-class Link : public Element
-{
- public:
-  enum class Type : int {
-    Node     = 0,
-    Shared   = 1,
-    Downlink = 2,
-    Uplink   = 3,
-  };
+Element::Element(const std::string& aName, const size_t aId)
+    : theName(aName)
+    , theId(aId) {
+  if (aName.empty()) {
+    throw std::runtime_error("Invalid empty name for an element: " +
+                             std::to_string(aId));
+  }
+}
 
-  /**
-   *  Create a link.
-   *
-   * \param aType The link type.
-   *
-   * \param aName The link string identifier.
-   *
-   * \param aId The link numeric identifier.
-   *
-   * \param aCapacity The link capacity, in Mb/s.
-   *
-   * \throw std::runtime_error if the name is empty of the capacity is null.
-   */
-  explicit Link(const Type         aType,
-                const std::string& aName,
-                const size_t       aId,
-                const float        aCapacity);
-
-  //! \return a Node from a string.
-  static Link make(const std::string& aString, Counter<int>& aCounter);
-  //! \return a human-readable string.
-  std::string toString() const;
-
-  // clang-format off
-  Type        type()     const noexcept { return theType;     }
-  float       capacity() const noexcept { return theCapacity; }
-  // clang-format on
-
- private:
-  const Type  theType;
-  const float theCapacity;
-};
+Element::~Element() {
+  // noop
+}
 
 } // namespace statesim
 } // namespace uiiit
