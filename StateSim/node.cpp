@@ -38,26 +38,31 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
-Node::Node(const std::string& aName)
+Node::Node(const std::string& aName, const int aId)
     : theType(Type::Networking)
     , theName(aName)
+    , theId(aId)
     , theSpeed(0)
     , theMemory(0)
     , theAffinity(Affinity::NotAvailable) {
+  // noop
 }
 
 Node::Node(const std::string& aName,
+           const int          aId,
            const float        aSpeed,
            const size_t       aMemory,
            const Affinity     aAffinity)
     : theType(Type::Processing)
     , theName(aName)
+    , theId(aId)
     , theSpeed(aSpeed)
     , theMemory(aMemory)
     , theAffinity(aAffinity) {
+  // noop
 }
 
-Node Node::make(const std::string& aString) {
+Node Node::make(const std::string& aString, Counter<int>& aCounter) {
   static const std::map<std::string, Affinity> myAffinities({
       {"server", Affinity::Cpu},
       {"rpi3b+", Affinity::Cpu},
@@ -74,13 +79,15 @@ Node Node::make(const std::string& aString) {
   }
   return Node(myTokens[1],
               std::stof(myTokens[2]),
+              aCounter(),
               std::stoull(myTokens[3]) * 1000000,
               myAffinity->second);
 }
 
 std::string Node::toString() const {
   std::stringstream ret;
-  ret << (theType == Type::Networking ? 'N' : 'P') << ' ' << theName;
+  ret << (theType == Type::Networking ? 'N' : 'P') << ' ' << theId << ' '
+      << theName;
   if (theType == Type::Processing) {
     ret << "speed " << theSpeed / 1e9 << " GFLOPS, memory " << theMemory / 1e9
         << " GB, affinity"

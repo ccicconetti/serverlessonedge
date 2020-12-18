@@ -29,6 +29,8 @@ SOFTWARE.
 
 #pragma once
 
+#include "StateSim/counter.h"
+
 #include <string>
 
 namespace uiiit {
@@ -49,28 +51,33 @@ class Link
    *
    * \param aType The link type.
    *
-   * \param aName The link identifier.
+   * \param aName The link string identifier.
+   *
+   * \param aId The link numeric identifier.
    *
    * \param aCapacity The link capacity, in Mb/s.
    */
   explicit Link(const Type         aType,
                 const std::string& aName,
+                const int          aId,
                 const float        aCapacity);
 
   //! \return a Node from a string.
-  static Link make(const std::string& aString);
+  static Link make(const std::string& aString, Counter<int>& aCounter);
   //! \return a human-readable string.
   std::string toString() const;
 
   // clang-format off
   Type        type()     const noexcept { return theType;     }
   std::string name()     const noexcept { return theName;     }
+  int         id()       const noexcept { return theId;       }
   float       capacity() const noexcept { return theCapacity; }
   // clang-format on
 
  private:
   const Type        theType;
   const std::string theName;
+  const int         theId;
   const float       theCapacity;
 };
 

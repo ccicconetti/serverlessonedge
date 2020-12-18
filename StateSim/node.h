@@ -29,6 +29,8 @@ SOFTWARE.
 
 #pragma once
 
+#include "StateSim/counter.h"
+
 #include <string>
 
 namespace uiiit {
@@ -48,20 +50,22 @@ class Node
   };
 
   //! Create a networking node.
-  explicit Node(const std::string& aName);
+  explicit Node(const std::string& aName, const int aId);
   //! Create a processing node.
   explicit Node(const std::string& aName,
+                const int          aId,
                 const float        aSpeed,
                 const size_t       aMemory,
                 const Affinity     aAffinity);
 
   //! \return a Node from a string.
-  static Node make(const std::string& aString);
+  static Node make(const std::string& aString, Counter<int>& aCounter);
   //! \return a human-readable string.
   std::string toString() const;
 
   // clang-format off
   Type        type()     const noexcept { return theType;     }
+  int         id()       const noexcept { return theId;       }
   std::string name()     const noexcept { return theName;     }
   float       speed()    const noexcept { return theSpeed;    }
   size_t      memory()   const noexcept { return theMemory;   }
@@ -69,13 +73,14 @@ class Node
   // clang-format on
 
  private:
-  const Type theType;
+  const Type        theType;
+  const std::string theName;
+  const int         theId;
 
   // only valid if theType == Type::Processing
-  const std::string theName;
-  const float       theSpeed;
-  const size_t      theMemory;
-  const Affinity    theAffinity;
+  const float    theSpeed;
+  const size_t   theMemory;
+  const Affinity theAffinity;
 };
 
 } // namespace statesim

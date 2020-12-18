@@ -39,7 +39,8 @@ namespace uiiit {
 namespace statesim {
 
 struct NodeList : public std::vector<std::string> {
-  static NodeList make(const std::string& aString) {
+  static NodeList make(const std::string&             aString,
+                       [[maybe_unused]] Counter<int>& aCounter) {
     const auto ret = support::split<NodeList>(aString, " ");
     if (ret.size() <= 1) {
       throw std::runtime_error("Invalid edge: " + aString);
@@ -49,7 +50,7 @@ struct NodeList : public std::vector<std::string> {
 };
 
 template <class T>
-std::vector<T> loadFile(const std::string& aPath) {
+std::vector<T> loadFile(const std::string& aPath, Counter<int>& aCounter) {
   std::vector<T> ret;
   std::ifstream  myFile(aPath);
   if (not myFile) {
@@ -61,21 +62,22 @@ std::vector<T> loadFile(const std::string& aPath) {
     if (myLine.empty() or myLine[0] == '#') {
       continue;
     }
-    ret.emplace_back(T::make(myLine));
+    ret.emplace_back(T::make(myLine, aCounter));
   }
   return ret;
 }
 
-std::vector<Node> loadNodes(const std::string& aPath) {
-  return loadFile<Node>(aPath);
+std::vector<Node> loadNodes(const std::string& aPath, Counter<int>& aCounter) {
+  return loadFile<Node>(aPath, aCounter);
 }
 
-std::vector<Link> loadLinks(const std::string& aPath) {
-  return loadFile<Link>(aPath);
+std::vector<Link> loadLinks(const std::string& aPath, Counter<int>& aCounter) {
+  return loadFile<Link>(aPath, aCounter);
 }
 
 std::vector<NodeList> loadNodeLists(const std::string& aPath) {
-  return loadFile<NodeList>(aPath);
+  Counter<int> myCounter;
+  return loadFile<NodeList>(aPath, myCounter);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,11 +87,13 @@ Network::Network(const std::string& aNodesPath,
                  const std::string& aLinksPath,
                  const std::string& aEdgesPath)
     : theNodes()
-    , theLinks() {
+    , theLinks()
+    , theGraph() {
   // read from files
-  auto       myNodes     = loadNodes(aNodesPath);
-  auto       myLinks     = loadLinks(aLinksPath);
-  const auto myNodeLists = loadNodeLists(aEdgesPath);
+  Counter<int> myCounter;
+  auto         myNodes     = loadNodes(aNodesPath, myCounter);
+  auto         myLinks     = loadLinks(aLinksPath, myCounter);
+  const auto   myNodeLists = loadNodeLists(aEdgesPath);
 
   // copy into member maps
   for (const auto& myNode : myNodes) {
@@ -99,17 +103,24 @@ Network::Network(const std::string& aNodesPath,
     theLinks.emplace(myLink.name(), myLink);
   }
 
-  // augment theNodes with non-processing nodes
+  // add to theNodes the non-processing nodes
   for (const auto& myNodeList : myNodeLists) {
     for (const auto& myName : myNodeList) {
       if (theNodes.find(myName) == theNodes.end() and
           theLinks.find(myName) == theLinks.end()) {
         [[maybe_unused]] const auto ret =
-            theNodes.emplace(myName, Node(myName));
+            theNodes.emplace(myName, Node(myName, myCounter()));
         assert(ret.second);
       }
     }
   }
+
+  // create the list of edges (with weights)
+  std::vector<Edge>  myEdges;
+  std::vector<float> myWeights;
+
+  // create the network graph
+  theGraph = Graph();
 }
 
 } // namespace statesim

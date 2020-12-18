@@ -27,6 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "StateSim/counter.h"
 #include "StateSim/network.h"
 
 #include "gtest/gtest.h"
@@ -124,14 +125,17 @@ TEST_F(TestStateSim, test_boost_graph) {
 }
 
 TEST_F(TestStateSim, test_network_files) {
-  ASSERT_THROW(loadNodes((theTestDir / "nodes").string()), std::runtime_error);
-  ASSERT_THROW(loadLinks((theTestDir / "links").string()), std::runtime_error);
+  Counter<int> myCounter;
+  ASSERT_THROW(loadNodes((theTestDir / "nodes").string(), myCounter),
+               std::runtime_error);
+  ASSERT_THROW(loadLinks((theTestDir / "links").string(), myCounter),
+               std::runtime_error);
 
   ASSERT_TRUE(prepareNetworkFiles());
 
-  const auto myNodes = loadNodes((theTestDir / "nodes").string());
+  const auto myNodes = loadNodes((theTestDir / "nodes").string(), myCounter);
   ASSERT_EQ(123, myNodes.size());
-  const auto myLinks = loadLinks((theTestDir / "links").string());
+  const auto myLinks = loadLinks((theTestDir / "links").string(), myCounter);
   ASSERT_EQ(140, myLinks.size());
 }
 

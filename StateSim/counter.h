@@ -27,63 +27,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "StateSim/link.h"
+#pragma once
 
-#include "Support/split.h"
-
-#include <cassert>
-#include <map>
-#include <sstream>
-#include <vector>
+#include "Support/macros.h"
 
 namespace uiiit {
 namespace statesim {
 
-Link::Link(const Type         aType,
-           const std::string& aName,
-           const int          aId,
-           const float        aCapacity)
-    : theType(aType)
-    , theName(aName)
-    , theId(aId)
-    , theCapacity(aCapacity) {
-  // noop
-}
+template <class T>
+class Counter final
+{
+  NONCOPYABLE_NONMOVABLE(Counter);
 
-Link Link::make(const std::string& aString, Counter<int>& aCounter) {
-  static const std::map<std::string, Type> myTypes({
-      {"node", Type::Node},
-      {"shared", Type::Shared},
-      {"downlink", Type::Downlink},
-      {"uplink", Type::Uplink},
-  });
-  const auto myTokens = support::split<std::vector<std::string>>(aString, ";");
-  if (myTokens.size() != 4) {
-    throw std::runtime_error("Invalid Link: " + aString);
+ public:
+  Counter()
+      : theCounter(0) {
+    // noop
   }
-  const auto myType = myTypes.find(myTokens[3]);
-  if (myType == myTypes.end()) {
-    throw std::runtime_error("Invalid type in Link: " + aString);
+
+  T operator()() {
+    return theCounter++;
   }
-  return Link(myType->second, myTokens[2], aCounter(), std::stof(myTokens[1]));
-}
 
-std::string Link::toString() const {
-  static const std::map<Type, char> myTypes({
-      {Type::Node, 'N'},
-      {Type::Shared, 'S'},
-      {Type::Downlink, 'D'},
-      {Type::Uplink, 'U'},
-  });
-
-  const auto myType = myTypes.find(theType);
-  assert(myType != myTypes.end());
-
-  std::stringstream ret;
-  ret << myType->second << ' ' << theId << ' ' << theName << ", capacity "
-      << theCapacity << " Mb/s";
-  return ret.str();
-}
+ private:
+  T theCounter;
+};
 
 } // namespace statesim
 } // namespace uiiit

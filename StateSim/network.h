@@ -33,8 +33,14 @@ SOFTWARE.
 #include "StateSim/node.h"
 #include "Support/macros.h"
 
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/property_map/property_map.hpp>
+
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace uiiit {
@@ -43,6 +49,16 @@ namespace statesim {
 class Network
 {
   NONCOPYABLE_NONMOVABLE(Network);
+
+  using Graph =
+      boost::adjacency_list<boost::listS,
+                            boost::vecS,
+                            boost::directedS,
+                            boost::no_property,
+                            boost::property<boost::edge_weight_t, float>,
+                            boost::no_property,
+                            boost::listS>;
+  using Edge = std::pair<int, int>;
 
  public:
   /**
@@ -69,10 +85,11 @@ class Network
  private:
   std::map<std::string, Node> theNodes;
   std::map<std::string, Link> theLinks;
+  Graph                       theGraph;
 };
 
-std::vector<Node> loadNodes(const std::string& aPath);
-std::vector<Link> loadLinks(const std::string& aPath);
+std::vector<Node> loadNodes(const std::string& aPath, Counter<int>& aCounter);
+std::vector<Link> loadLinks(const std::string& aPath, Counter<int>& aCounter);
 
 } // namespace statesim
 } // namespace uiiit
