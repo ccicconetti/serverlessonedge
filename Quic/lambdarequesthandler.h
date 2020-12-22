@@ -28,6 +28,7 @@ SOFTWARE.
 */
 #pragma once
 
+#include "Edge/edgemessages.h"
 #include "Quic/basehandler.h"
 
 namespace uiiit {
@@ -46,6 +47,8 @@ class LambdaRequestHandler : public BaseHandler
   void onHeadersComplete(
       std::unique_ptr<proxygen::HTTPMessage> msg) noexcept override {
     VLOG(10) << "LambdaRequestHandler::onHeadersComplete";
+
+    // HTTPResponse building
     proxygen::HTTPMessage resp;
     VLOG(10) << "Setting http-version to " << getHttpVersion();
     sendFooter_ =
@@ -53,10 +56,11 @@ class LambdaRequestHandler : public BaseHandler
     resp.setVersionString(getHttpVersion());
     resp.setStatusCode(200);
     resp.setStatusMessage("Ok");
-    msg->getHeaders().forEach(
-        [&](const std::string& header, const std::string& val) {
-          resp.getHeaders().add(folly::to<std::string>("x-echo-", header), val);
-        });
+    msg->getHeaders().forEach([&](const std::string& header,
+                                  const std::string& val) {
+      resp.getHeaders().add(folly::to<std::string>("lambda-execution-", header),
+                            val);
+    });
     resp.setWantsKeepalive(true);
     maybeAddAltSvcHeader(resp);
     txn_->sendHeaders(resp);
@@ -64,6 +68,27 @@ class LambdaRequestHandler : public BaseHandler
 
   void onBody(std::unique_ptr<folly::IOBuf> chain) noexcept override {
     VLOG(10) << "LambdaRequestHandler::onBody";
+
+    // this way we are assuming body is a string, we want a way to extract it as
+    // a LambdaRequest
+    // auto body = (LambdaRequest*)new char[chain->computeChainDataLength()];
+    // memcpy(body, chain->data(), chain->computeChainDataLength());
+    // LOG(INFO) << "body = \n" << body << "\nEnd of LambdaRequest\n";
+
+    // convert the IOBuf into a LambdaRequest object
+    auto lambdaReq = (LambdaRequest*)(chain->data());
+    LOG(INFO) << "LambdaRequest -> name = " << lambdaReq->theName << '\n';
+    // LOG(INFO) << "LambdaRequest.toString()= \n" << lambdaReq->toString();
+
+    /**
+     * Need to find a way to invoke theEdgeServer.process
+     */
+    // LambdaResponse lambdaRes = theEdgeServer.process(lambdaReq);
+
+    /**
+     * need to construct a new IOBuf in order to wrap the response and then to
+     * send it to the client in the body of the HTTPRes
+     */
     txn_->sendBody(std::move(chain));
   }
 
@@ -81,7 +106,9 @@ class LambdaRequestHandler : public BaseHandler
   }
 
  private:
-  bool sendFooter_{false};
+  bool        sendFooter_{false};
+  std::string theBody;
+  // eventually theEdgeServer reference to invoke the process function
 };
 
 } // namespace edge

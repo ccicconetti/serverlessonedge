@@ -65,7 +65,7 @@ HQServer::HQServer(
 }
 
 std::thread HQServer::start() {
-  LOG(INFO) << "HQServer::start\n";
+  VLOG(10) << "HQServer::start\n";
   std::thread t = std::thread([this]() mutable {
     server_->start(params_.localAddress.value(),
                    5); //, std::thread::hardware_concurrency());

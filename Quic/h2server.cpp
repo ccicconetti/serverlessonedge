@@ -143,17 +143,17 @@ H2Server::SampleHandlerFactory::~SampleHandlerFactory() {
 
 void H2Server::SampleHandlerFactory::onServerStart(
     folly::EventBase* /*evb*/) noexcept {
-  LOG(INFO) << "H2Server::onServerStart\n";
+  VLOG(10) << "H2Server::onServerStart\n";
 }
 
 void H2Server::SampleHandlerFactory::onServerStop() noexcept {
-  LOG(INFO) << "H2Server::onServerStop\n";
+  VLOG(10) << "H2Server::onServerStop\n";
 }
 
 proxygen::RequestHandler*
 H2Server::SampleHandlerFactory::onRequest(proxygen::RequestHandler*,
                                           proxygen::HTTPMessage* msg) noexcept {
-  LOG(INFO) << "H2Server::onRequest\n";
+  VLOG(10) << "H2Server::onRequest\n";
   return new proxygen::HTTPTransactionHandlerAdaptor(
       httpTransactionHandlerProvider_(msg, params_));
 }
@@ -197,7 +197,7 @@ std::thread
 H2Server::run(const HQParams&                params,
               HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
 
-  LOG(INFO) << "H2Server::run\n";
+  VLOG(10) << "H2Server::run\n";
   // Start HTTPServer mainloop in a separate thread
   std::thread t([params = folly::copy(params),
                  httpTransactionHandlerProvider =
@@ -213,7 +213,7 @@ H2Server::run(const HQParams&                params,
     // HTTPServer traps the SIGINT.  resignal HQServer
     raise(SIGINT);
   });
-  LOG(INFO) << "POST THREAD SPAWNING\n";
+  VLOG(10) << "POST THREAD SPAWNING\n";
 
   return t;
 }

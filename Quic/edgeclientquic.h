@@ -48,28 +48,22 @@ namespace edge {
 
 using FizzClientContextPtr = std::shared_ptr<fizz::client::FizzClientContext>;
 
-class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback
-//, public EdgeClientInterface
+class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
+                             public EdgeClientInterface
 {
  public:
   /**
    * \param aQuicParamsConf the EdgeClientQuic parameters configuration
    */
-  // explicit EdgeClientQuic(const quic::samples::HQParams& aQuicParamsConf);
   explicit EdgeClientQuic(const HQParams& aQuicParamsConf);
 
-  ~EdgeClientQuic(); // override;
+  ~EdgeClientQuic() override;
 
   void startClient();
 
-  // LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry)
-  // override;
-
   void initializeQuicTransportClient();
 
-  FizzClientContextPtr
-  // createFizzClientContext(const quic::samples::HQParams& params);
-  createFizzClientContext(const HQParams& params);
+  FizzClientContextPtr createFizzClientContext(const HQParams& params);
 
   proxygen::HTTPTransaction* sendRequest(const proxygen::URL& requestUrl);
 
@@ -82,15 +76,19 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback
 
   void connectError(std::pair<quic::QuicErrorCode, std::string> error) override;
 
+  // this function sends a LambdaRequest to the QuicServer to which the quic
+  // client is connected
+  LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry) override;
+
  private:
-  // const quic::samples::HQParams&                   theQuicParamsConf;
   const HQParams&                                     theQuicParamsConf;
+  std::thread                                         theQuicClientEvbThread;
   std::shared_ptr<quic::QuicClientTransport>          quicClient_;
-  quic::TimerHighRes::SharedPtr                       pacingTimer_;
   folly::EventBase                                    evb_;
   proxygen::HQUpstreamSession*                        session_;
   std::list<std::unique_ptr<CurlService::CurlClient>> curls_;
   std::deque<folly::StringPiece>                      httpPaths_;
+  // quic::TimerHighRes::SharedPtr                       pacingTimer_;
 
 }; // end class EdgeClientQuic
 

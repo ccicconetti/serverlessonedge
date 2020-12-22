@@ -50,10 +50,8 @@ Dispatcher::getRequestHandler(proxygen::HTTPMessage* msg,
   if (path == "/" || path == "/echo") {
     return new EchoHandler(params);
   } else if (path == "/lambda") {
-    // return new LambdaRequestHandler(params);
-    LOG(INFO) << "LambdaRequestHandler ctor\n";
+    return new LambdaRequestHandler(params);
   }
-  LOG(INFO) << "ULTIMO CASO HANDLER\n";
   return new EchoHandler(params);
 }
 
@@ -87,14 +85,13 @@ void EdgeServerQuic::wait() { // wait for the server termination
 
 EdgeServerQuic::~EdgeServerQuic() {
   // eventuali stop dei server
-  LOG(INFO) << "EdgeServerQuic::DTOR()\n";
+  LOG(INFO) << "EdgeServerQuic::dtor()\n";
   theH2ServerThread.join();
   theQuicServerThread.join();
-  LOG(INFO) << "POST EdgeServerQuic::DTOR()\n";
 }
 
 rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
-  LOG(INFO) << "EdgeServerQuic::PROCESS\n";
+  LOG(INFO) << "EdgeServerQuic::process\n";
   return theEdgeServer.process(aReq);
 }
 

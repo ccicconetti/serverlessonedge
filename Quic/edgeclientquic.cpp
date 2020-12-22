@@ -29,11 +29,13 @@ SOFTWARE.
 
 #include "edgeclientquic.h"
 
+//#include "Edge/edgemessages.h"
+
 #include <fizz/protocol/CertificateVerifier.h>
 #include <fizz/server/AeadTicketCipher.h>
 #include <fizz/server/CertManager.h>
 #include <fizz/server/TicketCodec.h>
-
+#include <proxygen/lib/utils/URL.h>
 #include <quic/client/QuicClientTransport.h>
 #include <quic/congestion_control/CongestionControllerFactory.h>
 #include <quic/fizz/client/handshake/FizzClientQuicHandshakeContext.h>
@@ -161,14 +163,22 @@ EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
-  // nihil
+  LOG(INFO) << "EdgeClientQuic::dtor\n";
+  session_->drain();
+  session_->closeWhenIdle();
 }
 
+/**
+ * This function initializes the quic transport client and establishes
+ * a connection with a remote quic server transport.
+ *
+ * If the connection is successfully established the callback function
+ * connectSuccess() will be invoked, otherwise it will be invoked the
+ * connectError() one.
+ */
 void EdgeClientQuic::startClient() {
 
   initializeQuicTransportClient();
-  CHECK(quicClient_);
-  // initializeQLogger();
 
   wangle::TransportInfo tinfo;
   session_ = new proxygen::HQUpstreamSession(theQuicParamsConf.txnTimeout,
@@ -179,69 +189,23 @@ void EdgeClientQuic::startClient() {
 
   // Need this for Interop since we use HTTP0.9
   session_->setForceUpstream1_1(false);
-
   session_->setSocket(quicClient_);
   CHECK(session_->getQuicSocket());
-
   session_->setConnectCallback(this);
-
   LOG(INFO) << "HQClient connecting to "
             << theQuicParamsConf.remoteAddress->describe();
-
+  LOG(INFO) << "before session_.startNow()\n";
   session_->startNow();
+  LOG(INFO) << "after session_.startNow() -> quicClient_.start(session_)\n";
   quicClient_->start(session_);
+  LOG(INFO) << "after quicClient_.start(session_) -> loopForever\n";
 
   // This is to flush the CFIN out so the server will see the handshake as
   // complete.
   evb_.loopForever();
-
   // migrateClient false by default, no if branch
-
-  evb_.loop();
+  // evb_.loop();
 }
-
-void EdgeClientQuic::sendRequests(bool     closeSession,
-                                  uint64_t numOpenableStreams) {
-  // VLOG(10) << "http-version:" << theQuicParamsConf.httpVersion;
-  while (!httpPaths_.empty() && numOpenableStreams > 0) {
-    proxygen::URL requestUrl(httpPaths_.front().str(), /*secure=*/true);
-    sendRequest(requestUrl);
-    httpPaths_.pop_front();
-    numOpenableStreams--;
-  }
-  if (closeSession && httpPaths_.empty()) {
-    session_->drain();
-    session_->closeWhenIdle();
-  }
-}
-
-proxygen::HTTPTransaction* FOLLY_NULLABLE
-EdgeClientQuic::sendRequest(const proxygen::URL& requestUrl) {
-  // partialReliabilityEnabled false by default
-  std::unique_ptr<CurlService::CurlClient> client =
-      std::make_unique<CurlService::CurlClient>(
-          &evb_,
-          theQuicParamsConf.httpMethod,
-          requestUrl,
-          nullptr,
-          theQuicParamsConf.httpHeaders,
-          theQuicParamsConf.httpBody,
-          false,
-          theQuicParamsConf.httpVersion.major,
-          theQuicParamsConf.httpVersion.minor);
-
-  client->setLogging(theQuicParamsConf.logResponse);
-  auto txn = session_->newTransaction(client.get());
-  if (!txn) {
-    return nullptr;
-  }
-  // theQuicParamsConf.outdir empty by default, no if branch
-  client->sendRequest(txn);
-  curls_.emplace_back(std::move(client));
-  return txn;
-}
-
-static std::function<void()> selfSchedulingRequestRunner;
 
 void EdgeClientQuic::connectSuccess() {
   // sendKnobFrame false by default, no if branch
@@ -252,32 +216,31 @@ void EdgeClientQuic::connectSuccess() {
   httpPaths_.insert(httpPaths_.end(),
                     theQuicParamsConf.httpPaths.begin(),
                     theQuicParamsConf.httpPaths.end());
-  sendRequests(!theQuicParamsConf.migrateClient, numOpenableStreams);
+  // sendRequests(!theQuicParamsConf.migrateClient, numOpenableStreams);
+  // LOG(INFO) << "post sendRequests\n";
 
   // If there are still pending requests, schedule a callback on the first EOM
   // to try to make some more. That callback will keep scheduling itself until
   // there are no more requests.
-
-  // For now, we need to send one request
-  /*
-  if (!httpPaths_.empty()) {
-    selfSchedulingRequestRunner = [&]() {
-      uint64_t numOpenable = quicClient_->getNumOpenableBidirectionalStreams();
-      if (numOpenable > 0) {
-        sendRequests(true, numOpenable);
-      };
-      if (!httpPaths_.empty()) {
-        auto rtt = std::chrono::duration_cast<std::chrono::milliseconds>(
-            quicClient_->getTransportInfo().srtt);
-        evb_.timer().scheduleTimeoutFn(
-            selfSchedulingRequestRunner,
-            std::max(rtt, std::chrono::milliseconds(1)));
-      }
-    };
-    CHECK(!curls_.empty());
-    curls_.back()->setEOMFunc(selfSchedulingRequestRunner);
-  }
-  */
+  // if (!httpPaths_.empty()) {
+  //   selfSchedulingRequestRunner = [&]() {
+  //     uint64_t numOpenable =
+  //     quicClient_->getNumOpenableBidirectionalStreams(); if (numOpenable >
+  //     0)
+  //     {
+  //       sendRequests(true, numOpenable);
+  //     };
+  //     if (!httpPaths_.empty()) {
+  //       auto rtt = std::chrono::duration_cast<std::chrono::milliseconds>(
+  //           quicClient_->getTransportInfo().srtt);
+  //       evb_.timer().scheduleTimeoutFn(
+  //           selfSchedulingRequestRunner,
+  //           std::max(rtt, std::chrono::milliseconds(1)));
+  //     }
+  //   };
+  //   CHECK(!curls_.empty());
+  //   curls_.back()->setEOMFunc(selfSchedulingRequestRunner);
+  // }
 }
 
 void EdgeClientQuic::onReplaySafe() {
@@ -303,7 +266,7 @@ void EdgeClientQuic::initializeQuicTransportClient() {
               std::make_unique<InsecureVerifierDangerousDoNotUseInProduction>())
           .setPskCache(theQuicParamsConf.pskCache)
           .build());
-  client->setPacingTimer(pacingTimer_);
+  // client->setPacingTimer(pacingTimer_);
   client->setHostname(theQuicParamsConf.host);
   client->addNewPeerAddress(theQuicParamsConf.remoteAddress.value());
   // this if should not be invoked since local address is empty
@@ -339,16 +302,64 @@ EdgeClientQuic::createFizzClientContext(const HQParams& params) {
   return ctx;
 }
 
-/**
- * This function will be compulsory when the EdgeClientInterface will be added
- *
- * LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
- *                                          const bool           aDry) {
- *   LOG(INFO) << "EdgeClientQuic::process()\n";
- *   rpc::LambdaResponse myRep;
- *   return LambdaResponse(myRep);
- * }
- */
+static std::function<void()> onEOMTerminateLoop;
+
+LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
+                                         const bool           aDry) {
+  LOG(INFO) << "EdgeClientQuic::RunLambda\n";
+
+  std::unique_ptr<CurlService::CurlClient> client =
+      std::make_unique<CurlService::CurlClient>(
+          &evb_,
+          theQuicParamsConf.httpMethod,
+          proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
+          nullptr,
+          theQuicParamsConf.httpHeaders,
+          theQuicParamsConf.httpBody,
+          false,
+          theQuicParamsConf.httpVersion.major,
+          theQuicParamsConf.httpVersion.minor);
+
+  onEOMTerminateLoop = [&]() { evb_.terminateLoopSoon(); };
+  client->setEOMFunc(onEOMTerminateLoop);
+
+  auto txn = session_->newTransaction(client.get());
+  if (!txn) {
+    std::runtime_error("Failed to create an HTTPTRansaction\n");
+  }
+
+  // build manually the HTTP Request message
+  proxygen::HTTPMessage request;
+  request.setMethod(
+      "POST"); // when we will send Lambdas probably it will be a POST
+  request.setURL(httpPaths_.front().str());
+  request.setVersionString(theQuicParamsConf.httpVersion.canonical);
+  request.setIsChunked(true);
+  txn->sendHeaders(request);
+
+  // Now we need to send the LambdaRequest in the body
+
+  // this is the way to proceed if body is a string
+  // std::string requestBodyStr = aReq.toString() + '\n';
+  // txn->sendBody(
+  //     folly::IOBuf::copyBuffer(requestBodyStr, requestBodyStr.size()));
+
+  const void* aReqPointer = &aReq;
+  txn->sendBody(folly::IOBuf::copyBuffer(aReqPointer, sizeof(aReq)));
+
+  txn->sendEOM();
+
+  LOG(INFO) << "Request sent, now evb_.loopForever()\n";
+  evb_.loopForever();
+  LOG(INFO) << "evb_loopForever() returned\n";
+
+  // how to return the Lambda response?? in the example is the CurlClient that
+  // prints the GOT EOM message, this client has no callbacks
+
+  LOG(INFO) << "Ephemeral LambdaResponse, end of RunLambda\n";
+  LambdaResponse myRep(std::to_string(200), std::string("OK"));
+  return myRep;
+}
 
 } // namespace edge
 } // namespace uiiit
