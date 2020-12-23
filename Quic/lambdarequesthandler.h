@@ -37,8 +37,10 @@ namespace edge {
 class LambdaRequestHandler : public BaseHandler
 {
  public:
-  explicit LambdaRequestHandler(const HQParams& params)
+  explicit LambdaRequestHandler(
+      const HQParams& params) //, EdgeServer& aEdgeServer)
       : BaseHandler(params) {
+    //, theEdgeServer(aEdgeServer) {
     LOG(INFO) << "LambdaRequestHandler::CTOR\n";
   }
 
@@ -48,11 +50,12 @@ class LambdaRequestHandler : public BaseHandler
       std::unique_ptr<proxygen::HTTPMessage> msg) noexcept override {
     VLOG(10) << "LambdaRequestHandler::onHeadersComplete";
 
-    // HTTPResponse building
+    // HTTPResponse building, put as member if the response must be sent after
+    // LambdaRequest processing or after EOM
     proxygen::HTTPMessage resp;
     VLOG(10) << "Setting http-version to " << getHttpVersion();
-    sendFooter_ =
-        (msg->getHTTPVersion() == proxygen::HTTPMessage::kHTTPVersion09);
+
+    // move sendHeaders after LambdaRequest processing
     resp.setVersionString(getHttpVersion());
     resp.setStatusCode(200);
     resp.setStatusMessage("Ok");
@@ -69,46 +72,45 @@ class LambdaRequestHandler : public BaseHandler
   void onBody(std::unique_ptr<folly::IOBuf> chain) noexcept override {
     VLOG(10) << "LambdaRequestHandler::onBody";
 
-    // this way we are assuming body is a string, we want a way to extract it as
-    // a LambdaRequest
-    // auto body = (LambdaRequest*)new char[chain->computeChainDataLength()];
-    // memcpy(body, chain->data(), chain->computeChainDataLength());
-    // LOG(INFO) << "body = \n" << body << "\nEnd of LambdaRequest\n";
+    // LOG(INFO) << chain->headroom();
+    // LOG(INFO) << chain->tailroom();
+    // LOG(INFO) << chain->length();
+    // LOG(INFO) << chain->capacity();
 
-    // convert the IOBuf into a LambdaRequest object
-    auto lambdaReq = (LambdaRequest*)(chain->data());
-    LOG(INFO) << "LambdaRequest -> name = " << lambdaReq->theName << '\n';
-    // LOG(INFO) << "LambdaRequest.toString()= \n" << lambdaReq->toString();
+    // converting the folly::IOBuf to a LambdaRequest
+    rpc::LambdaRequest theProtobufLambdaReq;
+    theProtobufLambdaReq.ParseFromArray(chain->data(), chain->length());
+    LambdaRequest theLambdaReq(theProtobufLambdaReq);
+    LOG(INFO) << "LambdaRequest.toString() = \n" << theLambdaReq.toString();
 
     /**
-     * Need to find a way to invoke theEdgeServer.process
+     * invoke theEdgeServer.process (need to find a way to pass theEdgeServer
+     * reference)
      */
     // LambdaResponse lambdaRes = theEdgeServer.process(lambdaReq);
 
     /**
-     * need to construct a new IOBuf in order to wrap the response and then to
-     * send it to the client in the body of the HTTPRes
+     * need to construct a new IOBuf in order to wrap the response and
+     * then to send it to the client in the body of the HTTPRes
      */
     txn_->sendBody(std::move(chain));
   }
 
+  // need to see if the HTTPResponse should be sent in onEOM body or in onBody
+  // body
   void onEOM() noexcept override {
     VLOG(10) << "LambdaRequestHandler::onEOM";
-    if (sendFooter_) {
-      auto& footer = getH1QFooter();
-      txn_->sendBody(folly::IOBuf::copyBuffer(footer.data(), footer.length()));
-    }
     txn_->sendEOM();
   }
 
+  // when is this callback called? does it need to send an HTTPResponse with
+  // error status?
   void onError(const proxygen::HTTPException& /*error*/) noexcept override {
     txn_->sendAbort();
   }
 
  private:
-  bool        sendFooter_{false};
-  std::string theBody;
-  // eventually theEdgeServer reference to invoke the process function
+  // EdgeServer&        theEdgeServer;
 };
 
 } // namespace edge

@@ -344,14 +344,30 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   // txn->sendBody(
   //     folly::IOBuf::copyBuffer(requestBodyStr, requestBodyStr.size()));
 
-  const void* aReqPointer = &aReq;
-  txn->sendBody(folly::IOBuf::copyBuffer(aReqPointer, sizeof(aReq)));
+  auto   aLambdaReq = aReq.toProtobuf();
+  size_t size       = aLambdaReq.ByteSizeLong();
+  void*  buffer     = malloc(size);
+  aLambdaReq.SerializeToArray(buffer, size);
+
+  // const void* aReqPointer = &aReq;
+  auto buf = folly::IOBuf::copyBuffer(buffer, size);
+  txn->sendBody(std::move(buf));
+
+  // LOG(INFO) << buf->headroom();
+  // LOG(INFO) << buf->tailroom();
+  // LOG(INFO) << buf->length();
+  // LOG(INFO) << buf->capacity();
+  // txn->sendBody(std::move(buf));
 
   txn->sendEOM();
 
   LOG(INFO) << "Request sent, now evb_.loopForever()\n";
   evb_.loopForever();
   LOG(INFO) << "evb_loopForever() returned\n";
+
+  /**
+   * Need to find a way to recover the returned lambda response
+   */
 
   // how to return the Lambda response?? in the example is the CurlClient that
   // prints the GOT EOM message, this client has no callbacks
