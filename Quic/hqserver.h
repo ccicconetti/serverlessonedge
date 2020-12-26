@@ -176,6 +176,8 @@ class HQServer
   // Starts the QUIC transport in background thread
   std::thread start();
 
+  void stop();
+
  private:
   const HQParams&                   params_;
   folly::EventBase                  eventbase_;

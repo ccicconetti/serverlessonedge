@@ -72,25 +72,24 @@ std::thread HQServer::start() {
 
     server_->waitUntilInitialized();
     const auto& boundAddr = server_->getAddress();
-    LOG(INFO) << "HQ server started at: " << boundAddr.describe();
+    LOG(INFO) << "EdgeServerQuic started at: " << boundAddr.describe();
 
     eventbase_.loopForever();
   });
   return t;
 }
 
+void HQServer::stop() {
+  server_->shutdown();
+  eventbase_.terminateLoopSoon();
+}
+
 FizzServerContextPtr createFizzServerContext(const HQParams& params) {
 
-  std::string certData = kDefaultCertData;
-  if (!params.certificateFilePath.empty()) {
-    folly::readFile(params.certificateFilePath.c_str(), certData);
-  }
-  std::string keyData = kDefaultKeyData;
-  if (!params.keyFilePath.empty()) {
-    folly::readFile(params.keyFilePath.c_str(), keyData);
-  }
-  auto cert        = fizz::CertUtils::makeSelfCert(certData, keyData);
-  auto certManager = std::make_unique<fizz::server::CertManager>();
+  std::string certData    = kDefaultCertData;
+  std::string keyData     = kDefaultKeyData;
+  auto        cert        = fizz::CertUtils::makeSelfCert(certData, keyData);
+  auto        certManager = std::make_unique<fizz::server::CertManager>();
   certManager->addCert(std::move(cert), true);
 
   auto cert2 =
