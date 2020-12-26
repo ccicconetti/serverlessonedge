@@ -29,7 +29,7 @@ SOFTWARE.
 
 #include "edgeclientquic.h"
 
-//#include "Edge/edgemessages.h"
+#include "Quic/curlclient.h"
 
 #include <fizz/protocol/CertificateVerifier.h>
 #include <fizz/server/AeadTicketCipher.h>
@@ -40,7 +40,6 @@ SOFTWARE.
 #include <quic/congestion_control/CongestionControllerFactory.h>
 #include <quic/fizz/client/handshake/FizzClientQuicHandshakeContext.h>
 
-//#include "RpcSupport/utils.h"
 namespace {
 const std::string kDefaultCertData = R"(
 -----BEGIN CERTIFICATE-----
@@ -158,8 +157,8 @@ class InsecureVerifierDangerousDoNotUseInProduction
 };
 
 EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
-    : /* EdgeClientInterface(),*/ theQuicParamsConf(aQuicParamsConf) {
-  // pacingEnabled false by default, no need for timer
+    : EdgeClientInterface()
+    , theQuicParamsConf(aQuicParamsConf) {
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
@@ -204,7 +203,6 @@ void EdgeClientQuic::startClient() {
   // complete.
   evb_.loopForever();
   // migrateClient false by default, no if branch
-  // evb_.loop();
 }
 
 void EdgeClientQuic::connectSuccess() {
@@ -308,17 +306,18 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
   LOG(INFO) << "EdgeClientQuic::RunLambda\n";
 
-  std::unique_ptr<CurlService::CurlClient> client =
-      std::make_unique<CurlService::CurlClient>(
-          &evb_,
-          theQuicParamsConf.httpMethod,
-          proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
-          nullptr,
-          theQuicParamsConf.httpHeaders,
-          theQuicParamsConf.httpBody,
-          false,
-          theQuicParamsConf.httpVersion.major,
-          theQuicParamsConf.httpVersion.minor);
+  // build of the uiiit::edge::CurlClient wich extends the
+  // CurlService::CurlClient sample
+  std::unique_ptr<CurlClient> client = std::make_unique<CurlClient>(
+      &evb_,
+      theQuicParamsConf.httpMethod,
+      proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
+      nullptr,
+      theQuicParamsConf.httpHeaders,
+      theQuicParamsConf.httpBody,
+      false,
+      theQuicParamsConf.httpVersion.major,
+      theQuicParamsConf.httpVersion.minor);
 
   onEOMTerminateLoop = [&]() { evb_.terminateLoopSoon(); };
   client->setEOMFunc(onEOMTerminateLoop);
@@ -330,51 +329,36 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
 
   // build manually the HTTP Request message
   proxygen::HTTPMessage request;
-  request.setMethod(
-      "POST"); // when we will send Lambdas probably it will be a POST
+  request.setMethod("POST");
   request.setURL(httpPaths_.front().str());
   request.setVersionString(theQuicParamsConf.httpVersion.canonical);
   request.setIsChunked(true);
   txn->sendHeaders(request);
 
-  // Now we need to send the LambdaRequest in the body
-
-  // this is the way to proceed if body is a string
-  // std::string requestBodyStr = aReq.toString() + '\n';
-  // txn->sendBody(
-  //     folly::IOBuf::copyBuffer(requestBodyStr, requestBodyStr.size()));
-
+  // put the serialized LambdaRequest in the body
   auto   aLambdaReq = aReq.toProtobuf();
   size_t size       = aLambdaReq.ByteSizeLong();
   void*  buffer     = malloc(size);
   aLambdaReq.SerializeToArray(buffer, size);
-
-  // const void* aReqPointer = &aReq;
   auto buf = folly::IOBuf::copyBuffer(buffer, size);
   txn->sendBody(std::move(buf));
-
-  // LOG(INFO) << buf->headroom();
-  // LOG(INFO) << buf->tailroom();
-  // LOG(INFO) << buf->length();
-  // LOG(INFO) << buf->capacity();
-  // txn->sendBody(std::move(buf));
-
   txn->sendEOM();
 
   LOG(INFO) << "Request sent, now evb_.loopForever()\n";
   evb_.loopForever();
   LOG(INFO) << "evb_loopForever() returned\n";
 
-  /**
-   * Need to find a way to recover the returned lambda response
-   */
+  // new method which extends the proxygen::CurlClient sample
+  auto response = client->getResponseBody();
 
-  // how to return the Lambda response?? in the example is the CurlClient that
-  // prints the GOT EOM message, this client has no callbacks
+  // LambdaResponse building after deserialization of the body of the response
+  rpc::LambdaResponse theProtobufLambdaRes;
+  theProtobufLambdaRes.ParseFromArray(response->data(), response->length());
+  LambdaResponse theLambdaRes(theProtobufLambdaRes);
 
-  LOG(INFO) << "Ephemeral LambdaResponse, end of RunLambda\n";
-  LambdaResponse myRep(std::to_string(200), std::string("OK"));
-  return myRep;
+  // LOG(INFO) << "theLambdaRes.theRetCode = " << theLambdaRes.theRetCode;
+
+  return theLambdaRes;
 }
 
 } // namespace edge

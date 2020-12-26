@@ -88,7 +88,6 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
   proxygen::HQUpstreamSession*                        session_;
   std::list<std::unique_ptr<CurlService::CurlClient>> curls_;
   std::deque<folly::StringPiece>                      httpPaths_;
-  // quic::TimerHighRes::SharedPtr                       pacingTimer_;
 
 }; // end class EdgeClientQuic
 
