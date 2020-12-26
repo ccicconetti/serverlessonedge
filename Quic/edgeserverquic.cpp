@@ -61,9 +61,7 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&    aEdgeServer,
           [this](proxygen::HTTPMessage* aMsg,
                  const HQParams& aParams) -> proxygen::HTTPTransactionHandler* {
             auto path = aMsg->getPathAsStringPiece();
-            if (path == "/" || path == "/echo") {
-              return new EchoHandler(aParams);
-            } else if (path == "/lambda") {
+            if (path == "/lambda") {
               return new LambdaRequestHandler(aParams, theEdgeServer);
             }
             return new EchoHandler(aParams);
@@ -76,9 +74,7 @@ void EdgeServerQuic::run() {
       [this](proxygen::HTTPMessage* aMsg,
              const HQParams& aParams) -> proxygen::HTTPTransactionHandler* {
         auto path = aMsg->getPathAsStringPiece();
-        if (path == "/" || path == "/echo") {
-          return new EchoHandler(aParams);
-        } else if (path == "/lambda") {
+        if (path == "/lambda") {
           return new LambdaRequestHandler(aParams, theEdgeServer);
         }
         return new EchoHandler(aParams);
@@ -88,18 +84,18 @@ void EdgeServerQuic::run() {
 }
 
 void EdgeServerQuic::wait() { // wait for the server termination
-  LOG(INFO) << "EdgeServerQuic::wait()\n";
+  VLOG(10) << "EdgeServerQuic::wait()\n";
 }
 
 EdgeServerQuic::~EdgeServerQuic() {
-  // eventuali stop dei server
   LOG(INFO) << "EdgeServerQuic::dtor()\n";
+  theQuicTransportServer.stop();
   theH2ServerThread.join();
   theQuicServerThread.join();
 }
 
 rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
-  LOG(INFO) << "EdgeServerQuic::process\n";
+  VLOG(10) << "EdgeServerQuic::process\n";
   return theEdgeServer.process(aReq);
 }
 

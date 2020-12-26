@@ -38,7 +38,6 @@ HQServerTransportFactory::HQServerTransportFactory(
     const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider)
     : params_(params)
     , httpTransactionHandlerProvider_(httpTransactionHandlerProvider) {
-  LOG(INFO) << "HQServerTransportFactory CTOR\n";
 }
 
 quic::QuicServerTransport::Ptr HQServerTransportFactory::make(
@@ -53,11 +52,6 @@ quic::QuicServerTransport::Ptr HQServerTransportFactory::make(
   CHECK_EQ(evb, socket->getEventBase());
   auto transport =
       quic::QuicServerTransport::make(evb, std::move(socket), *session, ctx);
-  // if (!params_.qLoggerPath.empty()) {
-  //   transport->setQLogger(std::make_shared<qs::HQLoggerHelper>(
-  //       params_.qLoggerPath, params_.prettyJson,
-  //       quic::VantagePoint::Server));
-  // }
   hqSessionController->startSession(transport);
   return transport;
 }

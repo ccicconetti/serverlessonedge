@@ -191,13 +191,10 @@ void EdgeClientQuic::startClient() {
   session_->setSocket(quicClient_);
   CHECK(session_->getQuicSocket());
   session_->setConnectCallback(this);
-  LOG(INFO) << "HQClient connecting to "
+  LOG(INFO) << "EdgeClientQuic connecting to "
             << theQuicParamsConf.remoteAddress->describe();
-  LOG(INFO) << "before session_.startNow()\n";
   session_->startNow();
-  LOG(INFO) << "after session_.startNow() -> quicClient_.start(session_)\n";
   quicClient_->start(session_);
-  LOG(INFO) << "after quicClient_.start(session_) -> loopForever\n";
 
   // This is to flush the CFIN out so the server will see the handshake as
   // complete.
@@ -207,7 +204,7 @@ void EdgeClientQuic::startClient() {
 
 void EdgeClientQuic::connectSuccess() {
   // sendKnobFrame false by default, no if branch
-  LOG(INFO) << "EdgeClientQuic::connectSuccess\n";
+  VLOG(10) << "EdgeClientQuic::connectSuccess\n";
   uint64_t numOpenableStreams =
       quicClient_->getNumOpenableBidirectionalStreams();
   CHECK_GT(numOpenableStreams, 0);
@@ -242,14 +239,14 @@ void EdgeClientQuic::connectSuccess() {
 }
 
 void EdgeClientQuic::onReplaySafe() {
-  LOG(INFO) << "EdgeClientQuic::onReplaySafe\n";
+  VLOG(10) << "EdgeClientQuic::onReplaySafe\n";
   evb_.terminateLoopSoon();
 }
 
 void EdgeClientQuic::connectError(
     std::pair<quic::QuicErrorCode, std::string> error) {
-  LOG(ERROR) << "HQClient failed to connect, error=" << toString(error.first)
-             << ", msg=" << error.second;
+  LOG(ERROR) << "EdgeClientQuic failed to connect, error="
+             << toString(error.first) << ", msg=" << error.second;
   evb_.terminateLoopSoon();
 }
 
@@ -264,7 +261,6 @@ void EdgeClientQuic::initializeQuicTransportClient() {
               std::make_unique<InsecureVerifierDangerousDoNotUseInProduction>())
           .setPskCache(theQuicParamsConf.pskCache)
           .build());
-  // client->setPacingTimer(pacingTimer_);
   client->setHostname(theQuicParamsConf.host);
   client->addNewPeerAddress(theQuicParamsConf.remoteAddress.value());
   // this if should not be invoked since local address is empty
@@ -284,14 +280,8 @@ EdgeClientQuic::createFizzClientContext(const HQParams& params) {
   auto ctx = std::make_shared<fizz::client::FizzClientContext>();
 
   std::string certData = kDefaultCertData;
-  if (!params.certificateFilePath.empty()) {
-    folly::readFile(params.certificateFilePath.c_str(), certData);
-  }
-  std::string keyData = kDefaultKeyData;
-  if (!params.keyFilePath.empty()) {
-    folly::readFile(params.keyFilePath.c_str(), keyData);
-  }
-  auto cert = fizz::CertUtils::makeSelfCert(certData, keyData);
+  std::string keyData  = kDefaultKeyData;
+  auto        cert     = fizz::CertUtils::makeSelfCert(certData, keyData);
   ctx->setClientCertificate(std::move(cert));
   ctx->setSupportedAlpns(params.supportedAlpns);
   ctx->setDefaultShares(
@@ -304,10 +294,8 @@ static std::function<void()> onEOMTerminateLoop;
 
 LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
-  LOG(INFO) << "EdgeClientQuic::RunLambda\n";
+  VLOG(10) << "EdgeClientQuic::RunLambda\n";
 
-  // build of the uiiit::edge::CurlClient wich extends the
-  // CurlService::CurlClient sample
   std::unique_ptr<CurlClient> client = std::make_unique<CurlClient>(
       &evb_,
       theQuicParamsConf.httpMethod,
@@ -319,9 +307,11 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
       theQuicParamsConf.httpVersion.major,
       theQuicParamsConf.httpVersion.minor);
 
+  // set the onEOM() callback function
   onEOMTerminateLoop = [&]() { evb_.terminateLoopSoon(); };
   client->setEOMFunc(onEOMTerminateLoop);
 
+  // transaction creation
   auto txn = session_->newTransaction(client.get());
   if (!txn) {
     std::runtime_error("Failed to create an HTTPTRansaction\n");
@@ -344,9 +334,8 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   txn->sendBody(std::move(buf));
   txn->sendEOM();
 
-  LOG(INFO) << "Request sent, now evb_.loopForever()\n";
+  // blocking, will exit when the Response will be received
   evb_.loopForever();
-  LOG(INFO) << "evb_loopForever() returned\n";
 
   // new method which extends the proxygen::CurlClient sample
   auto response = client->getResponseBody();
@@ -355,8 +344,6 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   rpc::LambdaResponse theProtobufLambdaRes;
   theProtobufLambdaRes.ParseFromArray(response->data(), response->length());
   LambdaResponse theLambdaRes(theProtobufLambdaRes);
-
-  // LOG(INFO) << "theLambdaRes.theRetCode = " << theLambdaRes.theRetCode;
 
   return theLambdaRes;
 }

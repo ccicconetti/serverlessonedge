@@ -52,12 +52,12 @@ void HQSessionController::startSession(std::shared_ptr<quic::QuicSocket> sock) {
   CHECK(session_);
   session_->setSocket(std::move(sock));
   session_->startNow();
-  LOG(INFO) << "HQSessionController::startSession\n";
+  VLOG(10) << "HQSessionController::startSession\n";
 }
 
 void HQSessionController::onTransportReady(
     proxygen::HTTPSessionBase* /*session*/) {
-  LOG(INFO) << "HQSessionController::onTransportReady\n";
+  VLOG(10) << "HQSessionController::onTransportReady\n";
 }
 
 void HQSessionController::onDestroy(const proxygen::HTTPSessionBase&) {
@@ -67,7 +67,7 @@ void HQSessionController::onDestroy(const proxygen::HTTPSessionBase&) {
 proxygen::HTTPTransactionHandler*
 HQSessionController::getRequestHandler(proxygen::HTTPTransaction& /*txn*/,
                                        proxygen::HTTPMessage* msg) {
-  LOG(INFO) << "HQSessionController::getRequestHandler\n";
+  VLOG(10) << "HQSessionController::getRequestHandler\n";
   return httpTransactionHandlerProvider_(msg, params_);
 }
 
@@ -76,7 +76,7 @@ HQSessionController::getParseErrorHandler(
     proxygen::HTTPTransaction* /*txn*/,
     const proxygen::HTTPException& /*error*/,
     const folly::SocketAddress& /*localAddress*/) {
-  LOG(INFO) << "HQSessionController::getParseErrorHandler\n";
+  VLOG(10) << "HQSessionController::getParseErrorHandler\n";
   return nullptr;
 }
 
@@ -84,18 +84,18 @@ proxygen::HTTPTransactionHandler* FOLLY_NULLABLE
 HQSessionController::getTransactionTimeoutHandler(
     proxygen::HTTPTransaction* /*txn*/,
     const folly::SocketAddress& /*localAddress*/) {
-  LOG(INFO) << "HQSessionController::getTransactionTimeoutHandler\n";
+  VLOG(10) << "HQSessionController::getTransactionTimeoutHandler\n";
   return nullptr;
 }
 
 void HQSessionController::attachSession(
     proxygen::HTTPSessionBase* /*session*/) {
-  LOG(INFO) << "HQSessionController::attachSession\n";
+  VLOG(10) << "HQSessionController::attachSession\n";
 }
 
 void HQSessionController::detachSession(
     const proxygen::HTTPSessionBase* /*session*/) {
-  LOG(INFO) << "HQSessionController::detachSession\n";
+  VLOG(10) << "HQSessionController::detachSession\n";
   delete this;
 }
 

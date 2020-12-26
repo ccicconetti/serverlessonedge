@@ -40,7 +40,7 @@ class LambdaRequestHandler : public BaseHandler
   explicit LambdaRequestHandler(const HQParams& params, EdgeServer& aEdgeServer)
       : BaseHandler(params)
       , theEdgeServer(aEdgeServer) {
-    LOG(INFO) << "LambdaRequestHandler::CTOR\n";
+    VLOG(10) << "LambdaRequestHandler::CTOR\n";
   }
 
   LambdaRequestHandler() = delete;
@@ -64,7 +64,7 @@ class LambdaRequestHandler : public BaseHandler
 
     // useful for debugging
     LambdaRequest theLambdaReq(theProtobufLambdaReq);
-    LOG(INFO) << "LambdaRequest.toString() = \n" << theLambdaReq.toString();
+    VLOG(10) << "LambdaRequest.toString() = \n" << theLambdaReq.toString();
 
     // actual LambdaRequest processing
     rpc::LambdaResponse aLambdaRes =

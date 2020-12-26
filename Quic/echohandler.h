@@ -68,10 +68,6 @@ class EchoHandler : public BaseHandler
 
   void onEOM() noexcept override {
     VLOG(10) << "EchoHandler::onEOM";
-    if (sendFooter_) {
-      auto& footer = getH1QFooter();
-      txn_->sendBody(folly::IOBuf::copyBuffer(footer.data(), footer.length()));
-    }
     txn_->sendEOM();
   }
 

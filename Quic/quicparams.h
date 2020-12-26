@@ -55,7 +55,6 @@ struct HTTPVersion {
   std::string canonical;
   uint16_t    major{1};
   uint16_t    minor{1};
-  // bool        parse(const std::string&);
 
   bool parse(const std::string& verString) {
     // version, major and minor are fields of struct HTTPVersion
@@ -96,15 +95,10 @@ struct HTTPVersion {
 };
 
 /**
- * Struct to hold both HTTP/3 and HTTP/2 settings for HQ
+ * Struct to hold both HTTP/3 and HTTP/2 settings for EdgeQuicServer and
+ * EdgeQuicClient
  */
 struct HQParams {
-  // General section
-  HQMode      mode;
-  std::string logprefix;
-  std::string logdir;
-  std::string outdir;
-  bool        logResponse;
 
   // Transport section
   std::string                                  host;
@@ -145,47 +139,24 @@ struct HQParams {
   bool                      h2cEnabled;
 
   // Partial reliability section
-  bool                      partialReliabilityEnabled{false};
   folly::Optional<uint64_t> prChunkSize;
   folly::Optional<uint64_t> prChunkDelayMs;
 
-  // QLogger section
-  std::string qLoggerPath;
-  bool        prettyJson;
-
-  // Static options
-  std::string staticRoot;
-
   // Fizz options
-  std::string                         certificateFilePath;
-  std::string                         keyFilePath;
-  std::string                         pskFilePath;
   std::shared_ptr<quic::QuicPskCache> pskCache;
   fizz::server::ClientAuthMode clientAuth{fizz::server::ClientAuthMode::None};
-
-  // Transport knobs
-  std::string transportKnobs;
-
-  bool migrateClient{false};
 
   // Struct Constructor (set default values according to the boolean parameter)
   HQParams(bool isServer) {
     // *** Common Settings Section ***
-    host = "127.0.0.1"; // ::1
-    port = 6473;        // HQServer Port
+    host = "127.0.0.1";
+    port = 6473;
     if (isServer) {
-      mode         = HQMode::SERVER;
-      logprefix    = "server";
       localAddress = folly::SocketAddress(host, port, true);
     } else {
-      mode          = HQMode::CLIENT;
-      logprefix     = "client";
       remoteAddress = folly::SocketAddress(host, port, true);
       // local_address empty by default, local_address not set
     }
-    logdir      = "/tmp/logs";
-    logResponse = true;
-    outdir      = "";
 
     // *** TransportSettings ***
     quicVersions = {quic::QuicVersion::MVFST,
@@ -206,7 +177,7 @@ struct HQParams {
     transportSettings.advertisedInitialBidiRemoteStreamWindowSize = 256 * 1024;
     transportSettings.advertisedInitialUniStreamWindowSize        = 256 * 1024;
     congestionControlName                                         = "cubic";
-    congestionControl = quic::congestionControlStrToType("cubic");
+    congestionControl = quic::congestionControlStrToType(congestionControlName);
     // since congestion control cannot be null since we are using default
     // values
     if (congestionControl) {
@@ -279,30 +250,15 @@ struct HQParams {
     if (!httpHeaders.exists(proxygen::HTTP_HEADER_HOST)) {
       httpHeaders.set(proxygen::HTTP_HEADER_HOST, host);
     }
-    migrateClient = false;
 
     // *** Partial Reliability Settings ***
-    partialReliabilityEnabled = false;
-    prChunkSize               = folly::to<uint64_t>(16);
-    // TODO: use chrono instead of uint64_t
+    prChunkSize    = folly::to<uint64_t>(16);
     prChunkDelayMs = folly::to<uint64_t>(0);
 
-    // *** QLogSettings ***
-    qLoggerPath = "";
-    prettyJson  = true;
-
-    // *** StaticSettings***
-    staticRoot = "";
-
     // *** FizzSettings***
-    earlyData           = false; // CHECK the function of this
-    certificateFilePath = "";
-    keyFilePath         = "";
-    pskFilePath         = "";
+    earlyData = false; // CHECK the function of this
     // psk_file is empty by default, else branch
     pskCache = std::make_shared<proxygen::SynchronizedLruQuicPskCache>(1000);
-    // client_auth_mode = "" by default, so none of the branches is called
-    clientAuth = fizz::server::ClientAuthMode::None; // CHECK!!!
   }
 };
 

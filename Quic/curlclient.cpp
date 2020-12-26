@@ -55,12 +55,12 @@ CurlClient::CurlClient(folly::EventBase*            evb,
 }
 
 void CurlClient::onBody(std::unique_ptr<folly::IOBuf> chain) noexcept {
-  LOG(INFO) << "CurlClient::onBody()";
+  VLOG(10) << "CurlClient::onBody()";
   theResponseBody = std::move(chain);
 }
 
 std::unique_ptr<folly::IOBuf> CurlClient::getResponseBody() {
-  LOG(INFO) << "CurlClient::getResponseBody()";
+  VLOG(10) << "CurlClient::getResponseBody()";
   return std::move(theResponseBody);
 }
 

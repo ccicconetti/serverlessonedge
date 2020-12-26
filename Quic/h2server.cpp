@@ -222,11 +222,7 @@ wangle::SSLContextConfig createSSLContext(const HQParams& params) {
   wangle::SSLContextConfig sslCfg;
   sslCfg.isDefault          = true;
   sslCfg.clientVerification = folly::SSLContext::SSLVerifyPeerEnum::VERIFY;
-  if (!params.certificateFilePath.empty() && !params.keyFilePath.empty()) {
-    sslCfg.setCertificate(params.certificateFilePath, params.keyFilePath, "");
-  } else {
-    sslCfg.setCertificateBuf(kDefaultCertData, kDefaultKeyData);
-  }
+  sslCfg.setCertificateBuf(kDefaultCertData, kDefaultKeyData);
   sslCfg.setNextProtocols({"h2"});
   return sslCfg;
 }
