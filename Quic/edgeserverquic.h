@@ -55,14 +55,6 @@ using HTTPTransactionHandlerProvider =
     std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
                                                     const HQParams&)>;
 
-class Dispatcher
-{
- public:
-  static proxygen::HTTPTransactionHandler*
-  getRequestHandler(proxygen::HTTPMessage* /* msg */,
-                    const HQParams& /* params */);
-};
-
 /**
  * Generic edge server providing a multi-threaded QUIC server interface for the
  * processing of lambda functions.

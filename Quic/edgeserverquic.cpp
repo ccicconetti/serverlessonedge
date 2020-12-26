@@ -42,19 +42,6 @@ namespace edge {
 
 using namespace std::chrono_literals;
 
-proxygen::HTTPTransactionHandler*
-Dispatcher::getRequestHandler(proxygen::HTTPMessage* msg,
-                              const HQParams&        params) {
-  DCHECK(msg);
-  auto path = msg->getPathAsStringPiece();
-  if (path == "/" || path == "/echo") {
-    return new EchoHandler(params);
-  } else if (path == "/lambda") {
-    return new LambdaRequestHandler(params);
-  }
-  return new EchoHandler(params);
-}
-
 /*
 1) theMutex serve sempre in EdgeServerGrpc???
 
@@ -69,12 +56,33 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&    aEdgeServer,
     , theServerEndpoint(aQuicParamsConf.host)
     , theNumThreads(aQuicParamsConf.httpServerThreads)
     , theQuicParamsConf(aQuicParamsConf)
-    , theQuicTransportServer(theQuicParamsConf, Dispatcher::getRequestHandler) {
+    , theQuicTransportServer(
+          theQuicParamsConf,
+          [this](proxygen::HTTPMessage* aMsg,
+                 const HQParams& aParams) -> proxygen::HTTPTransactionHandler* {
+            auto path = aMsg->getPathAsStringPiece();
+            if (path == "/" || path == "/echo") {
+              return new EchoHandler(aParams);
+            } else if (path == "/lambda") {
+              return new LambdaRequestHandler(aParams, theEdgeServer);
+            }
+            return new EchoHandler(aParams);
+          }) {
 }
 
 void EdgeServerQuic::run() {
-  theH2ServerThread =
-      H2Server::run(theQuicParamsConf, Dispatcher::getRequestHandler);
+  theH2ServerThread = H2Server::run(
+      theQuicParamsConf,
+      [this](proxygen::HTTPMessage* aMsg,
+             const HQParams& aParams) -> proxygen::HTTPTransactionHandler* {
+        auto path = aMsg->getPathAsStringPiece();
+        if (path == "/" || path == "/echo") {
+          return new EchoHandler(aParams);
+        } else if (path == "/lambda") {
+          return new LambdaRequestHandler(aParams, theEdgeServer);
+        }
+        return new EchoHandler(aParams);
+      });
 
   theQuicServerThread = theQuicTransportServer.start();
 }
