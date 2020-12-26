@@ -58,37 +58,11 @@ void HQSessionController::startSession(std::shared_ptr<quic::QuicSocket> sock) {
 void HQSessionController::onTransportReady(
     proxygen::HTTPSessionBase* /*session*/) {
   LOG(INFO) << "HQSessionController::onTransportReady\n";
-  // if (params_.sendKnobFrame) {
-  //   sendKnobFrame("Hello, World from Server!");
-  // }
 }
 
 void HQSessionController::onDestroy(const proxygen::HTTPSessionBase&) {
   LOG(INFO) << "HQSessionController::onDestroy\n";
 }
-
-/**
- * SendKnobFrame is false by default so we cannot invoke the following method
- *
-// void HQSessionController::sendKnobFrame(const folly::StringPiece str) {
-//   if (str.empty()) {
-//     return;
-//   }
-//   uint64_t knobSpace = 0xfaceb00c;
-//   uint64_t knobId    = 200;
-//   Buf      buf(folly::IOBuf::create(str.size()));
-//   memcpy(buf->writableData(), str.data(), str.size());
-//   buf->append(str.size());
-//   VLOG(10) << "Sending Knob Frame to peer. KnobSpace: " << std::hex <<
-//   knobSpace
-//            << " KnobId: " << std::dec << knobId << " Knob Blob" << str;
-//   const auto knobSent = session_->sendKnob(0xfaceb00c, 200, std::move(buf));
-//   if (knobSent.hasError()) {
-//     LOG(ERROR) << "Failed to send Knob frame to peer. Received error: "
-//                << knobSent.error();
-//   }
-// }
-*/
 
 proxygen::HTTPTransactionHandler*
 HQSessionController::getRequestHandler(proxygen::HTTPTransaction& /*txn*/,
