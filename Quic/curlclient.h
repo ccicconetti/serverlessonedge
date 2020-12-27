@@ -64,7 +64,6 @@ class CurlClient final : public CurlService::CurlClient
   std::unique_ptr<folly::IOBuf> getResponseBody();
 
  protected:
-  // std::unique_ptr<CurlService::CurlClient> theCurlClient;
   std::unique_ptr<folly::IOBuf> theResponseBody;
 };
 

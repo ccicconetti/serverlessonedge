@@ -211,31 +211,6 @@ void EdgeClientQuic::connectSuccess() {
   httpPaths_.insert(httpPaths_.end(),
                     theQuicParamsConf.httpPaths.begin(),
                     theQuicParamsConf.httpPaths.end());
-  // sendRequests(!theQuicParamsConf.migrateClient, numOpenableStreams);
-  // LOG(INFO) << "post sendRequests\n";
-
-  // If there are still pending requests, schedule a callback on the first EOM
-  // to try to make some more. That callback will keep scheduling itself until
-  // there are no more requests.
-  // if (!httpPaths_.empty()) {
-  //   selfSchedulingRequestRunner = [&]() {
-  //     uint64_t numOpenable =
-  //     quicClient_->getNumOpenableBidirectionalStreams(); if (numOpenable >
-  //     0)
-  //     {
-  //       sendRequests(true, numOpenable);
-  //     };
-  //     if (!httpPaths_.empty()) {
-  //       auto rtt = std::chrono::duration_cast<std::chrono::milliseconds>(
-  //           quicClient_->getTransportInfo().srtt);
-  //       evb_.timer().scheduleTimeoutFn(
-  //           selfSchedulingRequestRunner,
-  //           std::max(rtt, std::chrono::milliseconds(1)));
-  //     }
-  //   };
-  //   CHECK(!curls_.empty());
-  //   curls_.back()->setEOMFunc(selfSchedulingRequestRunner);
-  // }
 }
 
 void EdgeClientQuic::onReplaySafe() {
@@ -298,11 +273,11 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
 
   std::unique_ptr<CurlClient> client = std::make_unique<CurlClient>(
       &evb_,
-      theQuicParamsConf.httpMethod,
+      proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
       proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
       nullptr,
       theQuicParamsConf.httpHeaders,
-      theQuicParamsConf.httpBody,
+      "", // theQuicParamsConf.httpBody,
       false,
       theQuicParamsConf.httpVersion.major,
       theQuicParamsConf.httpVersion.minor);

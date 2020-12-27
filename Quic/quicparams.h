@@ -48,8 +48,6 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-enum class HQMode { INVALID, CLIENT, SERVER };
-
 struct HTTPVersion {
   std::string version;
   std::string canonical;
@@ -118,7 +116,6 @@ struct HQParams {
   folly::Optional<int64_t>                     rateLimitPerThread;
   std::chrono::milliseconds                    connectTimeout;
   std::string                                  ccpConfig;
-  bool                                         sendKnobFrame;
 
   // HTTP section
   uint16_t                              h2port;
@@ -204,11 +201,9 @@ struct HQParams {
     transportSettings.disableMigration = false;
     // FLAGS_use_inplace_write = false by default, no if branch
     // FLAGS_rate_limit = -1 by default, no if branch
-    connectTimeout = std::chrono::milliseconds(2000);
-    ccpConfig      = "";
-    sendKnobFrame  = false;
-    // sendKnobFrame = false by default, no if branch
-    transportSettings.d6dConfig.enabled                     = false;
+    connectTimeout                      = std::chrono::milliseconds(2000);
+    ccpConfig                           = "";
+    transportSettings.d6dConfig.enabled = false;
     transportSettings.d6dConfig.probeRaiserConstantStepSize = 10;
     // d6d_probe_raiser_type = 0 default so we can use the following
     transportSettings.d6dConfig.raiserType =
@@ -240,12 +235,8 @@ struct HQParams {
     httpVersion.parse("1.1");
     txnTimeout = std::chrono::milliseconds(120000);
     folly::split(',', "/lambda", httpPaths);
-    httpBody   = "";
-    httpMethod = httpBody.empty() ? proxygen::HTTPMethod::GET :
-                                    proxygen::HTTPMethod::POST;
     // parse HTTP headers
-    httpHeadersString = "";
-    httpHeaders = CurlService::CurlClient::parseHeaders(httpHeadersString);
+    httpHeaders = CurlService::CurlClient::parseHeaders("");
     // Set the host header
     if (!httpHeaders.exists(proxygen::HTTP_HEADER_HOST)) {
       httpHeaders.set(proxygen::HTTP_HEADER_HOST, host);
