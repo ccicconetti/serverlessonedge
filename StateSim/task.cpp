@@ -39,10 +39,12 @@ namespace statesim {
 Task::Task(const size_t              aId,
            const size_t              aSize,
            const size_t              aOps,
+           const std::string&        aFunc,
            const std::vector<size_t> aDeps)
     : theId(aId)
     , theSize(aSize)
     , theOps(aOps)
+    , theFunc(aFunc)
     , theDeps(aDeps) {
   // noop
 }
@@ -50,7 +52,7 @@ Task::Task(const size_t              aId,
 std::string Task::toString() const {
   std::stringstream myStream;
   myStream << "#" << theId << ", " << theOps << " operations, arg size "
-           << theSize << " bytes, depends on {"
+           << theSize << " bytes, func '" << theFunc << "', depends on {"
            << ::toString(
                   theDeps,
                   ",",

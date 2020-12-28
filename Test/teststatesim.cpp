@@ -84,6 +84,19 @@ struct TestStateSim : public ::testing::Test {
     return static_cast<bool>(myTasks);
   }
 
+  struct MapSave {
+    template <class T>
+    void operator()(const std::string& aPath, const T& aMap) const {
+      std::ofstream myOutfile(aPath);
+      if (not myOutfile) {
+        throw std::runtime_error("Could not open file for writing: " + aPath);
+      }
+      for (const auto& elem : aMap) {
+        myOutfile << elem.first << ' ' << elem.second << '\n';
+      }
+    }
+  };
+
   const boost::filesystem::path theTestDir;
 };
 
@@ -183,12 +196,18 @@ TEST_F(TestStateSim, test_network) {
   }
 }
 
-TEST_F(TestStateSim, test_tasks) {
+TEST_F(TestStateSim, test_all_tasks) {
   ASSERT_TRUE(prepareTaskFiles());
-  const auto myJobs = loadJobs((theTestDir / "tasks").string(), 1000, 100, 42);
+  std::map<std::string, double> myWeights({
+      {"less-often", 1},
+      {"more-often", 10},
+  });
+  const auto                    myJobs = loadJobs(
+      (theTestDir / "tasks").string(), 1000, 100, myWeights, 42, false);
   ASSERT_EQ(22, myJobs.size());
 
   const auto& myJob = myJobs[10];
+  VLOG(1) << myJob.toString();
   ASSERT_EQ(10, myJob.id());
   ASSERT_FLOAT_EQ(3.0875, myJob.start());
   ASSERT_EQ(30, myJob.retSize());
@@ -197,6 +216,65 @@ TEST_F(TestStateSim, test_tasks) {
   ASSERT_EQ(59, myJob.tasks()[3].size());
   ASSERT_EQ(std::vector<size_t>({0, 1, 2}), myJob.tasks()[3].deps());
   ASSERT_EQ(std::vector<size_t>({39, 59, 49}), myJob.stateSizes());
+
+  std::map<std::string, size_t> myFunctions;
+  for (const auto& myJob : myJobs) {
+    for (const auto& myTask : myJob.tasks()) {
+      myFunctions[myTask.func()]++;
+    }
+  }
+
+  ASSERT_EQ(2, myFunctions.size());
+  ASSERT_EQ(48, myFunctions["more-often"]);
+  ASSERT_EQ(8, myFunctions["less-often"]);
+}
+
+TEST_F(TestStateSim, test_stateful_tasks) {
+  ASSERT_TRUE(prepareTaskFiles());
+  const auto myJobs = loadJobs(
+      (theTestDir / "tasks").string(), 1000, 100, {{"", 1.0}}, 42, true);
+  ASSERT_EQ(6, myJobs.size());
+  for (const auto& myJob : myJobs) {
+    auto myAllStateless = true;
+    for (const auto& myTask : myJob.tasks()) {
+      if (not myTask.deps().empty()) {
+        myAllStateless = false;
+      }
+    }
+    ASSERT_FALSE(myAllStateless) << myJob.toString();
+  }
+}
+
+TEST_F(TestStateSim, DISABLE_analyze_tasks) {
+  const auto myJobs =
+      loadJobs("batch_task.csv", 1000, 100, {{"", 1.0}}, 42, false);
+  LOG(INFO) << "#jobs " << myJobs.size();
+  std::map<size_t, size_t> myChainSizeHisto;
+  std::map<size_t, size_t> myNumStatesHisto;
+  std::map<size_t, size_t> myStateSizeHisto;
+  std::map<size_t, size_t> myArgSizeHisto;
+  std::map<size_t, size_t> myNumOpsHisto;
+  std::map<size_t, size_t> myNumDepsHisto;
+  for (const auto& myJob : myJobs) {
+    myChainSizeHisto[myJob.tasks().size()]++;
+    myNumStatesHisto[myJob.stateSizes().size()]++;
+    for (const auto myStateSize : myJob.stateSizes()) {
+      myStateSizeHisto[myStateSize]++;
+    }
+    for (const auto& myTask : myJob.tasks()) {
+      myArgSizeHisto[myTask.size()]++;
+      myNumOpsHisto[myTask.ops()]++;
+      myNumDepsHisto[myTask.deps().size()]++;
+    }
+  }
+
+  // save everything to files
+  MapSave()("chain-size.dat", myChainSizeHisto);
+  MapSave()("num-states.dat", myNumStatesHisto);
+  MapSave()("state-size.dat", myStateSizeHisto);
+  MapSave()("arg-size.dat", myArgSizeHisto);
+  MapSave()("num-ops.dat", myNumOpsHisto);
+  MapSave()("num-deps.dat", myNumDepsHisto);
 }
 
 } // namespace statesim

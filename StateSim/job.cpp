@@ -42,6 +42,43 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
+class FunctionPicker
+{
+ public:
+  FunctionPicker(const std::map<std::string, double>& aWeights,
+                 const size_t                         aSeed)
+      : theGenerator(aSeed)
+      , theRv(0.0f, sum(aWeights))
+      , theWeights(aWeights) {
+    assert(not aWeights.empty());
+  }
+
+  std::string operator()() {
+    const auto myRandom = theRv(theGenerator);
+    double     mySum    = 0;
+    for (const auto& elem : theWeights) {
+      mySum += elem.second;
+      if (myRandom < mySum) {
+        return elem.first;
+      }
+    }
+    return theWeights.rbegin()->first;
+  }
+
+  static double sum(const std::map<std::string, double>& aWeights) {
+    double ret = 0;
+    for (const auto& elem : aWeights) {
+      ret += elem.second;
+    }
+    return ret;
+  }
+
+ private:
+  std::default_random_engine            theGenerator;
+  std::uniform_real_distribution<float> theRv;
+  const std::map<std::string, double>&  theWeights;
+};
+
 Job::Job(const size_t               aId,
          const double               aStart,
          const std::vector<Task>&   aTasks,
@@ -71,12 +108,15 @@ std::string Job::toString() const {
   return myStream.str();
 }
 
-std::vector<Job> loadJobs(const std::string& aPath,
-                          const double       aOpsFactor,
-                          const double       aMemFactor,
-                          const size_t       aSeed) {
-  std::default_random_engine            myGenerator(aSeed);
-  std::uniform_real_distribution<float> myRv(0.0f, 1.0f);
+std::vector<Job> loadJobs(const std::string&                   aPath,
+                          const double                         aOpsFactor,
+                          const double                         aMemFactor,
+                          const std::map<std::string, double>& aFuncWeights,
+                          const size_t                         aSeed,
+                          const bool                           aStatefulOnly) {
+  if (aFuncWeights.empty()) {
+    throw std::runtime_error("Empty function weights");
+  }
 
   std::ifstream myFile(aPath);
   if (not myFile) {
@@ -165,6 +205,7 @@ std::vector<Job> loadJobs(const std::string& aPath,
 
   // add all the jobs
   std::vector<Job> myJobs;
+  FunctionPicker   myFunctionPicker(aFuncWeights, aSeed);
   for (const auto& myJob : theJobs) {
     VLOG(1) << "job " << myJob.theId << " at " << myJob.theStartTime;
     size_t i = 0;
@@ -194,6 +235,7 @@ std::vector<Job> loadJobs(const std::string& aPath,
     // find state dependencies of the tasks along the chain
     std::map<size_t, std::set<size_t>> myStateDependencies;
     std::set<size_t>                   myAllStates;
+    auto                               myStatelessJob = true;
     for (const auto myId : myChain) {
       myStateDependencies[myId] = std::set<size_t>();
       for (const auto myPrec : myJob.theTasks[myId].thePrecedences) {
@@ -201,10 +243,18 @@ std::vector<Job> loadJobs(const std::string& aPath,
           // skip tasks in the chain
         } else {
           // all tasks not in the chain are state dependencies
+          myStatelessJob = false;
           myStateDependencies[myId].insert(myPrec);
           myAllStates.insert(myPrec);
         }
       }
+    }
+
+    // discard job only jobs with at least one stateful task are required
+    // and there are none
+    if (aStatefulOnly and myStatelessJob) {
+      VLOG(1) << "discarding job: all tasks are stateless";
+      continue;
     }
 
     VLOG(1) << "  chain: " << ::toString(myChain, " ", [](const auto aValue) {
@@ -249,6 +299,7 @@ std::vector<Job> loadJobs(const std::string& aPath,
       myTasks.emplace_back(Task(myTaskIdMap[myTaskId],
                                 myJob.theTasks[myTaskId].theSize,
                                 myJob.theTasks[myTaskId].theOps,
+                                myFunctionPicker(),
                                 myDeps));
     }
 

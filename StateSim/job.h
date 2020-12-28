@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "StateSim/task.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -83,10 +84,35 @@ class Job
   const size_t              theRetSize;
 };
 
-std::vector<Job> loadJobs(const std::string& aPath,
-                          const double       aOpsFactor,
-                          const double       aMemFactor,
-                          const size_t       aSeed);
+/**
+ * Load the jobs from a given file.
+ *
+ * \param aPath The file from which to load the jobs. Must be in the format
+ *        used by Alibaba traces (https://github.com/All-less/trace-generator)
+ *        in the batch_task.csv file
+ *
+ * \param aOpsFactor The multiplicative factor to determine the number
+ *        of operations of a task
+ *
+ * \param aMemFactor The multiplicative factor to determine the size of the
+ *        states and the intermediate function input/output sizes
+ *
+ * \param aFuncWeights The function names to pick randomly, with weights
+ *
+ * \param aSeed The seed to initialize the random number genetator
+ *
+ * \param aStatefulOnly Discard jobs that have only stateless tasks.
+ *
+ * \return A vector with all the jobs loaded. Can be empty
+ *
+ * \throw std::runtime_error if aPath cannot be opened or aFuncWeights is empty
+ */
+std::vector<Job> loadJobs(const std::string&                   aPath,
+                          const double                         aOpsFactor,
+                          const double                         aMemFactor,
+                          const std::map<std::string, double>& aFuncWeights,
+                          const size_t                         aSeed,
+                          const bool                           aStatefulOnly);
 
 } // namespace statesim
 } // namespace uiiit

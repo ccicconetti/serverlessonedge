@@ -48,11 +48,14 @@ class Task
    *
    * \param aOps The number of operations required for this task.
    *
+   * \param aFunction The name of the function to execute.
+   *
    * \param aDeps The set of states on which this task depends. Can be empty.
    */
   explicit Task(const size_t              aId,
                 const size_t              aSize,
                 const size_t              aOps,
+                const std::string&        aFunc,
                 const std::vector<size_t> aDeps);
 
   //! \return a human-readable string.
@@ -62,6 +65,7 @@ class Task
   size_t id()                       const noexcept { return theId;   }
   size_t size()                     const noexcept { return theSize; }
   size_t ops()                      const noexcept { return theOps;  }
+  const std::string& func()         const noexcept { return theFunc; }
   const std::vector<size_t>& deps() const noexcept { return theDeps; }
   // clang-format on
 
@@ -69,6 +73,7 @@ class Task
   const size_t              theId;
   const size_t              theSize;
   const size_t              theOps;
+  const std::string         theFunc;
   const std::vector<size_t> theDeps;
 };
 
