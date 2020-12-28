@@ -58,7 +58,7 @@ struct TestStateSim : public ::testing::Test {
   }
 
   void TearDown() {
-    // boost::filesystem::remove_all(theTestDir);
+    boost::filesystem::remove_all(theTestDir);
   }
 
   bool prepareNetworkFiles() const {
