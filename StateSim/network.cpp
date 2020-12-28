@@ -35,6 +35,7 @@ SOFTWARE.
 
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 
+#include <cassert>
 #include <fstream>
 
 namespace uiiit {

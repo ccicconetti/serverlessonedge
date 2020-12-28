@@ -28,6 +28,7 @@ SOFTWARE.
 */
 
 #include "StateSim/counter.h"
+#include "StateSim/job.h"
 #include "StateSim/network.h"
 
 #include "gtest/gtest.h"
@@ -44,6 +45,7 @@ namespace uiiit {
 namespace statesim {
 
 #include "Test/Data/datastatesim.h"
+#include "Test/Data/taskstatesim.h"
 
 struct TestStateSim : public ::testing::Test {
   TestStateSim()
@@ -59,7 +61,7 @@ struct TestStateSim : public ::testing::Test {
     // boost::filesystem::remove_all(theTestDir);
   }
 
-  bool prepareNetworkFiles() {
+  bool prepareNetworkFiles() const {
     std::ofstream myEdges((theTestDir / "edges").string());
     myEdges << theEdges;
 
@@ -74,6 +76,12 @@ struct TestStateSim : public ::testing::Test {
 
     return static_cast<bool>(myEdges) and static_cast<bool>(myLinks) and
            static_cast<bool>(myNodes) and static_cast<bool>(myGraph);
+  }
+
+  bool prepareTaskFiles() const {
+    std::ofstream myTasks((theTestDir / "tasks").string());
+    myTasks << theTasks;
+    return static_cast<bool>(myTasks);
   }
 
   const boost::filesystem::path theTestDir;
@@ -173,6 +181,22 @@ TEST_F(TestStateSim, test_network) {
               << " (" << myDesc.second << ")";
     }
   }
+}
+
+TEST_F(TestStateSim, test_tasks) {
+  ASSERT_TRUE(prepareTaskFiles());
+  const auto myJobs = loadJobs((theTestDir / "tasks").string(), 1000, 100, 42);
+  ASSERT_EQ(22, myJobs.size());
+
+  const auto& myJob = myJobs[10];
+  ASSERT_EQ(10, myJob.id());
+  ASSERT_FLOAT_EQ(3.0875, myJob.start());
+  ASSERT_EQ(30, myJob.retSize());
+  ASSERT_EQ(7, myJob.tasks().size());
+  ASSERT_EQ(40000, myJob.tasks()[3].ops());
+  ASSERT_EQ(59, myJob.tasks()[3].size());
+  ASSERT_EQ(std::vector<size_t>({0, 1, 2}), myJob.tasks()[3].deps());
+  ASSERT_EQ(std::vector<size_t>({39, 59, 49}), myJob.stateSizes());
 }
 
 } // namespace statesim
