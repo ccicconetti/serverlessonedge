@@ -29,6 +29,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "StateSim/affinity.h"
 #include "StateSim/counter.h"
 #include "StateSim/element.h"
 
@@ -43,11 +44,6 @@ class Node : public Element
   enum class Type : int {
     Networking = 0,
     Processing = 1,
-  };
-  enum class Affinity : int {
-    NotAvailable = -1,
-    Cpu          = 0,
-    Gpu          = 1,
   };
 
   /**

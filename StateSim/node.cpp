@@ -91,10 +91,7 @@ std::string Node::toString() const {
       << theName;
   if (theType == Type::Processing) {
     ret << "speed " << theSpeed / 1e9 << " GFLOPS, memory " << theMemory / 1e9
-        << " GB, affinity"
-        << (theAffinity == Affinity::NotAvailable ?
-                "N/A" :
-                theAffinity == Affinity::Cpu ? "CPU" : "GPU");
+        << " GB, affinity " << ::uiiit::statesim::toString(theAffinity);
   }
   return ret.str();
 }

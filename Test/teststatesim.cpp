@@ -245,7 +245,7 @@ TEST_F(TestStateSim, test_stateful_tasks) {
   }
 }
 
-TEST_F(TestStateSim, DISABLE_analyze_tasks) {
+TEST_F(TestStateSim, DISABLED_analyze_tasks) {
   const auto myJobs =
       loadJobs("batch_task.csv", 1000, 100, {{"", 1.0}}, 42, false);
   LOG(INFO) << "#jobs " << myJobs.size();
