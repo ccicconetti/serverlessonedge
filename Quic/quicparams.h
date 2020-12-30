@@ -4,20 +4,16 @@
 |   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
 |   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
 |_______|__|__/__/   /__/
-
 Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
-
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
 in the Software  without restriction, including without  limitation the rights
 to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
 copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
 THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
 IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
 FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
@@ -101,14 +97,10 @@ struct HQParams {
   // Transport section
   std::string                                  host;
   uint16_t                                     port;
-  std::string                                  protocol;
   folly::Optional<folly::SocketAddress>        localAddress;
   folly::Optional<folly::SocketAddress>        remoteAddress;
-  std::string                                  transportVersion;
   std::vector<quic::QuicVersion>               quicVersions;
   std::vector<std::string>                     supportedAlpns;
-  std::string                                  localHostname;
-  std::string                                  httpProtocol;
   quic::TransportSettings                      transportSettings;
   std::string                                  congestionControlName;
   folly::Optional<quic::CongestionControlType> congestionControl;
@@ -121,10 +113,7 @@ struct HQParams {
   uint16_t                              h2port;
   folly::Optional<folly::SocketAddress> localH2Address;
   HTTPVersion                           httpVersion;
-  std::string                           httpHeadersString;
   proxygen::HTTPHeaders                 httpHeaders;
-  std::string                           httpBody;
-  proxygen::HTTPMethod                  httpMethod;
   std::vector<folly::StringPiece>       httpPaths;
 
   std::chrono::milliseconds txnTimeout;
@@ -143,7 +132,10 @@ struct HQParams {
   std::shared_ptr<quic::QuicPskCache> pskCache;
   fizz::server::ClientAuthMode clientAuth{fizz::server::ClientAuthMode::None};
 
-  // Struct Constructor (set default values according to the boolean parameter)
+  /**
+   * Struct Constructor (set default values according to the boolean parameter
+   * isServer)
+   */
   HQParams(bool isServer) {
     // *** Common Settings Section ***
     host = "127.0.0.1";
@@ -229,7 +221,7 @@ struct HQParams {
     // std::thread::hardware_concurrency() << can be quite a lot...
     httpServerThreads                  = 5;
     httpServerIdleTimeout              = std::chrono::milliseconds(60000);
-    httpServerShutdownOn               = {SIGINT, SIGTERM};
+    httpServerShutdownOn               = {SIGINT, SIGTERM}; //<<<<<<<<<<<<<
     httpServerEnableContentCompression = false;
     h2cEnabled                         = false;
     httpVersion.parse("1.1");
@@ -257,23 +249,32 @@ struct HQParams {
  * Basically a wrapper for HQParams, provides ctor methods for both
  * EdgeServerQuic and EdgeClientQuic
  */
-/**
-class QuicParams
+class QuicParamsBuilder
 {
-public:
+ public:
+  /**
+   * Ctor for EdgeClientQuic & for EdgeServerQuic if server-conf is empty
+   *
+   * TODO: check if it is needed to use boost options from CLI to initialize the
+   * client Params or if it is sufficient to initialize with default values
+   * (not important now)
+   */
+  QuicParamsBuilder(uiiit::support::Conf quicConf); // for EdgeServerQuic
+  // need to see for the client
 
- * Ctor for EdgeClientQuic & for EdgeServerQuic if server-conf is empty
- * TODO: check if it is needed to use boost options from CLI to initialize the
- * client Params or if it is sufficient to initialize with default values
- * (not important now)
-
-QuicParams(bool isServer);
-QuicParams(uiiit::support::Conf quicConf); // for EdgeServerQuic
-
-~QuicParams();
-
-const HQParams theQuicParams;
+  /**
+   * need to keep the distinction between the first two members if we do not
+   * want to allow user to have the possibility to configure all the
+   * QuicParameters
+   */
+  static std::list<std::string> theConfigurableQuicParamsList;
+  // list of all the parameters in HQParams struct, this is needed in order to
+  // check if a key provided in the Support::Conf exists or not and to retrieve
+  // the element in which we need to insert the value
+  std::list<std::string>             theQuicParamsList;
+  HQParams                           theQuicParams;
+  std::map<std::string, std::string> theInvalidParams;
 };
-*/
+
 } // namespace edge
 } // namespace uiiit
