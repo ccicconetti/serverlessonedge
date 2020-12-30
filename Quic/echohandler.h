@@ -36,47 +36,42 @@ namespace edge {
 class EchoHandler : public BaseHandler
 {
  public:
-  explicit EchoHandler(const HQParams& params)
-      : BaseHandler(params) {
+  explicit EchoHandler(const HQParams& aQuicParamsConf)
+      : BaseHandler(aQuicParamsConf) {
   }
 
   EchoHandler() = delete;
 
   void onHeadersComplete(
-      std::unique_ptr<proxygen::HTTPMessage> msg) noexcept override {
+      std::unique_ptr<proxygen::HTTPMessage> aMsg) noexcept override {
     VLOG(10) << "EchoHandler::onHeadersComplete";
-    proxygen::HTTPMessage resp;
+    proxygen::HTTPMessage myResp;
     VLOG(10) << "Setting http-version to " << getHttpVersion();
-    sendFooter_ =
-        (msg->getHTTPVersion() == proxygen::HTTPMessage::kHTTPVersion09);
-    resp.setVersionString(getHttpVersion());
-    resp.setStatusCode(200);
-    resp.setStatusMessage("Ok");
-    msg->getHeaders().forEach(
-        [&](const std::string& header, const std::string& val) {
-          resp.getHeaders().add(folly::to<std::string>("x-echo-", header), val);
-        });
-    resp.setWantsKeepalive(true);
-    maybeAddAltSvcHeader(resp);
-    txn_->sendHeaders(resp);
+    myResp.setVersionString(getHttpVersion());
+    myResp.setStatusCode(200);
+    myResp.setStatusMessage("Ok");
+    aMsg->getHeaders().forEach([&](const std::string& header,
+                                   const std::string& value) {
+      myResp.getHeaders().add(folly::to<std::string>("x-echo-", header), value);
+    });
+    myResp.setWantsKeepalive(true);
+    maybeAddAltSvcHeader(myResp);
+    theTransaction->sendHeaders(myResp);
   }
 
-  void onBody(std::unique_ptr<folly::IOBuf> chain) noexcept override {
+  void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override {
     VLOG(10) << "EchoHandler::onBody";
-    txn_->sendBody(std::move(chain));
+    theTransaction->sendBody(std::move(aChain));
   }
 
   void onEOM() noexcept override {
     VLOG(10) << "EchoHandler::onEOM";
-    txn_->sendEOM();
+    theTransaction->sendEOM();
   }
 
   void onError(const proxygen::HTTPException& /*error*/) noexcept override {
-    txn_->sendAbort();
+    theTransaction->sendAbort();
   }
-
- private:
-  bool sendFooter_{false};
 };
 
 } // namespace edge

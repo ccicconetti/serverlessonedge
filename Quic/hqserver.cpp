@@ -42,86 +42,89 @@ namespace uiiit {
 namespace edge {
 
 HQServer::HQServer(
-    const HQParams&                params,
-    HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
-    : params_(params)
-    , server_(quic::QuicServer::createQuicServer()) {
-  server_->setBindV6Only(false);
-  server_->setCongestionControllerFactory(
+    const HQParams&                aQuicParamsConf,
+    HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider)
+    : theQuicParamsConf(aQuicParamsConf)
+    , theQuicServer(quic::QuicServer::createQuicServer()) {
+  theQuicServer->setBindV6Only(false);
+  theQuicServer->setCongestionControllerFactory(
       std::make_shared<quic::ServerCongestionControllerFactory>());
-  server_->setTransportSettings(params_.transportSettings);
-  server_->setCcpConfig(params_.ccpConfig);
-  server_->setQuicServerTransportFactory(
+  theQuicServer->setTransportSettings(theQuicParamsConf.transportSettings);
+  theQuicServer->setCcpConfig(theQuicParamsConf.ccpConfig);
+  theQuicServer->setQuicServerTransportFactory(
       std::make_unique<HQServerTransportFactory>(
-          params_, std::move(httpTransactionHandlerProvider)));
-  server_->setQuicUDPSocketFactory(
+          theQuicParamsConf, std::move(aHttpTransactionHandlerProvider)));
+  theQuicServer->setQuicUDPSocketFactory(
       std::make_unique<quic::QuicSharedUDPSocketFactory>());
-  server_->setHealthCheckToken("health");
-  server_->setSupportedVersion(params_.quicVersions);
-  server_->setFizzContext(uiiit::edge::createFizzServerContext(params_));
-  if (params_.rateLimitPerThread) {
-    server_->setRateLimit(params_.rateLimitPerThread.value(), 1s);
+  theQuicServer->setHealthCheckToken("health");
+  theQuicServer->setSupportedVersion(theQuicParamsConf.quicVersions);
+  theQuicServer->setFizzContext(
+      uiiit::edge::createFizzServerContext(theQuicParamsConf));
+  if (theQuicParamsConf.rateLimitPerThread) {
+    theQuicServer->setRateLimit(theQuicParamsConf.rateLimitPerThread.value(),
+                                1s);
   }
 }
 
 std::thread HQServer::start() {
   VLOG(10) << "HQServer::start\n";
   std::thread t = std::thread([this]() mutable {
-    server_->start(params_.localAddress.value(),
-                   5); //, std::thread::hardware_concurrency());
+    theQuicServer->start(theQuicParamsConf.localAddress.value(),
+                         5); //, std::thread::hardware_concurrency());
 
-    server_->waitUntilInitialized();
-    const auto& boundAddr = server_->getAddress();
+    theQuicServer->waitUntilInitialized();
+    const auto& boundAddr = theQuicServer->getAddress();
     LOG(INFO) << "EdgeServerQuic started at: " << boundAddr.describe();
 
-    eventbase_.loopForever();
+    theEvb.loopForever();
   });
   return t;
 }
 
 void HQServer::stop() {
-  server_->shutdown();
-  eventbase_.terminateLoopSoon();
+  theQuicServer->shutdown();
+  theEvb.terminateLoopSoon();
 }
 
-FizzServerContextPtr createFizzServerContext(const HQParams& params) {
+FizzServerContextPtr createFizzServerContext(const HQParams& aQuicParamsConf) {
 
-  std::string certData    = kDefaultCertData;
-  std::string keyData     = kDefaultKeyData;
-  auto        cert        = fizz::CertUtils::makeSelfCert(certData, keyData);
-  auto        certManager = std::make_unique<fizz::server::CertManager>();
-  certManager->addCert(std::move(cert), true);
+  std::string myCertData = kDefaultCertData;
+  std::string myKeyData  = kDefaultKeyData;
+  auto        myCert     = fizz::CertUtils::makeSelfCert(myCertData, myKeyData);
+  auto        myCertManager = std::make_unique<fizz::server::CertManager>();
+  myCertManager->addCert(std::move(myCert), true);
 
   auto cert2 =
       fizz::CertUtils::makeSelfCert(kPrime256v1CertData, kPrime256v1KeyData);
-  certManager->addCert(std::move(cert2), false);
+  myCertManager->addCert(std::move(cert2), false);
 
-  auto serverCtx = std::make_shared<fizz::server::FizzServerContext>();
-  serverCtx->setCertManager(std::move(certManager));
+  auto myServerCtx = std::make_shared<fizz::server::FizzServerContext>();
+  myServerCtx->setCertManager(std::move(myCertManager));
   auto ticketCipher = std::make_shared<fizz::server::Aead128GCMTicketCipher<
       fizz::server::TicketCodec<fizz::server::CertificateStorage::X509>>>(
-      serverCtx->getFactoryPtr(), std::move(certManager));
+      myServerCtx->getFactoryPtr(), std::move(myCertManager));
   std::array<uint8_t, 32> ticketSeed;
   folly::Random::secureRandom(ticketSeed.data(), ticketSeed.size());
   ticketCipher->setTicketSecrets({{folly::range(ticketSeed)}});
-  serverCtx->setTicketCipher(ticketCipher);
-  serverCtx->setClientAuthMode(params.clientAuth);
-  serverCtx->setSupportedAlpns(params.supportedAlpns);
-  serverCtx->setRequireAlpn(true);
-  serverCtx->setSendNewSessionTicket(false);
-  serverCtx->setEarlyDataFbOnly(false);
-  serverCtx->setVersionFallbackEnabled(false);
+  myServerCtx->setTicketCipher(ticketCipher);
+  myServerCtx->setClientAuthMode(aQuicParamsConf.clientAuth);
+  myServerCtx->setSupportedAlpns(aQuicParamsConf.supportedAlpns);
+  myServerCtx->setRequireAlpn(true);
+  myServerCtx->setSendNewSessionTicket(false);
+  myServerCtx->setEarlyDataFbOnly(false);
+  myServerCtx->setVersionFallbackEnabled(false);
 
-  fizz::server::ClockSkewTolerance tolerance;
-  tolerance.before = std::chrono::minutes(-5);
-  tolerance.after  = std::chrono::minutes(5);
+  fizz::server::ClockSkewTolerance myTolerance;
+  myTolerance.before = std::chrono::minutes(-5);
+  myTolerance.after  = std::chrono::minutes(5);
 
-  std::shared_ptr<fizz::server::ReplayCache> replayCache =
+  std::shared_ptr<fizz::server::ReplayCache> myReplayCache =
       std::make_shared<fizz::server::AllowAllReplayReplayCache>();
 
-  serverCtx->setEarlyDataSettings(true, tolerance, std::move(replayCache));
+  myServerCtx->setEarlyDataSettings(
+      true, myTolerance, std::move(myReplayCache));
 
-  return serverCtx;
+  return myServerCtx;
 }
 
 } // namespace edge

@@ -32,31 +32,31 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-CurlClient::CurlClient(folly::EventBase*            evb,
-                       proxygen::HTTPMethod         httpMethod,
-                       const proxygen::URL&         url,
-                       const proxygen::URL*         proxy,
-                       const proxygen::HTTPHeaders& headers,
-                       const std::string&           inputFilename,
-                       bool                         h2c,
-                       unsigned short               httpMajor,
-                       unsigned short               httpMinor,
-                       bool                         partiallyReliable)
-    : CurlService::CurlClient(evb,
-                              httpMethod,
-                              url,
-                              proxy,
-                              headers,
-                              inputFilename,
-                              h2c,
-                              httpMajor,
-                              httpMinor,
-                              partiallyReliable) {
+CurlClient::CurlClient(folly::EventBase*            aEvb,
+                       proxygen::HTTPMethod         aHttpMethod,
+                       const proxygen::URL&         aUrl,
+                       const proxygen::URL*         aProxy,
+                       const proxygen::HTTPHeaders& aHeaders,
+                       const std::string&           aInputFilename,
+                       bool                         aH2c,
+                       unsigned short               aHttpMajor,
+                       unsigned short               aHttpMinor,
+                       bool                         aPartiallyReliable)
+    : CurlService::CurlClient(aEvb,
+                              aHttpMethod,
+                              aUrl,
+                              aProxy,
+                              aHeaders,
+                              aInputFilename,
+                              aH2c,
+                              aHttpMajor,
+                              aHttpMinor,
+                              aPartiallyReliable) {
 }
 
-void CurlClient::onBody(std::unique_ptr<folly::IOBuf> chain) noexcept {
+void CurlClient::onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept {
   VLOG(10) << "CurlClient::onBody()";
-  theResponseBody = std::move(chain);
+  theResponseBody = std::move(aChain);
 }
 
 std::unique_ptr<folly::IOBuf> CurlClient::getResponseBody() {

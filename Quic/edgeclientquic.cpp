@@ -163,8 +163,8 @@ EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
 
 EdgeClientQuic::~EdgeClientQuic() {
   LOG(INFO) << "EdgeClientQuic::dtor\n";
-  session_->drain();
-  session_->closeWhenIdle();
+  theSession->drain();
+  theSession->closeWhenIdle();
 }
 
 /**
@@ -179,89 +179,91 @@ void EdgeClientQuic::startClient() {
 
   initializeQuicTransportClient();
 
-  wangle::TransportInfo tinfo;
-  session_ = new proxygen::HQUpstreamSession(theQuicParamsConf.txnTimeout,
-                                             theQuicParamsConf.connectTimeout,
-                                             nullptr, // controller
-                                             tinfo,
-                                             nullptr); // codecfiltercallback
+  wangle::TransportInfo myTransportInfo;
+  theSession = new proxygen::HQUpstreamSession(theQuicParamsConf.txnTimeout,
+                                               theQuicParamsConf.connectTimeout,
+                                               nullptr, // controller
+                                               myTransportInfo,
+                                               nullptr); // codecfiltercallback
 
   // Need this for Interop since we use HTTP0.9
-  session_->setForceUpstream1_1(false);
-  session_->setSocket(quicClient_);
-  CHECK(session_->getQuicSocket());
-  session_->setConnectCallback(this);
+  theSession->setForceUpstream1_1(false);
+  theSession->setSocket(theQuicClient);
+  CHECK(theSession->getQuicSocket());
+  theSession->setConnectCallback(this);
   LOG(INFO) << "EdgeClientQuic connecting to "
             << theQuicParamsConf.remoteAddress->describe();
-  session_->startNow();
-  quicClient_->start(session_);
+  theSession->startNow();
+  theQuicClient->start(theSession);
 
   // This is to flush the CFIN out so the server will see the handshake as
   // complete.
-  evb_.loopForever();
+  theEvb.loopForever();
   // migrateClient false by default, no if branch
 }
 
 void EdgeClientQuic::connectSuccess() {
   // sendKnobFrame false by default, no if branch
   VLOG(10) << "EdgeClientQuic::connectSuccess\n";
-  uint64_t numOpenableStreams =
-      quicClient_->getNumOpenableBidirectionalStreams();
-  CHECK_GT(numOpenableStreams, 0);
-  httpPaths_.insert(httpPaths_.end(),
-                    theQuicParamsConf.httpPaths.begin(),
-                    theQuicParamsConf.httpPaths.end());
+  uint64_t myNumOpenableStreams =
+      theQuicClient->getNumOpenableBidirectionalStreams();
+  CHECK_GT(myNumOpenableStreams, 0);
+  theHttpPaths.insert(theHttpPaths.end(),
+                      theQuicParamsConf.httpPaths.begin(),
+                      theQuicParamsConf.httpPaths.end());
 }
 
 void EdgeClientQuic::onReplaySafe() {
   VLOG(10) << "EdgeClientQuic::onReplaySafe\n";
-  evb_.terminateLoopSoon();
+  theEvb.terminateLoopSoon();
 }
 
 void EdgeClientQuic::connectError(
-    std::pair<quic::QuicErrorCode, std::string> error) {
-  LOG(ERROR) << "EdgeClientQuic failed to connect, error="
-             << toString(error.first) << ", msg=" << error.second;
-  evb_.terminateLoopSoon();
+    std::pair<quic::QuicErrorCode, std::string> aError) {
+  LOG(ERROR) << "EdgeClientQuic failed to connect, Error="
+             << toString(aError.first) << ", msg=" << aError.second;
+  theEvb.terminateLoopSoon();
 }
 
 void EdgeClientQuic::initializeQuicTransportClient() {
-  auto sock   = std::make_unique<folly::AsyncUDPSocket>(&evb_);
-  auto client = std::make_shared<quic::QuicClientTransport>(
-      &evb_,
-      std::move(sock),
+  auto mySocket              = std::make_unique<folly::AsyncUDPSocket>(&theEvb);
+  auto myQuicTransportClient = std::make_shared<quic::QuicClientTransport>(
+      &theEvb,
+      std::move(mySocket),
       quic::FizzClientQuicHandshakeContext::Builder()
           .setFizzClientContext(createFizzClientContext(theQuicParamsConf))
           .setCertificateVerifier(
               std::make_unique<InsecureVerifierDangerousDoNotUseInProduction>())
           .setPskCache(theQuicParamsConf.pskCache)
           .build());
-  client->setHostname(theQuicParamsConf.host);
-  client->addNewPeerAddress(theQuicParamsConf.remoteAddress.value());
+  myQuicTransportClient->setHostname(theQuicParamsConf.host);
+  myQuicTransportClient->addNewPeerAddress(
+      theQuicParamsConf.remoteAddress.value());
   // this if should not be invoked since local address is empty
   if (theQuicParamsConf.localAddress.has_value()) {
-    client->setLocalAddress(*theQuicParamsConf.localAddress);
+    myQuicTransportClient->setLocalAddress(*theQuicParamsConf.localAddress);
   }
-  client->setCongestionControllerFactory(
+  myQuicTransportClient->setCongestionControllerFactory(
       std::make_shared<quic::DefaultCongestionControllerFactory>());
-  client->setTransportSettings(theQuicParamsConf.transportSettings);
-  client->setSupportedVersions(theQuicParamsConf.quicVersions);
+  myQuicTransportClient->setTransportSettings(
+      theQuicParamsConf.transportSettings);
+  myQuicTransportClient->setSupportedVersions(theQuicParamsConf.quicVersions);
 
-  quicClient_ = std::move(client);
+  theQuicClient = std::move(myQuicTransportClient);
 }
 
 FizzClientContextPtr
-EdgeClientQuic::createFizzClientContext(const HQParams& params) {
+EdgeClientQuic::createFizzClientContext(const HQParams& aQuicParamsConf) {
   auto ctx = std::make_shared<fizz::client::FizzClientContext>();
 
-  std::string certData = kDefaultCertData;
-  std::string keyData  = kDefaultKeyData;
-  auto        cert     = fizz::CertUtils::makeSelfCert(certData, keyData);
-  ctx->setClientCertificate(std::move(cert));
-  ctx->setSupportedAlpns(params.supportedAlpns);
+  std::string myCertData = kDefaultCertData;
+  std::string myKeyData  = kDefaultKeyData;
+  auto        myCert     = fizz::CertUtils::makeSelfCert(myCertData, myKeyData);
+  ctx->setClientCertificate(std::move(myCert));
+  ctx->setSupportedAlpns(aQuicParamsConf.supportedAlpns);
   ctx->setDefaultShares(
       {fizz::NamedGroup::x25519, fizz::NamedGroup::secp256r1});
-  ctx->setSendEarlyData(params.earlyData);
+  ctx->setSendEarlyData(aQuicParamsConf.earlyData);
   return ctx;
 }
 
@@ -271,8 +273,8 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
   VLOG(10) << "EdgeClientQuic::RunLambda\n";
 
-  std::unique_ptr<CurlClient> client = std::make_unique<CurlClient>(
-      &evb_,
+  std::unique_ptr<CurlClient> myClient = std::make_unique<CurlClient>(
+      &theEvb,
       proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
       proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
       nullptr,
@@ -283,44 +285,46 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
       theQuicParamsConf.httpVersion.minor);
 
   // set the onEOM() callback function
-  onEOMTerminateLoop = [&]() { evb_.terminateLoopSoon(); };
-  client->setEOMFunc(onEOMTerminateLoop);
+  onEOMTerminateLoop = [&]() { theEvb.terminateLoopSoon(); };
+  myClient->setEOMFunc(onEOMTerminateLoop);
 
   // transaction creation
-  auto txn = session_->newTransaction(client.get());
-  if (!txn) {
+  auto myTransaction = theSession->newTransaction(myClient.get());
+  if (!myTransaction) {
     std::runtime_error("Failed to create an HTTPTRansaction\n");
   }
 
   // build manually the HTTP Request message
-  proxygen::HTTPMessage request;
-  request.setMethod("POST");
-  request.setURL(httpPaths_.front().str());
-  request.setVersionString(theQuicParamsConf.httpVersion.canonical);
-  request.setIsChunked(true);
-  txn->sendHeaders(request);
+  proxygen::HTTPMessage myHttpRequestMessage;
+  myHttpRequestMessage.setMethod("POST");
+  myHttpRequestMessage.setURL(theHttpPaths.front().str());
+  myHttpRequestMessage.setVersionString(
+      theQuicParamsConf.httpVersion.canonical);
+  myHttpRequestMessage.setIsChunked(true);
+  myTransaction->sendHeaders(myHttpRequestMessage);
 
   // put the serialized LambdaRequest in the body
-  auto   aLambdaReq = aReq.toProtobuf();
-  size_t size       = aLambdaReq.ByteSizeLong();
-  void*  buffer     = malloc(size);
-  aLambdaReq.SerializeToArray(buffer, size);
-  auto buf = folly::IOBuf::copyBuffer(buffer, size);
-  txn->sendBody(std::move(buf));
-  txn->sendEOM();
+  auto   myProtobufLambdaReq = aReq.toProtobuf();
+  size_t mySize              = myProtobufLambdaReq.ByteSizeLong();
+  void*  myBuffer            = malloc(mySize);
+  myProtobufLambdaReq.SerializeToArray(myBuffer, mySize);
+  auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
+  myTransaction->sendBody(std::move(myIOBuf));
+  myTransaction->sendEOM();
 
   // blocking, will exit when the Response will be received
-  evb_.loopForever();
+  theEvb.loopForever();
 
   // new method which extends the proxygen::CurlClient sample
-  auto response = client->getResponseBody();
+  auto myResponseBody = myClient->getResponseBody();
 
   // LambdaResponse building after deserialization of the body of the response
-  rpc::LambdaResponse theProtobufLambdaRes;
-  theProtobufLambdaRes.ParseFromArray(response->data(), response->length());
-  LambdaResponse theLambdaRes(theProtobufLambdaRes);
+  rpc::LambdaResponse myProtobufLambdaRes;
+  myProtobufLambdaRes.ParseFromArray(myResponseBody->data(),
+                                     myResponseBody->length());
+  LambdaResponse myLambdaRes(myProtobufLambdaRes);
 
-  return theLambdaRes;
+  return myLambdaRes;
 }
 
 } // namespace edge

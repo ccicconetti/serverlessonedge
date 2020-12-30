@@ -73,8 +73,8 @@ void EdgeServerQuic::run() {
       theQuicParamsConf,
       [this](proxygen::HTTPMessage* aMsg,
              const HQParams& aParams) -> proxygen::HTTPTransactionHandler* {
-        auto path = aMsg->getPathAsStringPiece();
-        if (path == "/lambda") {
+        auto myPath = aMsg->getPathAsStringPiece();
+        if (myPath == "/lambda") {
           return new LambdaRequestHandler(aParams, theEdgeServer);
         }
         return new EchoHandler(aParams);

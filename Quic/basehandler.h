@@ -42,12 +42,13 @@ class BaseHandler : public proxygen::HTTPTransactionHandler
  public:
   BaseHandler() = delete;
 
-  explicit BaseHandler(const HQParams& params)
-      : params_(params) {
+  explicit BaseHandler(const HQParams& aQuicParamsConf)
+      : theQuicParamsConf(aQuicParamsConf) {
   }
 
-  void setTransaction(proxygen::HTTPTransaction* txn) noexcept override {
-    txn_ = txn;
+  void
+  setTransaction(proxygen::HTTPTransaction* aTransaction) noexcept override {
+    theTransaction = aTransaction;
   }
 
   void detachTransaction() noexcept override {
@@ -73,23 +74,24 @@ class BaseHandler : public proxygen::HTTPTransactionHandler
   void onEgressResumed() noexcept override {
   }
 
-  void maybeAddAltSvcHeader(proxygen::HTTPMessage& msg) const {
-    if (params_.protocol.empty() || params_.port == 0) {
+  void maybeAddAltSvcHeader(proxygen::HTTPMessage& aMsg) const {
+    if (theQuicParamsConf.protocol.empty() || theQuicParamsConf.port == 0) {
       return;
     }
-    msg.getHeaders().add(
-        proxygen::HTTP_HEADER_ALT_SVC,
-        folly::format("{}=\":{}\"; ma=3600", params_.protocol, params_.port)
-            .str());
+    aMsg.getHeaders().add(proxygen::HTTP_HEADER_ALT_SVC,
+                          folly::format("{}=\":{}\"; ma=3600",
+                                        theQuicParamsConf.protocol,
+                                        theQuicParamsConf.port)
+                              .str());
   }
 
  protected:
   const std::string& getHttpVersion() const {
-    return params_.httpVersion.canonical;
+    return theQuicParamsConf.httpVersion.canonical;
   }
 
-  proxygen::HTTPTransaction* txn_{nullptr};
-  const HQParams&            params_;
+  proxygen::HTTPTransaction* theTransaction{nullptr};
+  const HQParams&            theQuicParamsConf;
 };
 
 } // namespace edge

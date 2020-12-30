@@ -37,8 +37,9 @@ namespace edge {
 class LambdaRequestHandler : public BaseHandler
 {
  public:
-  explicit LambdaRequestHandler(const HQParams& params, EdgeServer& aEdgeServer)
-      : BaseHandler(params)
+  explicit LambdaRequestHandler(const HQParams& aQuicParamsConf,
+                                EdgeServer&     aEdgeServer)
+      : BaseHandler(aQuicParamsConf)
       , theEdgeServer(aEdgeServer) {
     VLOG(10) << "LambdaRequestHandler::CTOR\n";
   }
@@ -46,7 +47,7 @@ class LambdaRequestHandler : public BaseHandler
   LambdaRequestHandler() = delete;
 
   void onHeadersComplete(
-      std::unique_ptr<proxygen::HTTPMessage> msg) noexcept override {
+      std::unique_ptr<proxygen::HTTPMessage> aMsg) noexcept override {
     VLOG(10) << "LambdaRequestHandler::onHeadersComplete";
     VLOG(10) << "Setting http-version to " << getHttpVersion();
 
@@ -55,50 +56,50 @@ class LambdaRequestHandler : public BaseHandler
     maybeAddAltSvcHeader(theResponse);
   }
 
-  void onBody(std::unique_ptr<folly::IOBuf> chain) noexcept override {
+  void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override {
     VLOG(10) << "LambdaRequestHandler::onBody";
 
     // converting the folly::IOBuf in a rpc::LambdaRequest
-    rpc::LambdaRequest theProtobufLambdaReq;
-    theProtobufLambdaReq.ParseFromArray(chain->data(), chain->length());
+    rpc::LambdaRequest myProtobufLambdaReq;
+    myProtobufLambdaReq.ParseFromArray(aChain->data(), aChain->length());
 
     // useful for debugging
-    LambdaRequest theLambdaReq(theProtobufLambdaReq);
-    VLOG(10) << "LambdaRequest.toString() = \n" << theLambdaReq.toString();
+    LambdaRequest myLambdaReq(myProtobufLambdaReq);
+    VLOG(10) << "LambdaRequest.toString() = \n" << myLambdaReq.toString();
 
     // actual LambdaRequest processing
-    rpc::LambdaResponse aLambdaRes =
-        theEdgeServer.process(theProtobufLambdaReq);
+    rpc::LambdaResponse myProtobufLambdaResp =
+        theEdgeServer.process(myProtobufLambdaReq);
 
     // building of the LambdaResponse in order to check for theRetCode and set
     // the HTTPMessage theStatusCode and theStatusMessage according to it
-    LambdaResponse theLambdaRes(aLambdaRes);
-    if (theLambdaRes.theRetCode == std::string("OK")) {
+    LambdaResponse myLambdaResp(myProtobufLambdaResp);
+    if (myLambdaResp.theRetCode == std::string("OK")) {
       theResponse.setStatusCode(200);
       theResponse.setStatusMessage("Ok");
     } else {
       theResponse.setStatusCode(400);
       theResponse.setStatusMessage("Bad Request");
     }
-    txn_->sendHeaders(theResponse);
+    theTransaction->sendHeaders(theResponse);
 
     // send the LambdaResponse as body of the HTTPResponse
-    size_t size   = aLambdaRes.ByteSizeLong();
+    size_t size   = myProtobufLambdaResp.ByteSizeLong();
     void*  buffer = malloc(size);
-    aLambdaRes.SerializeToArray(buffer, size);
+    myProtobufLambdaResp.SerializeToArray(buffer, size);
     auto buf = folly::IOBuf::copyBuffer(buffer, size);
-    txn_->sendBody(std::move(buf));
+    theTransaction->sendBody(std::move(buf));
   }
 
   void onEOM() noexcept override {
     VLOG(10) << "LambdaRequestHandler::onEOM";
-    txn_->sendEOM();
+    theTransaction->sendEOM();
   }
 
   // when is this callback called? does it need to send an HTTPResponse with
   // error status?
   void onError(const proxygen::HTTPException& /*error*/) noexcept override {
-    txn_->sendAbort();
+    theTransaction->sendAbort();
   }
 
  private:

@@ -34,26 +34,26 @@ namespace uiiit {
 namespace edge {
 
 HQServerTransportFactory::HQServerTransportFactory(
-    const HQParams&                       params,
-    const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider)
-    : params_(params)
-    , httpTransactionHandlerProvider_(httpTransactionHandlerProvider) {
+    const HQParams&                       aQuicParamsConf,
+    const HTTPTransactionHandlerProvider& aHttpTransactionHandlerProvider)
+    : theQuicParamsConf(aQuicParamsConf)
+    , theHttpTransactionHandlerProvider(aHttpTransactionHandlerProvider) {
 }
 
 quic::QuicServerTransport::Ptr HQServerTransportFactory::make(
-    folly::EventBase*                      evb,
-    std::unique_ptr<folly::AsyncUDPSocket> socket,
+    folly::EventBase*                      aEvb,
+    std::unique_ptr<folly::AsyncUDPSocket> aSocket,
     const folly::SocketAddress& /* peerAddr */,
-    std::shared_ptr<const fizz::server::FizzServerContext> ctx) noexcept {
+    std::shared_ptr<const fizz::server::FizzServerContext> aCtx) noexcept {
   // Session controller is self owning
-  auto hqSessionController =
-      new HQSessionController(params_, httpTransactionHandlerProvider_);
-  auto session = hqSessionController->createSession();
-  CHECK_EQ(evb, socket->getEventBase());
-  auto transport =
-      quic::QuicServerTransport::make(evb, std::move(socket), *session, ctx);
-  hqSessionController->startSession(transport);
-  return transport;
+  auto mySessionController = new HQSessionController(
+      theQuicParamsConf, theHttpTransactionHandlerProvider);
+  auto mySession = mySessionController->createSession();
+  CHECK_EQ(aEvb, aSocket->getEventBase());
+  auto myServerTransport = quic::QuicServerTransport::make(
+      aEvb, std::move(aSocket), *mySession, aCtx);
+  mySessionController->startSession(myServerTransport);
+  return myServerTransport;
 }
 
 } // namespace edge

@@ -63,31 +63,31 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
 
   void initializeQuicTransportClient();
 
-  FizzClientContextPtr createFizzClientContext(const HQParams& params);
+  FizzClientContextPtr createFizzClientContext(const HQParams& aQuicParamsConf);
 
-  proxygen::HTTPTransaction* sendRequest(const proxygen::URL& requestUrl);
+  proxygen::HTTPTransaction* sendRequest(const proxygen::URL& aRequestUrl);
 
-  void sendRequests(bool closeSession, uint64_t numOpenableStreams);
+  void sendRequests(bool aCloseSession, uint64_t aNumOpenableStreams);
 
   // these 3 functions override the pure virtual ones in ConnectCallback
   void connectSuccess() override;
 
   void onReplaySafe() override;
 
-  void connectError(std::pair<quic::QuicErrorCode, std::string> error) override;
+  void
+  connectError(std::pair<quic::QuicErrorCode, std::string> aError) override;
 
   // this function sends a LambdaRequest to the QuicServer to which the quic
   // client is connected
   LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry) override;
 
  private:
-  const HQParams&                                     theQuicParamsConf;
-  std::thread                                         theQuicClientEvbThread;
-  std::shared_ptr<quic::QuicClientTransport>          quicClient_;
-  folly::EventBase                                    evb_;
-  proxygen::HQUpstreamSession*                        session_;
-  std::list<std::unique_ptr<CurlService::CurlClient>> curls_;
-  std::deque<folly::StringPiece>                      httpPaths_;
+  const HQParams&                            theQuicParamsConf;
+  std::thread                                theQuicClientEvbThread;
+  std::shared_ptr<quic::QuicClientTransport> theQuicClient;
+  folly::EventBase                           theEvb;
+  proxygen::HQUpstreamSession*               theSession;
+  std::deque<folly::StringPiece>             theHttpPaths;
 
 }; // end class EdgeClientQuic
 

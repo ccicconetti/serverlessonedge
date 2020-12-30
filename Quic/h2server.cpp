@@ -131,11 +131,11 @@ namespace uiiit {
 namespace edge {
 
 H2Server::SampleHandlerFactory::SampleHandlerFactory(
-    const HQParams&                params,
-    HTTPTransactionHandlerProvider httpTransactionHandlerProvider)
-    : params_(params)
-    , httpTransactionHandlerProvider_(
-          std::move(httpTransactionHandlerProvider)) {
+    const HQParams&                aQuicParamsConf,
+    HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider)
+    : theQuicParamsConf(aQuicParamsConf)
+    , theHttpTransactionHandlerProvider(
+          std::move(aHttpTransactionHandlerProvider)) {
 }
 
 H2Server::SampleHandlerFactory::~SampleHandlerFactory() {
@@ -150,62 +150,64 @@ void H2Server::SampleHandlerFactory::onServerStop() noexcept {
   VLOG(10) << "H2Server::onServerStop\n";
 }
 
-proxygen::RequestHandler*
-H2Server::SampleHandlerFactory::onRequest(proxygen::RequestHandler*,
-                                          proxygen::HTTPMessage* msg) noexcept {
+proxygen::RequestHandler* H2Server::SampleHandlerFactory::onRequest(
+    proxygen::RequestHandler*, proxygen::HTTPMessage* aMsg) noexcept {
   VLOG(10) << "H2Server::onRequest\n";
   return new proxygen::HTTPTransactionHandlerAdaptor(
-      httpTransactionHandlerProvider_(msg, params_));
+      theHttpTransactionHandlerProvider(aMsg, theQuicParamsConf));
 }
 
 std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
-    const HQParams&                params,
+    const HQParams&                aQuicParamsConf,
     HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
 
   auto serverOptions = std::make_unique<proxygen::HTTPServerOptions>();
 
-  serverOptions->threads     = params.httpServerThreads;
-  serverOptions->idleTimeout = params.httpServerIdleTimeout;
-  serverOptions->shutdownOn  = params.httpServerShutdownOn;
+  serverOptions->threads     = aQuicParamsConf.httpServerThreads;
+  serverOptions->idleTimeout = aQuicParamsConf.httpServerIdleTimeout;
+  serverOptions->shutdownOn  = aQuicParamsConf.httpServerShutdownOn;
   serverOptions->enableContentCompression =
-      params.httpServerEnableContentCompression;
+      aQuicParamsConf.httpServerEnableContentCompression;
   serverOptions->initialReceiveWindow =
-      params.transportSettings.advertisedInitialBidiLocalStreamWindowSize;
+      aQuicParamsConf.transportSettings
+          .advertisedInitialBidiLocalStreamWindowSize;
   serverOptions->receiveStreamWindowSize =
-      params.transportSettings.advertisedInitialBidiLocalStreamWindowSize;
+      aQuicParamsConf.transportSettings
+          .advertisedInitialBidiLocalStreamWindowSize;
   serverOptions->receiveSessionWindowSize =
-      params.transportSettings.advertisedInitialConnectionWindowSize;
+      aQuicParamsConf.transportSettings.advertisedInitialConnectionWindowSize;
   serverOptions->handlerFactories =
       proxygen::RequestHandlerChain()
           .addThen<SampleHandlerFactory>(
-              params, std::move(httpTransactionHandlerProvider))
+              aQuicParamsConf, std::move(httpTransactionHandlerProvider))
           .build();
   return serverOptions;
 }
 
 std::unique_ptr<H2Server::AcceptorConfig>
-H2Server::createServerAcceptorConfig(const HQParams& params) {
+H2Server::createServerAcceptorConfig(const HQParams& aQuicParamsConf) {
   auto acceptorConfig = std::make_unique<AcceptorConfig>();
   proxygen::HTTPServer::IPConfig ipConfig(
-      params.localH2Address.value(), proxygen::HTTPServer::Protocol::HTTP2);
-  ipConfig.sslConfigs.emplace_back(createSSLContext(params));
+      aQuicParamsConf.localH2Address.value(),
+      proxygen::HTTPServer::Protocol::HTTP2);
+  ipConfig.sslConfigs.emplace_back(createSSLContext(aQuicParamsConf));
   acceptorConfig->push_back(ipConfig);
   return acceptorConfig;
 }
 
 std::thread
-H2Server::run(const HQParams&                params,
-              HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
+H2Server::run(const HQParams&                aQuicParamsConf,
+              HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider) {
 
   VLOG(10) << "H2Server::run\n";
   // Start HTTPServer mainloop in a separate thread
-  std::thread t([params = folly::copy(params),
-                 httpTransactionHandlerProvider =
-                     std::move(httpTransactionHandlerProvider)]() mutable {
+  std::thread t([aQuicParamsConf = folly::copy(aQuicParamsConf),
+                 aHttpTransactionHandlerProvider =
+                     std::move(aHttpTransactionHandlerProvider)]() mutable {
     {
-      auto acceptorConfig = createServerAcceptorConfig(params);
+      auto acceptorConfig = createServerAcceptorConfig(aQuicParamsConf);
       auto serverOptions  = createServerOptions(
-          params, std::move(httpTransactionHandlerProvider));
+          aQuicParamsConf, std::move(aHttpTransactionHandlerProvider));
       proxygen::HTTPServer server(std::move(*serverOptions));
       server.bind(std::move(*acceptorConfig));
       server.start();
@@ -218,7 +220,7 @@ H2Server::run(const HQParams&                params,
   return t;
 }
 
-wangle::SSLContextConfig createSSLContext(const HQParams& params) {
+wangle::SSLContextConfig createSSLContext(const HQParams& aQuicParamsConf) {
   wangle::SSLContextConfig sslCfg;
   sslCfg.isDefault          = true;
   sslCfg.clientVerification = folly::SSLContext::SSLVerifyPeerEnum::VERIFY;

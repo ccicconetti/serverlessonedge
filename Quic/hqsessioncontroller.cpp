@@ -35,23 +35,23 @@ namespace uiiit {
 namespace edge {
 
 HQSessionController::HQSessionController(
-    const HQParams&                       params,
-    const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider)
-    : params_(params)
-    , httpTransactionHandlerProvider_(httpTransactionHandlerProvider) {
+    const HQParams&                       aQuicParamsConf,
+    const HTTPTransactionHandlerProvider& aHttpTransactionHandlerProvider)
+    : theQuicParamsConf(aQuicParamsConf)
+    , theHttpTransactionHandlerProvider(aHttpTransactionHandlerProvider) {
 }
 
 proxygen::HQSession* HQSessionController::createSession() {
   wangle::TransportInfo tinfo;
-  session_ =
-      new proxygen::HQDownstreamSession(params_.txnTimeout, this, tinfo, this);
-  return session_;
+  theSession = new proxygen::HQDownstreamSession(
+      theQuicParamsConf.txnTimeout, this, tinfo, this);
+  return theSession;
 }
 
 void HQSessionController::startSession(std::shared_ptr<quic::QuicSocket> sock) {
-  CHECK(session_);
-  session_->setSocket(std::move(sock));
-  session_->startNow();
+  CHECK(theSession);
+  theSession->setSocket(std::move(sock));
+  theSession->startNow();
   VLOG(10) << "HQSessionController::startSession\n";
 }
 
@@ -68,7 +68,7 @@ proxygen::HTTPTransactionHandler*
 HQSessionController::getRequestHandler(proxygen::HTTPTransaction& /*txn*/,
                                        proxygen::HTTPMessage* msg) {
   VLOG(10) << "HQSessionController::getRequestHandler\n";
-  return httpTransactionHandlerProvider_(msg, params_);
+  return theHttpTransactionHandlerProvider(msg, theQuicParamsConf);
 }
 
 proxygen::HTTPTransactionHandler* FOLLY_NULLABLE

@@ -86,13 +86,11 @@ class HQSessionController : public proxygen::HTTPSessionController,
  private:
   // The owning session. NOTE: this must be a plain pointer to
   // avoid circular references
-  proxygen::HQSession* session_{nullptr};
+  proxygen::HQSession* theSession{nullptr};
   // Configuration params
-  const HQParams& params_;
+  const HQParams& theQuicParamsConf;
   // Provider of HTTPTransactionHandler, owned by HQServerTransportFactory
-  const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider_;
-
-  // void sendKnobFrame(const folly::StringPiece str);
+  const HTTPTransactionHandlerProvider& theHttpTransactionHandlerProvider;
 };
 
 } // namespace edge

@@ -57,8 +57,8 @@ class H2Server
   {
    public:
     explicit SampleHandlerFactory(
-        const HQParams&                params,
-        HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
+        const HQParams&                aQuicParamsConf,
+        HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
 
     virtual ~SampleHandlerFactory();
 
@@ -71,14 +71,14 @@ class H2Server
               proxygen::HTTPMessage* /* msg */) noexcept override;
 
    private:
-    const HQParams&                params_;
-    HTTPTransactionHandlerProvider httpTransactionHandlerProvider_;
+    const HQParams&                theQuicParamsConf;
+    HTTPTransactionHandlerProvider theHttpTransactionHandlerProvider;
   }; // SampleHandlerFactory
 
  public:
   static std::unique_ptr<proxygen::HTTPServerOptions> createServerOptions(
       const HQParams& /* params */,
-      HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
+      HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
 
   using AcceptorConfig = std::vector<proxygen::HTTPServer::IPConfig>;
 
@@ -87,12 +87,12 @@ class H2Server
 
   // Starts H2 server in a background thread
   static std::thread
-  run(const HQParams&                params,
-      HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
+  run(const HQParams&                aQuicParamsConf,
+      HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
 
 }; // class H2Server
 
-wangle::SSLContextConfig createSSLContext(const HQParams& params);
+wangle::SSLContextConfig createSSLContext(const HQParams& aQuicParamsConf);
 
 } // namespace edge
 } // namespace uiiit

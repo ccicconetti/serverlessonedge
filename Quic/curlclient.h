@@ -47,20 +47,20 @@ namespace edge {
 class CurlClient final : public CurlService::CurlClient
 {
  public:
-  explicit CurlClient(folly::EventBase*            evb,
-                      proxygen::HTTPMethod         httpMethod,
-                      const proxygen::URL&         url,
-                      const proxygen::URL*         proxy,
-                      const proxygen::HTTPHeaders& headers,
-                      const std::string&           inputFilename,
-                      bool                         h2c               = false,
-                      unsigned short               httpMajor         = 1,
-                      unsigned short               httpMinor         = 1,
-                      bool                         partiallyReliable = false);
+  explicit CurlClient(folly::EventBase*            aEvb,
+                      proxygen::HTTPMethod         aHttpMethod,
+                      const proxygen::URL&         aUrl,
+                      const proxygen::URL*         aProxy,
+                      const proxygen::HTTPHeaders& aHeaders,
+                      const std::string&           aInputFilename,
+                      bool                         aH2c               = false,
+                      unsigned short               aHttpMajor         = 1,
+                      unsigned short               aHttpMinor         = 1,
+                      bool                         aPartiallyReliable = false);
 
   virtual ~CurlClient() = default;
 
-  void onBody(std::unique_ptr<folly::IOBuf> chain) noexcept override;
+  void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override;
   std::unique_ptr<folly::IOBuf> getResponseBody();
 
  protected:

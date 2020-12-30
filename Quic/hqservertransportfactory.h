@@ -45,23 +45,23 @@ class HQServerTransportFactory : public quic::QuicServerTransportFactory
 {
  public:
   explicit HQServerTransportFactory(
-      const HQParams&                       params,
-      const HTTPTransactionHandlerProvider& httpTransactionHandlerProvider);
+      const HQParams&                       aQuicParamsConf,
+      const HTTPTransactionHandlerProvider& aHttpTransactionHandlerProvider);
   ~HQServerTransportFactory() override = default;
 
   // Creates new quic server transport
   quic::QuicServerTransport::Ptr
-  make(folly::EventBase*                      evb,
-       std::unique_ptr<folly::AsyncUDPSocket> socket,
+  make(folly::EventBase*                      aEvb,
+       std::unique_ptr<folly::AsyncUDPSocket> aSocket,
        const folly::SocketAddress& /* peerAddr */,
-       std::shared_ptr<const fizz::server::FizzServerContext> ctx) noexcept
+       std::shared_ptr<const fizz::server::FizzServerContext> aCtx) noexcept
       override;
 
  private:
   // Configuration params
-  const HQParams& params_;
+  const HQParams& theQuicParamsConf;
   // Provider of HTTPTransactionHandler
-  HTTPTransactionHandlerProvider httpTransactionHandlerProvider_;
+  HTTPTransactionHandlerProvider theHttpTransactionHandlerProvider;
 };
 
 } // namespace edge

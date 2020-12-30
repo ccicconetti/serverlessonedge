@@ -170,8 +170,8 @@ class HQServer
 {
  public:
   explicit HQServer(
-      const HQParams&                params,
-      HTTPTransactionHandlerProvider httpTransactionHandlerProvider);
+      const HQParams&                aQuicParamsConf,
+      HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
 
   // Starts the QUIC transport in background thread
   std::thread start();
@@ -179,13 +179,13 @@ class HQServer
   void stop();
 
  private:
-  const HQParams&                   params_;
-  folly::EventBase                  eventbase_;
-  std::shared_ptr<quic::QuicServer> server_;
-  folly::Baton<>                    cv_;
+  const HQParams&                   theQuicParamsConf;
+  folly::EventBase                  theEvb;
+  std::shared_ptr<quic::QuicServer> theQuicServer;
+  folly::Baton<>                    theCv;
 };
 
-FizzServerContextPtr createFizzServerContext(const HQParams& params);
+FizzServerContextPtr createFizzServerContext(const HQParams& aQuicParamsConf);
 
 } // namespace edge
 } // namespace uiiit
