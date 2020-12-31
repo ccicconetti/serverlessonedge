@@ -32,7 +32,7 @@ SOFTWARE.
 #include "Edge/edgeserverimpl.h"
 #include "Quic/edgeclientquic.h"
 #include "Quic/edgeserverquic.h"
-#include "Quic/quicparams.h"
+#include "Quic/quicparamsbuilder.h"
 #include "Support/conf.h"
 
 #include "gtest/gtest.h"
@@ -52,8 +52,10 @@ TEST_F(TestEdgeServerQuic, test_connection) {
 
   folly::ssl::init();
 
-  HQParams myEdgeServerQuicParams(true);
-  HQParams myEdgeClientQuicParams(false);
+  HQParams myEdgeServerQuicParams =
+      QuicParamsBuilder::build(support::Conf("transport-type=quic"), true);
+  HQParams myEdgeClientQuicParams =
+      QuicParamsBuilder::build(support::Conf("transport-type=quic"), false);
 
   std::unique_ptr<EdgeRouter> theRouter;
   LOG(INFO) << myEdgeServerQuicParams.host + ':' +
@@ -73,18 +75,14 @@ TEST_F(TestEdgeServerQuic, test_connection) {
   assert(myServerImpl != nullptr);
   myServerImpl->run();
 
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-
   EdgeClientQuic myClient(myEdgeClientQuicParams);
   myClient.startClient();
 
-  // std::this_thread::sleep_for(std::chrono::seconds(1));
-
   LambdaRequest  myReq("clambda0", std::string(50, 'A'));
-  LambdaResponse myRes = myClient.RunLambda(myReq, false);
+  LambdaResponse myResp = myClient.RunLambda(myReq, false);
   // checks
 
-  // std::this_thread::sleep_for(std::chrono::seconds(1));
+  LOG(INFO) << myResp.toString();
 
   // myClient.RunLambda(myReq, false);
 

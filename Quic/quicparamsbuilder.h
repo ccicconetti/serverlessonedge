@@ -4,16 +4,20 @@
 |   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
 |   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
 |_______|__|__/__/   /__/
+
 Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
+
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
 in the Software  without restriction, including without  limitation the rights
 to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
 copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
 furnished to do so, subject to the following conditions:
+
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
 THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
 IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
 FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
@@ -115,100 +119,104 @@ struct HQParams {
   HTTPVersion                           httpVersion;
   proxygen::HTTPHeaders                 httpHeaders;
   std::vector<folly::StringPiece>       httpPaths;
-
-  std::chrono::milliseconds txnTimeout;
-
-  size_t                    httpServerThreads;
-  std::chrono::milliseconds httpServerIdleTimeout;
-  std::vector<int>          httpServerShutdownOn;
-  bool                      httpServerEnableContentCompression;
-  bool                      h2cEnabled;
-
-  // Partial reliability section
-  folly::Optional<uint64_t> prChunkSize;
-  folly::Optional<uint64_t> prChunkDelayMs;
+  size_t                                httpServerThreads;
+  std::chrono::milliseconds             httpServerIdleTimeout;
+  std::vector<int>                      httpServerShutdownOn;
+  bool                                  httpServerEnableContentCompression;
+  bool                                  h2cEnabled;
+  std::chrono::milliseconds             txnTimeout;
 
   // Fizz options
   std::shared_ptr<quic::QuicPskCache> pskCache;
   fizz::server::ClientAuthMode clientAuth{fizz::server::ClientAuthMode::None};
 
-  /**
-   * Struct Constructor (set default values according to the boolean parameter
-   * isServer)
-   */
   HQParams(bool isServer) {
+
     // *** Common Settings Section ***
-    host = "127.0.0.1";
-    port = 6473;
-    if (isServer) {
-      localAddress = folly::SocketAddress(host, port, true);
-    } else {
-      remoteAddress = folly::SocketAddress(host, port, true);
-      // local_address empty by default, local_address not set
-    }
+    // host = "127.0.0.1";
+    // port = 6473;
+    // if (isServer) {
+    //   localAddress = folly::SocketAddress(host, port, true);
+    // } else {
+    //   remoteAddress = folly::SocketAddress(host, port, true);
+    //   // local_address empty by default, local_address not set
+    //   // CHECK this local_address for client in edgeclient(grpc)
+    // }
 
     // *** TransportSettings ***
-    quicVersions = {quic::QuicVersion::MVFST,
+    quicVersions   = {quic::QuicVersion::MVFST,
                     quic::QuicVersion::MVFST_D24,
                     quic::QuicVersion::MVFST_EXPERIMENTAL,
                     quic::QuicVersion::QUIC_DRAFT,
                     quic::QuicVersion::QUIC_DRAFT_LEGACY};
-    // draft_version = 0 by default -> no if branch
-    // protocol = "" by default -> else branch
-    supportedAlpns                                          = {"h1q-fb",
+    supportedAlpns = {"h1q-fb",
                       "h1q-fb-v2",
                       proxygen::kH3FBCurrentDraft,
                       proxygen::kH3CurrentDraft,
                       proxygen::kH3LegacyDraft,
                       proxygen::kHQCurrentDraft};
-    transportSettings.advertisedInitialConnectionWindowSize = 1024 * 1024 * 10;
-    transportSettings.advertisedInitialBidiLocalStreamWindowSize  = 256 * 1024;
-    transportSettings.advertisedInitialBidiRemoteStreamWindowSize = 256 * 1024;
-    transportSettings.advertisedInitialUniStreamWindowSize        = 256 * 1024;
-    congestionControlName                                         = "cubic";
+
+    transportSettings.advertisedInitialConnectionWindowSize =
+        1024 * 1024 * 10; //"Connection flow control"
+    transportSettings.advertisedInitialBidiLocalStreamWindowSize =
+        256 * 1024; //"Stream flow control"
+    transportSettings.advertisedInitialBidiRemoteStreamWindowSize =
+        256 * 1024; //"Stream flow control"
+    transportSettings.advertisedInitialUniStreamWindowSize =
+        256 * 1024;                  //"Stream flow control"
+    congestionControlName = "cubic"; //"newreno / cubic / bbr / none"
     congestionControl = quic::congestionControlStrToType(congestionControlName);
-    // since congestion control cannot be null since we are using default
-    // values
     if (congestionControl) {
       transportSettings.defaultCongestionController = congestionControl.value();
     }
-    transportSettings.maxRecvPacketSize = quic::kDefaultUDPReadBufferSize;
-    transportSettings.numGROBuffers_    = quic::kDefaultNumGROBuffers;
-    transportSettings.pacingEnabled     = false;
-    // pacingEnabled false by default, no if branch
-    transportSettings.batchingMode = quic::getQuicBatchingMode(
-        static_cast<uint32_t>(quic::QuicBatchingMode::BATCHING_MODE_NONE));
-    transportSettings.useThreadLocalBatching = false;
-    transportSettings.threadLocalDelay       = std::chrono::microseconds(1000);
-    transportSettings.maxBatchSize           = quic::kDefaultQuicMaxBatchSize;
-    transportSettings.turnoffPMTUD           = true;
+    transportSettings.maxRecvPacketSize =
+        quic::kDefaultUDPReadBufferSize; //"Max UDP packet size Quic can
+                                         // receive"
+    transportSettings.numGROBuffers_ =
+        quic::kDefaultNumGROBuffers; //"Number of GRO buffers"
+
+    transportSettings.batchingMode =
+        quic::getQuicBatchingMode(static_cast<uint32_t>(
+            quic::QuicBatchingMode::BATCHING_MODE_NONE)); //"QUIC batching mode"
+    transportSettings.useThreadLocalBatching =
+        false; //"Use thread local batching"
+    transportSettings.threadLocalDelay =
+        std::chrono::microseconds(1000); //"Thread local delay in microseconds"
+    transportSettings.maxBatchSize =
+        quic::kDefaultQuicMaxBatchSize; //"Maximum number of packets that can be
+                                        // batched in Quic"
+    transportSettings.turnoffPMTUD              = true;
     transportSettings.partialReliabilityEnabled = false;
     if (!isServer) {
       transportSettings.shouldDrain = false;
-      transportSettings.attemptEarlyData =
-          false; // CHECK!!! (WHETHER TO USE 0-RTT)
+      // transportSettings.attemptEarlyData = false;
     }
-    transportSettings.connectUDP       = false;
-    transportSettings.maxCwndInMss     = quic::kLargeMaxCwndInMss;
+    transportSettings.connectUDP =
+        false; //"Whether or not to use connected udp sockets"
+    transportSettings.maxCwndInMss =
+        quic::kLargeMaxCwndInMss; //"Max cwnd in unit of mss"
     transportSettings.disableMigration = false;
-    // FLAGS_use_inplace_write = false by default, no if branch
-    // FLAGS_rate_limit = -1 by default, no if branch
-    connectTimeout                      = std::chrono::milliseconds(2000);
-    ccpConfig                           = "";
+    connectTimeout =
+        std::chrono::milliseconds(2000); //"(HQClient) connect timeout in ms"
+    ccpConfig = ""; //"Additional args to pass to ccp. Ccp disabled if empty
+    // string."
     transportSettings.d6dConfig.enabled = false;
-    transportSettings.d6dConfig.probeRaiserConstantStepSize = 10;
-    // d6d_probe_raiser_type = 0 default so we can use the following
-    transportSettings.d6dConfig.raiserType =
-        quic::ProbeSizeRaiserType::ConstantStep;
-    transportSettings.d6dConfig.blackholeDetectionWindow =
-        std::chrono::seconds(5);
-    transportSettings.d6dConfig.blackholeDetectionThreshold = 5;
-    transportSettings.d6dConfig.enabled                     = false;
-    transportSettings.d6dConfig.advertisedBasePMTU          = 1252;
-    transportSettings.d6dConfig.advertisedRaiseTimeout =
-        std::chrono::seconds(600);
-    transportSettings.d6dConfig.advertisedProbeTimeout =
-        std::chrono::seconds(600);
+    transportSettings.d6dConfig.probeRaiserConstantStepSize =
+        10; //"Server only. The constant step size used to increase PMTU, only "
+            //"meaningful to ConstantStep probe size raiser"
+    transportSettings.d6dConfig.raiserType = quic::ProbeSizeRaiserType::
+        ConstantStep; //"Server only. The type of probe size raiser.
+                      // (0:ConstantStep, 1:BinarySearch)
+    transportSettings.d6dConfig.blackholeDetectionWindow = std::chrono::seconds(
+        5); //"Server only. PMTU blackhole detection window in secs"
+    transportSettings.d6dConfig.blackholeDetectionThreshold =
+        5; //"Server only. PMTU blackhole detection threshold, in # of packets"
+    transportSettings.d6dConfig.advertisedBasePMTU =
+        1252; //"Client only. The base PMTU advertised to server"
+    transportSettings.d6dConfig.advertisedRaiseTimeout = std::chrono::seconds(
+        600); //"Client only. The raise timeout advertised to server"
+    transportSettings.d6dConfig.advertisedProbeTimeout = std::chrono::seconds(
+        600); //"Client only. The probe timeout advertised to server"
     transportSettings.maxRecvBatchSize                = 32;
     transportSettings.shouldUseRecvmmsgForBatchRecv   = true;
     transportSettings.advertisedInitialMaxStreamsBidi = 100;
@@ -216,8 +224,9 @@ struct HQParams {
     transportSettings.tokenlessPacer                  = true;
 
     // *** HTTP Settings ***
-    h2port         = 6667; // "HTTP/2 server port"
-    localH2Address = folly::SocketAddress(host, h2port, true);
+    // h2port         = 6667; // "HTTP/2 server port"
+    // localH2Address = folly::SocketAddress(host, h2port, true);
+
     // std::thread::hardware_concurrency() << can be quite a lot...
     httpServerThreads                  = 5;
     httpServerIdleTimeout              = std::chrono::milliseconds(60000);
@@ -234,13 +243,8 @@ struct HQParams {
       httpHeaders.set(proxygen::HTTP_HEADER_HOST, host);
     }
 
-    // *** Partial Reliability Settings ***
-    prChunkSize    = folly::to<uint64_t>(16);
-    prChunkDelayMs = folly::to<uint64_t>(0);
-
     // *** FizzSettings***
-    earlyData = false; // CHECK the function of this
-    // psk_file is empty by default, else branch
+    // earlyData = false;
     pskCache = std::make_shared<proxygen::SynchronizedLruQuicPskCache>(1000);
   }
 };
@@ -252,28 +256,9 @@ struct HQParams {
 class QuicParamsBuilder
 {
  public:
-  /**
-   * Ctor for EdgeClientQuic & for EdgeServerQuic if server-conf is empty
-   *
-   * TODO: check if it is needed to use boost options from CLI to initialize the
-   * client Params or if it is sufficient to initialize with default values
-   * (not important now)
-   */
-  QuicParamsBuilder(uiiit::support::Conf quicConf); // for EdgeServerQuic
-  // need to see for the client
-
-  /**
-   * need to keep the distinction between the first two members if we do not
-   * want to allow user to have the possibility to configure all the
-   * QuicParameters
-   */
-  static std::list<std::string> theConfigurableQuicParamsList;
-  // list of all the parameters in HQParams struct, this is needed in order to
-  // check if a key provided in the Support::Conf exists or not and to retrieve
-  // the element in which we need to insert the value
-  std::list<std::string>             theQuicParamsList;
-  HQParams                           theQuicParams;
-  std::map<std::string, std::string> theInvalidParams;
+  // simply with iteration on std::map of the conf and with if statements since
+  // configurable parameters are few
+  static HQParams build(const support::Conf& aConf, bool isServer);
 };
 
 } // namespace edge

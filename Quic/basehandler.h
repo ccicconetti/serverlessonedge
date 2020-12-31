@@ -29,7 +29,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Quic/quicparams.h"
+#include "Quic/quicparamsbuilder.h"
 
 #include <folly/Format.h>
 #include <proxygen/lib/http/session/HTTPTransaction.h>
@@ -75,14 +75,12 @@ class BaseHandler : public proxygen::HTTPTransactionHandler
   }
 
   void maybeAddAltSvcHeader(proxygen::HTTPMessage& aMsg) const {
-    if (theQuicParamsConf.protocol.empty() || theQuicParamsConf.port == 0) {
+    if (theQuicParamsConf.port == 0) {
       return;
     }
-    aMsg.getHeaders().add(proxygen::HTTP_HEADER_ALT_SVC,
-                          folly::format("{}=\":{}\"; ma=3600",
-                                        theQuicParamsConf.protocol,
-                                        theQuicParamsConf.port)
-                              .str());
+    aMsg.getHeaders().add(
+        proxygen::HTTP_HEADER_ALT_SVC,
+        folly::format("{}=\":{}\"; ma=3600", "", theQuicParamsConf.port).str());
   }
 
  protected:

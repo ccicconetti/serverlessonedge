@@ -29,7 +29,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Quic/quicparams.h"
+#include "Quic/quicparamsbuilder.h"
 
 #include <proxygen/lib/http/session/HQSession.h>
 #include <proxygen/lib/http/session/HTTPSession.h>

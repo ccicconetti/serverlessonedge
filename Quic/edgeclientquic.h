@@ -31,7 +31,7 @@ SOFTWARE.
 
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
-#include "Quic/quicparams.h"
+#include "Quic/quicparamsbuilder.h"
 
 #include <proxygen/httpclient/samples/curl/CurlClient.h>
 #include <proxygen/lib/http/session/HQUpstreamSession.h>

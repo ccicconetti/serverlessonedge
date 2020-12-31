@@ -6,6 +6,7 @@ add_library(uiiitedgequic SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/curlclient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/hqsessioncontroller.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/hqservertransportfactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/quicparamsbuilder.cpp
 )
 
 target_compile_options(uiiitedgequic PRIVATE "-DNDEBUG")

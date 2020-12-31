@@ -30,7 +30,7 @@ SOFTWARE.
 #pragma once
 
 #include "Edge/edgeserverimpl.h"
-#include "Quic/quicparams.h"
+#include "Quic/quicparamsbuilder.h"
 #include "Support/macros.h"
 
 #include <proxygen/httpserver/HTTPServer.h>

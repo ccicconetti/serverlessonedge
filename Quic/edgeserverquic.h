@@ -34,7 +34,7 @@ SOFTWARE.
 #include "Quic/hqserver.h"
 #include "Quic/hqservertransportfactory.h"
 #include "Quic/hqsessioncontroller.h"
-#include "Quic/quicparams.h"
+#include "Quic/quicparamsbuilder.h"
 #include "Support/macros.h"
 
 #include <cassert>
