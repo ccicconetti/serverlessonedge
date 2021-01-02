@@ -228,9 +228,10 @@ struct HQParams {
     // localH2Address = folly::SocketAddress(host, h2port, true);
 
     // std::thread::hardware_concurrency() << can be quite a lot...
-    httpServerThreads                  = 5;
-    httpServerIdleTimeout              = std::chrono::milliseconds(60000);
-    httpServerShutdownOn               = {SIGINT, SIGTERM}; //<<<<<<<<<<<<<
+    httpServerThreads     = 5;
+    httpServerIdleTimeout = std::chrono::milliseconds(60000);
+    // httpServerShutdownOn               = {SIGINT, SIGTERM}; //<<<<<<<<<<<<<
+    httpServerShutdownOn               = {};
     httpServerEnableContentCompression = false;
     h2cEnabled                         = false;
     httpVersion.parse("1.1");

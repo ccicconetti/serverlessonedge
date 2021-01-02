@@ -61,7 +61,7 @@ void HQSessionController::onTransportReady(
 }
 
 void HQSessionController::onDestroy(const proxygen::HTTPSessionBase&) {
-  LOG(INFO) << "HQSessionController::onDestroy\n";
+  VLOG(10) << "HQSessionController::onDestroy\n";
 }
 
 proxygen::HTTPTransactionHandler*

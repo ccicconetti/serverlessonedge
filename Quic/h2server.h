@@ -76,6 +76,10 @@ class H2Server
   }; // SampleHandlerFactory
 
  public:
+  explicit H2Server(
+      const HQParams&                aQuicParamsConf,
+      HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
+
   static std::unique_ptr<proxygen::HTTPServerOptions> createServerOptions(
       const HQParams& /* params */,
       HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
@@ -85,10 +89,14 @@ class H2Server
   static std::unique_ptr<AcceptorConfig>
   createServerAcceptorConfig(const HQParams& /* params */);
 
-  // Starts H2 server in a background thread
-  static std::thread
-  run(const HQParams&                aQuicParamsConf,
-      HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
+  // Starts theHttpServer in another thread
+  std::thread start();
+
+  // Stops theHttpServer in another thread
+  void stop();
+
+ private:
+  std::unique_ptr<proxygen::HTTPServer> theHttpServer;
 
 }; // class H2Server
 

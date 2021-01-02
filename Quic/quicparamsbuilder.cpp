@@ -32,8 +32,6 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-// Conf = std::map<std::string, std::string>
-
 HQParams QuicParamsBuilder::build(const support::Conf& aConf, bool isServer) {
   HQParams myHQParamsConf(isServer);
 

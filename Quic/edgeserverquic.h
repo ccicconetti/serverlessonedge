@@ -103,6 +103,7 @@ class EdgeServerQuic final : public EdgeServerImpl
   std::thread    theQuicServerThread;
   const HQParams theQuicParamsConf;
   HQServer       theQuicTransportServer;
+  H2Server       theHttpServer;
 
 }; // end class EdgeServer
 

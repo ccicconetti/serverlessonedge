@@ -157,9 +157,21 @@ proxygen::RequestHandler* H2Server::SampleHandlerFactory::onRequest(
       theHttpTransactionHandlerProvider(aMsg, theQuicParamsConf));
 }
 
+H2Server::H2Server(
+    const HQParams&                aQuicParamsConf,
+    HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider) {
+  VLOG(10) << "H2Server::ctor";
+  auto myAcceptorConfig = createServerAcceptorConfig(aQuicParamsConf);
+  auto myServerOptions  = H2Server::createServerOptions(
+      aQuicParamsConf, std::move(aHttpTransactionHandlerProvider));
+  theHttpServer =
+      std::make_unique<proxygen::HTTPServer>(std::move(*myServerOptions));
+  theHttpServer->bind(std::move(*myAcceptorConfig));
+}
+
 std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
     const HQParams&                aQuicParamsConf,
-    HTTPTransactionHandlerProvider httpTransactionHandlerProvider) {
+    HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider) {
 
   auto serverOptions = std::make_unique<proxygen::HTTPServerOptions>();
 
@@ -179,7 +191,7 @@ std::unique_ptr<proxygen::HTTPServerOptions> H2Server::createServerOptions(
   serverOptions->handlerFactories =
       proxygen::RequestHandlerChain()
           .addThen<SampleHandlerFactory>(
-              aQuicParamsConf, std::move(httpTransactionHandlerProvider))
+              aQuicParamsConf, std::move(aHttpTransactionHandlerProvider))
           .build();
   return serverOptions;
 }
@@ -195,29 +207,15 @@ H2Server::createServerAcceptorConfig(const HQParams& aQuicParamsConf) {
   return acceptorConfig;
 }
 
-std::thread
-H2Server::run(const HQParams&                aQuicParamsConf,
-              HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider) {
-
-  VLOG(10) << "H2Server::run\n";
-  // Start HTTPServer mainloop in a separate thread
-  std::thread t([aQuicParamsConf = folly::copy(aQuicParamsConf),
-                 aHttpTransactionHandlerProvider =
-                     std::move(aHttpTransactionHandlerProvider)]() mutable {
-    {
-      auto acceptorConfig = createServerAcceptorConfig(aQuicParamsConf);
-      auto serverOptions  = createServerOptions(
-          aQuicParamsConf, std::move(aHttpTransactionHandlerProvider));
-      proxygen::HTTPServer server(std::move(*serverOptions));
-      server.bind(std::move(*acceptorConfig));
-      server.start();
-    }
-    // HTTPServer traps the SIGINT.  resignal HQServer
-    raise(SIGINT);
-  });
-  VLOG(10) << "POST THREAD SPAWNING\n";
-
+std::thread H2Server::start() {
+  VLOG(10) << "H2Server::start()";
+  std::thread t([&]() mutable { theHttpServer->start(); });
   return t;
+}
+
+void H2Server::stop() {
+  VLOG(10) << "H2Server::stop()";
+  theHttpServer->stop();
 }
 
 wangle::SSLContextConfig createSSLContext(const HQParams& aQuicParamsConf) {
