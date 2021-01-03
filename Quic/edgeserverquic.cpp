@@ -85,12 +85,17 @@ void EdgeServerQuic::run() {
 
 void EdgeServerQuic::wait() { // wait for the server termination
   VLOG(10) << "EdgeServerQuic::wait()\n";
+  theH2ServerThread.join();
+  theQuicServerThread.join();
 }
 
 EdgeServerQuic::~EdgeServerQuic() {
   VLOG(10) << "EdgeServerQuic::dtor()\n";
   theQuicTransportServer.stop();
   theHttpServer.stop();
+  // these repetitions should not be a problem since std::thread::join is
+  // idempotent and if a thread is already ended the function returns
+  // immediately
   theH2ServerThread.join();
   theQuicServerThread.join();
 }
