@@ -116,8 +116,7 @@ class Network
                                         const std::string& aDst);
 
   //! \return the transmission time from aSrc to aDst of a given amount of data
-  double
-  txTime(const std::string& aSrc, const std::string& aDst, const size_t aBytes);
+  double txTime(const Node& aSrc, const Node& aDst, const size_t aBytes);
 
  private:
   //! Convert name to numeric identifier.

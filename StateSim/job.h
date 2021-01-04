@@ -45,7 +45,7 @@ class Job
    *
    * Create a job.
    *
-   * \param aId The task identifier, unique within a job.
+   * \param aId The job identifier, unique within a scenario.
    *
    * \param aStart The job start time, relative, in seconds.
    *

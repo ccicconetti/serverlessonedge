@@ -314,7 +314,7 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
     assert(myStateIdMapSize == myStateIdMap.size());
 
     // add the new job
-    myJobs.emplace_back(Job{myJob.theId,
+    myJobs.emplace_back(Job{myJobs.size(),
                             myJob.theStartTime,
                             myTasks,
                             myStateSizes,

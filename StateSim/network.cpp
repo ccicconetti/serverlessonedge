@@ -292,17 +292,14 @@ std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
   return {myRet.first, theElements[myRet.second]->name()};
 }
 
-double Network::txTime(const std::string& aSrc,
-                       const std::string& aDst,
-                       const size_t       aBytes) {
-  const auto myDstId      = id(aDst);
-  auto&      myCacheEntry = cacheEntry(myDstId);
-  const auto mySrcId      = id(aSrc);
-  assert(mySrcId < myCacheEntry.second.size());
+double
+Network::txTime(const Node& aSrc, const Node& aDst, const size_t aBytes) {
+  auto& myCacheEntry = cacheEntry(aDst.id());
+  assert(aSrc.id() < myCacheEntry.second.size());
 
   auto myTxTime = 0.0;
-  auto myCur    = mySrcId;
-  while (myCacheEntry.second[myCur].second != myDstId) {
+  auto myCur    = aSrc.id();
+  while (myCacheEntry.second[myCur].second != aDst.id()) {
     myTxTime += theElements[myCacheEntry.second[myCur].second]->txTime(aBytes);
     myCur = myCacheEntry.second[myCur].second;
   }

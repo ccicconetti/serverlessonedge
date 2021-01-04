@@ -50,7 +50,47 @@ namespace statesim {
 
 struct TestStateSim : public ::testing::Test {
   TestStateSim()
-      : theTestDir("TO_REMOVE_DIR") {
+      : theExampleNodes({
+            Node("A", 0, 1e9, 1ull << 30, Affinity::Gpu),
+            Node("B", 1, 1e9, 1ull << 30, Affinity::Gpu),
+            Node("C", 2, 1e9, 1ull << 30, Affinity::Gpu),
+            Node("D", 3, 20 * 1e9, 1ull << 36, Affinity::Cpu),
+            Node("E", 4, 20 * 1e9, 1ull << 36, Affinity::Cpu),
+            Node("sw1", 5),
+            Node("sw2", 6),
+        })
+      , theExampleLinks({
+            Link(Link::Type::Node, "link_0_5", 7, 10e6f),
+            Link(Link::Type::Node, "link_1_5", 8, 10e6f),
+            Link(Link::Type::Node, "link_1_2", 9, 100e6f),
+            Link(Link::Type::Node, "link_2_5", 10, 10e6f),
+            Link(Link::Type::Node, "link_5_3", 11, 10e6f),
+            Link(Link::Type::Node, "link_3_6", 12, 1000e6f),
+            Link(Link::Type::Node, "link_4_6", 13, 1000e6f),
+        })
+      , theExampleEdges({
+            {"A", {"link_0_5"}},
+            {"B", {"link_1_5", "link_1_2"}},
+            {"C", {"link_2_5", "link_1_2"}},
+            {"D", {"link_5_3", "link_3_6"}},
+            {"E", {"link_4_6"}},
+            {"sw1", {"link_0_5", "link_1_5", "link_2_5", "link_5_3"}},
+            {"sw2", {"link_3_6", "link_4_6"}},
+            {"link_0_5", {"A", "sw1"}},
+            {"link_1_5", {"B", "sw1"}},
+            {"link_1_2", {"B", "C"}},
+            {"link_2_5", {"C", "sw1"}},
+            {"link_5_3", {"sw1", "D"}},
+            {"link_3_6", {"D", "sw2"}},
+            {"link_4_6", {"E", "sw2"}},
+        })
+      , theExampleClients({
+            "A",
+            "B",
+            "C",
+        })
+      , theTestDir("TO_REMOVE_DIR") {
+    // noop
   }
 
   void SetUp() {
@@ -140,6 +180,46 @@ struct TestStateSim : public ::testing::Test {
       VLOG(2) << myLink.second.toString();
     }
   }
+
+  /*
+   *               +-----------+
+   *           +---+6  sw2     +--+
+   *           |   +-----------+  |
+   *           |12                |13
+   *           |                  |
+   *          +--+---+         +----+-+
+   *          |      |         |      |
+   *          |  D   +--+      |   E  |
+   *          |3     |  |      |4     |
+   *          +------+  |      +------+
+   *                  |11
+   *                  |
+   *             +----+------+
+   *          +--+5   sw1    +------+
+   *          |  +--------+--+      |
+   *          |           |         |
+   *          |7          |8        |10
+   *          |           |         |
+   *          +-+----+  +---+--+  +---+--+
+   *          |      |  |      |  |      |
+   *          |  A   |  |  B   |  |  C   |
+   *          |0     |  |1     |  |2     |
+   *          +------+  +---+--+  +---+--+
+   *                      |    9    |
+   *                      +---------+
+   *
+   * A-E are processing nodes
+   * sw1-sw2 are networking devices
+   * A, B, and C are clients
+   *
+   * All links have 10 Mb/s capacity except:
+   * - BC (100 Mb/s)
+   * - Dsw2 and Esw2 (1000 Mb/s)
+   */
+  const std::set<Node>                               theExampleNodes;
+  const std::set<Link>                               theExampleLinks;
+  const std::map<std::string, std::set<std::string>> theExampleEdges;
+  const std::set<std::string>                        theExampleClients;
 
   const boost::filesystem::path theTestDir;
 };
@@ -249,90 +329,13 @@ TEST_F(TestStateSim, test_network_from_files) {
 }
 
 TEST_F(TestStateSim, test_network) {
-  /*
-       +-----------+
-   +---+6  sw2     +--+
-   |   +-----------+  |
-   |12                |13
-   |                  |
-+--+---+         +----+-+
-|      |         |      |
-|  D   +--+      |   E  |
-|3     |  |      |4     |
-+------+  |      +------+
-          |11
-          |
-     +----+------+
-  +--+5   sw1    +------+
-  |  +--------+--+      |
-  |           |         |
-  |7          |8        |10
-  |           |         |
-+-+----+  +---+--+  +---+--+
-|      |  |      |  |      |
-|  A   |  |  B   |  |  C   |
-|0     |  |1     |  |2     |
-+------+  +---+--+  +---+--+
-              |    9    |
-              +---------+
-
-  A-E are processing nodes
-  sw1-sw2 are networking devices
-  A, B, and C are clients
-
-  All links have 10 Mb/s capacity except:
-  - BC (100 Mb/s)
-  - Dsw2 and Esw2 (1000 Mb/s)
-  */
-  const std::set<Node> myNodes({
-      Node("A", 0, 1e9, 1ull << 30, Affinity::Gpu),
-      Node("B", 1, 1e9, 1ull << 30, Affinity::Gpu),
-      Node("C", 2, 1e9, 1ull << 30, Affinity::Gpu),
-      Node("D", 3, 20 * 1e9, 1ull << 36, Affinity::Cpu),
-      Node("E", 4, 20 * 1e9, 1ull << 36, Affinity::Cpu),
-      Node("sw1", 5),
-      Node("sw2", 6),
-  });
-
-  const std::set<Link> myLinks({
-      Link(Link::Type::Node, "link_0_5", 7, 10e6f),
-      Link(Link::Type::Node, "link_1_5", 8, 10e6f),
-      Link(Link::Type::Node, "link_1_2", 9, 100e6f),
-      Link(Link::Type::Node, "link_2_5", 10, 10e6f),
-      Link(Link::Type::Node, "link_5_3", 11, 10e6f),
-      Link(Link::Type::Node, "link_3_6", 12, 1000e6f),
-      Link(Link::Type::Node, "link_4_6", 13, 1000e6f),
-  });
-
-  const std::map<std::string, std::set<std::string>> myEdges({
-      {"A", {"link_0_5"}},
-      {"B", {"link_1_5", "link_1_2"}},
-      {"C", {"link_2_5", "link_1_2"}},
-      {"D", {"link_5_3", "link_3_6"}},
-      {"E", {"link_4_6"}},
-      {"sw1", {"link_0_5", "link_1_5", "link_2_5", "link_5_3"}},
-      {"sw2", {"link_3_6", "link_4_6"}},
-      {"link_0_5", {"A", "sw1"}},
-      {"link_1_5", {"B", "sw1"}},
-      {"link_1_2", {"B", "C"}},
-      {"link_2_5", {"C", "sw1"}},
-      {"link_5_3", {"sw1", "D"}},
-      {"link_3_6", {"D", "sw2"}},
-      {"link_4_6", {"E", "sw2"}},
-  });
-
-  const std::set<std::string> myClients({
-      "A",
-      "B",
-      "C",
-  });
-
-  Network myNetwork(myNodes, myLinks, myEdges, myClients);
+  Network myNetwork(
+      theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
   printNetwork(myNetwork);
 
-  ASSERT_EQ(myNodes.size(), myNetwork.nodes().size());
-  ASSERT_EQ(myLinks.size(), myNetwork.links().size());
-  ASSERT_EQ(myClients.size(), myNetwork.clients().size());
+  ASSERT_EQ(theExampleNodes.size(), myNetwork.nodes().size());
+  ASSERT_EQ(theExampleLinks.size(), myNetwork.links().size());
+  ASSERT_EQ(theExampleClients.size(), myNetwork.clients().size());
   ASSERT_EQ(5, myNetwork.processing().size());
 
   // check distance matrix
@@ -352,10 +355,14 @@ TEST_F(TestStateSim, test_network) {
 
   // check tx time
   const size_t N = 1000000;
-  ASSERT_FLOAT_EQ(2 * N * 8 / 10e6, myNetwork.txTime("A", "B", N));
+  const auto&  A = myNetwork.nodes().find("A")->second;
+  const auto&  B = myNetwork.nodes().find("B")->second;
+  const auto&  C = myNetwork.nodes().find("C")->second;
+  const auto&  E = myNetwork.nodes().find("E")->second;
+  ASSERT_FLOAT_EQ(2 * N * 8 / 10e6, myNetwork.txTime(A, B, N));
   ASSERT_FLOAT_EQ(2 * N * 8 / 10e6 + 2 * N * 8 / 1000e6,
-                  myNetwork.txTime("A", "E", N));
-  ASSERT_FLOAT_EQ(N * 8 / 100e6, myNetwork.txTime("C", "B", N));
+                  myNetwork.txTime(A, E, N));
+  ASSERT_FLOAT_EQ(N * 8 / 100e6, myNetwork.txTime(C, B, N));
 }
 
 TEST_F(TestStateSim, test_all_tasks) {
@@ -408,7 +415,7 @@ TEST_F(TestStateSim, test_stateful_tasks) {
   }
 }
 
-TEST_F(TestStateSim, test_scenario) {
+TEST_F(TestStateSim, test_scenario_from_files) {
   ASSERT_TRUE(prepareNetworkFiles());
   ASSERT_TRUE(prepareTaskFiles());
 
@@ -435,6 +442,49 @@ TEST_F(TestStateSim, test_scenario) {
                                      42,
                                      true,
                                      myAffinityWeights});
+
+  ASSERT_NO_THROW(myScenario.allocateTasks());
+
+  std::vector<double> myProcDelays;
+  std::vector<double> myNetDelays;
+  myScenario.performance(myProcDelays, myNetDelays);
+  for (size_t i = 0; i < myProcDelays.size(); i++) {
+    LOG(INFO) << myProcDelays[i] << ' ' << myNetDelays[i];
+  }
+}
+
+TEST_F(TestStateSim, test_scenario) {
+  const size_t            N = 100000;
+  const size_t            M = 100000000;
+  const std::vector<Task> myTasks({
+      Task(0, N, M, "lambda1", {}),
+      Task(1, N, M, "lambda2", {0, 1}),
+      Task(2, N, M, "lambda3", {0}),
+  });
+  Scenario                myScenario(
+      {
+          {"lambda1", Affinity::Cpu},
+          {"lambda2", Affinity::Gpu},
+          {"lambda3", Affinity::Cpu},
+      },
+      std::make_unique<Network>(
+          theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients),
+      {
+          Job(0, 0, myTasks, {N, N}, N),
+          Job(1, 1, myTasks, {N, N}, N),
+          Job(2, 2, myTasks, {N, N}, N),
+      },
+      42);
+
+  myScenario.allocateTasks();
+
+  std::vector<double> myProcDelays;
+  std::vector<double> myNetDelays;
+  myScenario.performance(myProcDelays, myNetDelays);
+
+  for (size_t i = 0; i < 3; i++) {
+    LOG(INFO) << myProcDelays[i] << ' ' << myNetDelays[i];
+  }
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {
