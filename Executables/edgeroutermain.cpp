@@ -95,9 +95,10 @@ int main(int argc, char* argv[]) {
       myServerImpl.reset(new ec::EdgeServerGrpc(
           myEdgeRouter, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
-      // parametri makeHqParams(myImplConf)
-      LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
+      myServerImpl.reset(new ec::EdgeServerQuic(
+          myEdgeRouter,
+          ec::QuicParamsBuilder::build(
+              myServerImplConf, myCli.serverEndpoint(), true)));
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
                                myServerImplConf("type"));
@@ -115,9 +116,11 @@ int main(int argc, char* argv[]) {
         myCli.forwardingEndpoint(), *myTables[0], *myTables[1]);
 
     myForwardingTableServer.run(false); // non-blocking
-
+    LOG(INFO) << "Server::run";
     myServerImpl->run();
+    LOG(INFO) << "Server::wait";
     myServerImpl->wait();
+    LOG(INFO) << "after server::wait";
 
     return EXIT_SUCCESS;
 

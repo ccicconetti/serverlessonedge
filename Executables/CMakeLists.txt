@@ -80,6 +80,7 @@ add_executable(edgecomputer
 
 target_link_libraries(edgecomputer
   uiiitedge
+  uiiitedgequic
   ${GLOG}
   ${Boost_LIBRARIES}
 )
@@ -90,6 +91,7 @@ add_executable(edgecomputerwsk
 
 target_link_libraries(edgecomputerwsk
   uiiitedge
+  uiiitedgequic
   uiiitopenwhisk
   ${GLOG}
   ${Boost_LIBRARIES}
@@ -101,6 +103,7 @@ add_executable(edgedispatcher
 
 target_link_libraries(edgedispatcher
   uiiitedge
+  uiiitedgequic
   ${GLOG}
   ${Boost_LIBRARIES}
 )

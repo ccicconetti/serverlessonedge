@@ -33,8 +33,8 @@ SOFTWARE.
 #include "Edge/edgecomputerserver.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgeservergrpc.h"
-//#include "Edge/edgeserverquic"
 #include "Edge/edgeserveroptions.h"
+#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 #include "Support/signalhandlerwait.h"
@@ -109,9 +109,10 @@ int main(int argc, char* argv[]) {
       myServerImpl.reset(new ec::EdgeServerGrpc(
           myServer, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
-      // parametri makeHqParams(myImplConf)
-      LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
+      myServerImpl.reset(new ec::EdgeServerQuic(
+          myServer,
+          ec::QuicParamsBuilder::build(
+              myServerImplConf, myCli.serverEndpoint(), true)));
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
                                myServerImplConf("type"));

@@ -42,13 +42,6 @@ namespace edge {
 
 using namespace std::chrono_literals;
 
-/*
-1) theMutex serve sempre in EdgeServerGrpc???
-
-2) Valutare se è necessario lasciare tra i membri privati
-theMutex, theServerEndpoint, theNumThreads
-*/
-
 EdgeServerQuic::EdgeServerQuic(EdgeServer&    aEdgeServer,
                                const HQParams aQuicParamsConf)
     : EdgeServerImpl(aEdgeServer)
@@ -83,7 +76,7 @@ void EdgeServerQuic::run() {
   theQuicServerThread = theQuicTransportServer.start();
 }
 
-void EdgeServerQuic::wait() { // wait for the server termination
+void EdgeServerQuic::wait() {
   VLOG(10) << "EdgeServerQuic::wait()\n";
   theH2ServerThread.join();
   theQuicServerThread.join();
@@ -93,9 +86,9 @@ EdgeServerQuic::~EdgeServerQuic() {
   VLOG(10) << "EdgeServerQuic::dtor()\n";
   theQuicTransportServer.stop();
   theHttpServer.stop();
-  // these repetitions should not be a problem since std::thread::join is
-  // idempotent and if a thread is already ended the function returns
-  // immediately
+  // these repetitions should not create problems since
+  // std::thread::join() is idempotent and if a thread is already ended the
+  // this function returns immediately
   theH2ServerThread.join();
   theQuicServerThread.join();
 }

@@ -74,14 +74,13 @@ class EdgeServerQuic final : public EdgeServerImpl
   //! Start the server. No more configuration allowed after this call.
   void run() override;
 
-  //! Wait until termination of the server.
+  //! Wait until H2Server and HQServer terminations.
   void wait() override;
 
  protected:
   /**
    * \return the set of the identifiers of the threads that have been
-   * spawned during the call to run(). The cardinality of this set
-   * if equal to the number of threads specified in the ctor. If
+   * spawned during the call to run(). If
    * run() has not (yet) been called, then an empty set is returned.
    */
   std::set<std::thread::id> threadIds() const;
