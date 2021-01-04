@@ -97,6 +97,38 @@ struct TestStateSim : public ::testing::Test {
     }
   };
 
+  void analyze_tasks(const bool aStatefulOnly) {
+    const auto myJobs =
+        loadJobs("batch_task.csv", 1000, 100, {{"", 1.0}}, 42, aStatefulOnly);
+    LOG(INFO) << "#jobs " << myJobs.size();
+    std::map<size_t, size_t> myChainSizeHisto;
+    std::map<size_t, size_t> myNumStatesHisto;
+    std::map<size_t, size_t> myStateSizeHisto;
+    std::map<size_t, size_t> myArgSizeHisto;
+    std::map<size_t, size_t> myNumOpsHisto;
+    std::map<size_t, size_t> myNumDepsHisto;
+    for (const auto& myJob : myJobs) {
+      myChainSizeHisto[myJob.tasks().size()]++;
+      myNumStatesHisto[myJob.stateSizes().size()]++;
+      for (const auto myStateSize : myJob.stateSizes()) {
+        myStateSizeHisto[myStateSize]++;
+      }
+      for (const auto& myTask : myJob.tasks()) {
+        myArgSizeHisto[myTask.size()]++;
+        myNumOpsHisto[myTask.ops()]++;
+        myNumDepsHisto[myTask.deps().size()]++;
+      }
+    }
+
+    // save everything to files
+    MapSave()("chain-size.dat", myChainSizeHisto);
+    MapSave()("num-states.dat", myNumStatesHisto);
+    MapSave()("state-size.dat", myStateSizeHisto);
+    MapSave()("arg-size.dat", myArgSizeHisto);
+    MapSave()("num-ops.dat", myNumOpsHisto);
+    MapSave()("num-deps.dat", myNumDepsHisto);
+  }
+
   const boost::filesystem::path theTestDir;
 };
 
@@ -245,36 +277,12 @@ TEST_F(TestStateSim, test_stateful_tasks) {
   }
 }
 
-TEST_F(TestStateSim, DISABLED_analyze_tasks) {
-  const auto myJobs =
-      loadJobs("batch_task.csv", 1000, 100, {{"", 1.0}}, 42, false);
-  LOG(INFO) << "#jobs " << myJobs.size();
-  std::map<size_t, size_t> myChainSizeHisto;
-  std::map<size_t, size_t> myNumStatesHisto;
-  std::map<size_t, size_t> myStateSizeHisto;
-  std::map<size_t, size_t> myArgSizeHisto;
-  std::map<size_t, size_t> myNumOpsHisto;
-  std::map<size_t, size_t> myNumDepsHisto;
-  for (const auto& myJob : myJobs) {
-    myChainSizeHisto[myJob.tasks().size()]++;
-    myNumStatesHisto[myJob.stateSizes().size()]++;
-    for (const auto myStateSize : myJob.stateSizes()) {
-      myStateSizeHisto[myStateSize]++;
-    }
-    for (const auto& myTask : myJob.tasks()) {
-      myArgSizeHisto[myTask.size()]++;
-      myNumOpsHisto[myTask.ops()]++;
-      myNumDepsHisto[myTask.deps().size()]++;
-    }
-  }
+TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {
+  analyze_tasks(true);
+}
 
-  // save everything to files
-  MapSave()("chain-size.dat", myChainSizeHisto);
-  MapSave()("num-states.dat", myNumStatesHisto);
-  MapSave()("state-size.dat", myStateSizeHisto);
-  MapSave()("arg-size.dat", myArgSizeHisto);
-  MapSave()("num-ops.dat", myNumOpsHisto);
-  MapSave()("num-deps.dat", myNumDepsHisto);
+TEST_F(TestStateSim, DISABLED_analyze_tasks_all) {
+  analyze_tasks(false);
 }
 
 } // namespace statesim
