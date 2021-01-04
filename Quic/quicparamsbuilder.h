@@ -32,6 +32,7 @@ SOFTWARE.
 #include <string>
 
 #include "Support/conf.h"
+#include "Support/split.h"
 
 #include <folly/Optional.h>
 #include <folly/SocketAddress.h>
@@ -130,18 +131,19 @@ struct HQParams {
   std::shared_ptr<quic::QuicPskCache> pskCache;
   fizz::server::ClientAuthMode clientAuth{fizz::server::ClientAuthMode::None};
 
-  HQParams(bool isServer) {
+  HQParams(std::string aServerEndpoint, bool isServer) {
+    // aServerEndpoint format is "IPaddress:port"
+    const auto myServerIPPortVector =
+        support::split<std::vector<std::string>>(aServerEndpoint, ":");
 
     // *** Common Settings Section ***
-    // host = "127.0.0.1";
-    // port = 6473;
-    // if (isServer) {
-    //   localAddress = folly::SocketAddress(host, port, true);
-    // } else {
-    //   remoteAddress = folly::SocketAddress(host, port, true);
-    //   // local_address empty by default, local_address not set
-    //   // CHECK this local_address for client in edgeclient(grpc)
-    // }
+    host = myServerIPPortVector[0];
+    port = std::stoi(myServerIPPortVector[1]); // possible overflow
+    if (isServer) {
+      localAddress = folly::SocketAddress(host, port, true);
+    } else {
+      remoteAddress = folly::SocketAddress(host, port, true);
+    }
 
     // *** TransportSettings ***
     quicVersions   = {quic::QuicVersion::MVFST,
@@ -228,9 +230,8 @@ struct HQParams {
     // localH2Address = folly::SocketAddress(host, h2port, true);
 
     // std::thread::hardware_concurrency() << can be quite a lot...
-    httpServerThreads     = 5;
-    httpServerIdleTimeout = std::chrono::milliseconds(60000);
-    // httpServerShutdownOn               = {SIGINT, SIGTERM}; //<<<<<<<<<<<<<
+    httpServerThreads                  = 5;
+    httpServerIdleTimeout              = std::chrono::milliseconds(60000);
     httpServerShutdownOn               = {};
     httpServerEnableContentCompression = false;
     h2cEnabled                         = false;
@@ -245,21 +246,35 @@ struct HQParams {
     }
 
     // *** FizzSettings***
-    // earlyData = false;
     pskCache = std::make_shared<proxygen::SynchronizedLruQuicPskCache>(1000);
   }
 };
 
 /**
- * Basically a wrapper for HQParams, provides ctor methods for both
- * EdgeServerQuic and EdgeClientQuic
+ * Class to implement the HQParams building
  */
 class QuicParamsBuilder
 {
  public:
-  // simply with iteration on std::map of the conf and with if statements since
-  // configurable parameters are few
-  static HQParams build(const support::Conf& aConf, bool isServer);
+  /**
+   * \param aConf server configuration specified through the --server-conf
+   * option from CLI. This configuration can be used to specify:
+   *    \li h2port (=6667): the port on which the server can receive HTTP2
+   * requests \li attempt-early-data (=false): flag to make the EdgeClientQuic
+   * trying to exploit the QUIC protocol 0-RTT feature
+   *
+   * \param aServerEndpoint server endpoint specified through the
+   * --server-endpoint option from CLI (format: "IPAddress:Port")
+   *
+   * \param isServer boolean parameter to discriminate between server and client
+   * HQParams building
+   *
+   * \returns the HQParams configuration (both QUIC and HTTP parameters) to
+   * build an EdgeServerQuic or an EdgeClientQuic starting from the given CLI
+   * options
+   */
+  static HQParams
+  build(const support::Conf& aConf, std::string aServerEndpoint, bool isServer);
 };
 
 } // namespace edge

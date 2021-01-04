@@ -40,7 +40,6 @@ SOFTWARE.
 #include <glog/logging.h>
 
 #include <folly/ssl/Init.h>
-#include <proxygen/lib/http/SynchronizedLruQuicPskCache.h>
 #include <quic/QuicConstants.h>
 
 namespace uiiit {
@@ -50,12 +49,12 @@ struct TestEdgeServerQuic : public ::testing::Test {};
 
 TEST_F(TestEdgeServerQuic, test_connection) {
 
-  folly::ssl::init();
+  // folly::ssl::init();
 
-  HQParams myEdgeServerQuicParams =
-      QuicParamsBuilder::build(support::Conf("transport-type=quic"), true);
-  HQParams myEdgeClientQuicParams =
-      QuicParamsBuilder::build(support::Conf("transport-type=quic"), false);
+  HQParams myEdgeServerQuicParams = QuicParamsBuilder::build(
+      support::Conf("transport-type=quic"), "127.0.0.1:6473", true);
+  HQParams myEdgeClientQuicParams = QuicParamsBuilder::build(
+      support::Conf("transport-type=quic"), "127.0.0.1:6473", false);
 
   std::unique_ptr<EdgeRouter> theRouter;
   LOG(INFO) << myEdgeServerQuicParams.host + ':' +
@@ -80,11 +79,8 @@ TEST_F(TestEdgeServerQuic, test_connection) {
 
   LambdaRequest  myReq("clambda0", std::string(50, 'A'));
   LambdaResponse myResp = myClient.RunLambda(myReq, false);
-  // checks
 
   LOG(INFO) << myResp.toString();
-
-  // myClient.RunLambda(myReq, false);
 
   LOG(INFO) << "Terminating test\n";
 }

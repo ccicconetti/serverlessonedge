@@ -32,45 +32,18 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-HQParams QuicParamsBuilder::build(const support::Conf& aConf, bool isServer) {
-  HQParams myHQParamsConf(isServer);
-
-  // host (std::string)
-  if (aConf.find(std::string("host")) != aConf.end()) {
-    myHQParamsConf.host = aConf(std::string("host"));
-    LOG(INFO) << "host in Conf = " << myHQParamsConf.host;
-  } else {
-    myHQParamsConf.host = std::string("127.0.0.1");
-    LOG(INFO) << "host default = " << myHQParamsConf.host;
-  }
-
-  // port (uint16_t)
-  if (aConf.find(std::string("port")) != aConf.end()) {
-    myHQParamsConf.port = aConf.getUint("port");
-    LOG(INFO) << "port in Conf = " << myHQParamsConf.port;
-  } else {
-    myHQParamsConf.port = 6473;
-    LOG(INFO) << "port default = " << myHQParamsConf.port;
-  }
-
-  // Socket configuration according parameters passed by CLI
-  if (isServer) {
-    myHQParamsConf.localAddress =
-        folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.port, true);
-  } else {
-    myHQParamsConf.remoteAddress =
-        folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.port, true);
-    // local_address empty by default (only for Client), local_address not set
-    // CHECK if this local_address is needed in edgeclient(grpc)
-  }
+HQParams QuicParamsBuilder::build(const support::Conf& aConf,
+                                  std::string          aServerEndpoint,
+                                  bool                 isServer) {
+  HQParams myHQParamsConf(aServerEndpoint, isServer);
 
   // h2serverport (uint16_t)
   if (aConf.find(std::string("h2port")) != aConf.end()) {
     myHQParamsConf.h2port = aConf.getUint("h2port");
-    LOG(INFO) << "h2port in Conf = " << myHQParamsConf.h2port;
+    VLOG(10) << "h2port in Conf = " << myHQParamsConf.h2port;
   } else {
     myHQParamsConf.h2port = 6667;
-    LOG(INFO) << "h2port default = " << myHQParamsConf.h2port;
+    VLOG(10) << "h2port default = " << myHQParamsConf.h2port;
   }
 
   myHQParamsConf.localH2Address =
@@ -81,21 +54,18 @@ HQParams QuicParamsBuilder::build(const support::Conf& aConf, bool isServer) {
     if (!isServer) {
       myHQParamsConf.transportSettings.attemptEarlyData =
           aConf.getBool("attempt-early-data");
-      LOG(INFO) << "attempt-early-data in Conf = "
-                << myHQParamsConf.transportSettings.attemptEarlyData;
+      VLOG(10) << "attempt-early-data in Conf = "
+               << myHQParamsConf.transportSettings.attemptEarlyData;
     }
     myHQParamsConf.earlyData = aConf.getBool("attempt-early-data");
   } else {
     myHQParamsConf.transportSettings.attemptEarlyData = false;
-    LOG(INFO) << "attempt-early-data default = "
-              << myHQParamsConf.transportSettings.attemptEarlyData;
+    VLOG(10) << "attempt-early-data default = "
+             << myHQParamsConf.transportSettings.attemptEarlyData;
     myHQParamsConf.earlyData = false;
   }
 
   return myHQParamsConf;
-
-  // cascade of if to see if parameters are set by cli and eventually set the
-  // realted HQParams parameter value
 }
 
 } // namespace edge
