@@ -32,6 +32,7 @@ SOFTWARE.
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
 #include "RpcSupport/simpleclient.h"
+#include "Support/conf.h"
 #include "Support/queue.h"
 
 #include <memory>
@@ -124,24 +125,28 @@ class EdgeClientMulti final : public EdgeClientInterface
 
   //! One per client connected.
   struct Desc {
-    size_t                      theIndex;
-    std::string                 theEndpoint;
-    std::unique_ptr<EdgeClient> theClient;
-    support::Queue<MessageIn>   theQueueIn;
-    std::thread                 theThread;
+    size_t                               theIndex;
+    std::string                          theEndpoint;
+    std::unique_ptr<EdgeClientInterface> theClient;
+    support::Queue<MessageIn>            theQueueIn;
+    std::thread                          theThread;
   };
 
  public:
   /**
    * \param aServerEndpoints the edge servers to use.
    *
-   * \param aProbability the p-persistence probability to probe another
-   * destination.
+   * \param aClientConf the edge client configuration
+   * ("transport-type=grpc,persistence=0.05" by default): "transport-type" is
+   * the edge client transport protocol and can be "grpc" or "quic",
+   * "persistence" is instead the the p-persistence probability to probe another
+   * destination
    *
    * \pre aPersistenceProb is in [0, 1]
    */
   explicit EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
-                           const float                  aPersistenceProb);
+                           const support::Conf&         aConf);
+
   ~EdgeClientMulti() override;
 
   /**

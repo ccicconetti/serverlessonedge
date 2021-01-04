@@ -30,6 +30,8 @@ SOFTWARE.
 #include "edgeclientmulti.h"
 
 #include "Edge/edgeclient.h"
+#include "Edge/edgeclientfactory.h"
+#include "Quic/edgeclientquic.h"
 #include "Support/random.h"
 #include "Support/tostring.h"
 
@@ -42,19 +44,21 @@ namespace uiiit {
 namespace edge {
 
 EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
-                                 const float                  aPersistenceProb)
+                                 const support::Conf&         aConf)
     : EdgeClientInterface()
-    , thePersistenceProb(aPersistenceProb)
+    , thePersistenceProb(aConf.getDouble("persistence"))
     , theDesc(aServerEndpoints.size())
     , theConsumer()
     , theConsumerQueue()
     , theQueueOut()
     , thePendingRequest(nullptr)
     , thePrimary(0) {
-  if (aPersistenceProb < 0 or aPersistenceProb > 1) {
+  if (aConf.getDouble("persistence") < 0 or
+      aConf.getDouble("persistence") > 1) {
     throw std::runtime_error(
         "Invalid configuration: persistence probability (" +
-        std::to_string(aPersistenceProb) + ") cannot be < 0 or > 1");
+        std::to_string(aConf.getDouble("persistence")) +
+        ") cannot be < 0 or > 1");
   }
 
   if (aServerEndpoints.empty()) {
@@ -62,12 +66,20 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
   }
 
   // start executors
-  size_t i = 0;
+  size_t     i            = 0;
+  const auto myClientType = aConf("transport-type");
   for (const auto& myEndpoint : aServerEndpoints) {
     auto& myDesc       = theDesc[i];
     myDesc.theIndex    = i;
     myDesc.theEndpoint = myEndpoint;
-    myDesc.theClient.reset(new EdgeClient(myEndpoint));
+
+    if (myClientType == std::string("grpc")) {
+      myDesc.theClient.reset(new EdgeClient(myEndpoint));
+    } else {
+      myDesc.theClient.reset(new EdgeClientQuic(
+          QuicParamsBuilder::build(aConf, myEndpoint, false)));
+    }
+
     myDesc.theThread = std::thread([this, &myDesc]() {
       while (execLambda(myDesc)) {
         // do nothing
@@ -89,7 +101,8 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
 
   LOG(INFO) << "starting an edge multi-client towards ["
             << toString(aServerEndpoints, ",")
-            << "] with persistence probability " << aPersistenceProb;
+            << "] with persistence probability "
+            << aConf.getDouble("persistence");
 }
 
 EdgeClientMulti::~EdgeClientMulti() {

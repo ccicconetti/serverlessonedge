@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
      po::value<std::string>(&myServerEndpoints)->default_value("localhost:6473"),
      "Server end-points (comma-separated list).")
     ("client-conf",
-     po::value<std::string>(&myClientConf)->default_value("persistence=0.05"),
+     po::value<std::string>(&myClientConf)->default_value("transport-type=grpc, persistence=0.05"),
      "Configuration of the edge clients.")
     ("lambda",
      po::value<std::string>(&myLambda)->default_value("clambda0"),
@@ -132,8 +132,7 @@ int main(int argc, char* argv[]) {
     }
 
     LOG_IF(INFO, not myContent.empty())
-        << "Using a custom content for all lambda requests: "
-        << myContent;
+        << "Using a custom content for all lambda requests: " << myContent;
 
     std::this_thread::sleep_for(
         std::chrono::nanoseconds(static_cast<int64_t>(myInitialDelay * 1e9)));

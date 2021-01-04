@@ -32,6 +32,8 @@ SOFTWARE.
 #include "Edge/edgeclient.h"
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgeclientmulti.h"
+#include "Quic/edgeclientquic.h"
+#include "Quic/quicparamsbuilder.h"
 #include "Support/conf.h"
 
 #include <stdexcept>
@@ -47,11 +49,17 @@ EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
         "Cannot create an edge client with an empty set of destinations");
   }
 
+  const auto myType = aConf("transport-type");
   if (aEndpoints.size() == 1) {
-    return std::make_unique<EdgeClient>(*aEndpoints.begin());
+    if (myType == std::string("grpc")) {
+      return std::make_unique<EdgeClient>(*aEndpoints.begin());
+    } else {
+      return std::make_unique<EdgeClientQuic>(
+          QuicParamsBuilder::build(aConf, *aEndpoints.begin(), false));
+    }
   }
 
-  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf.getDouble("persistence"));
+  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
 }
 
 } // end namespace edge
