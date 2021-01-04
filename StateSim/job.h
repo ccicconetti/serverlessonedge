@@ -99,9 +99,9 @@ class Job
  *
  * \param aFuncWeights The function names to pick randomly, with weights
  *
- * \param aSeed The seed to initialize the random number genetator
+ * \param aSeed The seed to initialize the random number generator
  *
- * \param aStatefulOnly Discard jobs that have only stateless tasks.
+ * \param aStatefulOnly Discard jobs that have only stateless tasks
  *
  * \return A vector with all the jobs loaded. Can be empty
  *
