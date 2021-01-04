@@ -48,7 +48,7 @@ class FunctionPicker
   FunctionPicker(const std::map<std::string, double>& aWeights,
                  const size_t                         aSeed)
       : theGenerator(aSeed)
-      , theRv(0.0f, sum(aWeights))
+      , theRv(0.0, sum(aWeights))
       , theWeights(aWeights) {
     assert(not aWeights.empty());
   }
@@ -74,9 +74,9 @@ class FunctionPicker
   }
 
  private:
-  std::default_random_engine            theGenerator;
-  std::uniform_real_distribution<float> theRv;
-  const std::map<std::string, double>&  theWeights;
+  std::default_random_engine             theGenerator;
+  std::uniform_real_distribution<double> theRv;
+  const std::map<std::string, double>&   theWeights;
 };
 
 Job::Job(const size_t               aId,

@@ -30,6 +30,7 @@ SOFTWARE.
 #include "StateSim/counter.h"
 #include "StateSim/job.h"
 #include "StateSim/network.h"
+#include "StateSim/scenario.h"
 
 #include "gtest/gtest.h"
 
@@ -230,11 +231,11 @@ TEST_F(TestStateSim, test_network) {
 
 TEST_F(TestStateSim, test_all_tasks) {
   ASSERT_TRUE(prepareTaskFiles());
-  std::map<std::string, double> myWeights({
+  const std::map<std::string, double> myWeights({
       {"less-often", 1},
       {"more-often", 10},
   });
-  const auto                    myJobs = loadJobs(
+  const auto                          myJobs = loadJobs(
       (theTestDir / "tasks").string(), 1000, 100, myWeights, 42, false);
   ASSERT_EQ(22, myJobs.size());
 
@@ -275,6 +276,35 @@ TEST_F(TestStateSim, test_stateful_tasks) {
     }
     ASSERT_FALSE(myAllStateless) << myJob.toString();
   }
+}
+
+TEST_F(TestStateSim, test_scenario) {
+  ASSERT_TRUE(prepareNetworkFiles());
+  ASSERT_TRUE(prepareTaskFiles());
+
+  const std::map<std::string, double> myFuncWeights({
+      {"lambda1", 1},
+      {"lambda2", 1},
+      {"lambda3", 1},
+      {"lambda4", 1},
+      {"lambda5", 10},
+  });
+
+  const std::map<Affinity, double> myAffinityWeights({
+      {Affinity::Cpu, 10},
+      {Affinity::Gpu, 1},
+  });
+
+  Scenario myScenario(Scenario::Conf{(theTestDir / "nodes").string(),
+                                     (theTestDir / "links").string(),
+                                     (theTestDir / "edges").string(),
+                                     (theTestDir / "tasks").string(),
+                                     1000,
+                                     100,
+                                     myFuncWeights,
+                                     42,
+                                     true,
+                                     myAffinityWeights});
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {
