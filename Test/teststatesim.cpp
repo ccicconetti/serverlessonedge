@@ -227,6 +227,12 @@ TEST_F(TestStateSim, test_network) {
               << " (" << myDesc.second << ")";
     }
   }
+
+  ASSERT_EQ(113, myNetwork.clients().size());
+  for (const auto& myClient : myNetwork.clients()) {
+    ASSERT_TRUE(myClient != nullptr);
+    ASSERT_EQ(std::string::npos, myClient->name().find("server"));
+  }
 }
 
 TEST_F(TestStateSim, test_all_tasks) {
@@ -235,7 +241,8 @@ TEST_F(TestStateSim, test_all_tasks) {
       {"less-often", 1},
       {"more-often", 10},
   });
-  const auto                          myJobs = loadJobs(
+
+  const auto myJobs = loadJobs(
       (theTestDir / "tasks").string(), 1000, 100, myWeights, 42, false);
   ASSERT_EQ(22, myJobs.size());
 
@@ -258,8 +265,8 @@ TEST_F(TestStateSim, test_all_tasks) {
   }
 
   ASSERT_EQ(2, myFunctions.size());
-  ASSERT_EQ(48, myFunctions["more-often"]);
-  ASSERT_EQ(8, myFunctions["less-often"]);
+  ASSERT_EQ(51, myFunctions["more-often"]);
+  ASSERT_EQ(5, myFunctions["less-often"]);
 }
 
 TEST_F(TestStateSim, test_stateful_tasks) {

@@ -65,6 +65,8 @@ class Network
   /**
    * Create a network from a set of files.
    *
+   * All non-server nodes are identified as clients.
+   *
    * \param aNodesPath The file containing the nodes in the following format:
    *        0;rpi3_0;1023012864;4000;arm32;sbc;rpi3b+
    *
@@ -79,8 +81,9 @@ class Network
           const std::string& aEdgesPath);
 
   // clang-format off
-  const std::map<std::string, Node>& nodes() const noexcept { return theNodes; }
-  const std::map<std::string, Link>& links() const noexcept { return theLinks; }
+  const std::map<std::string, Node>& nodes()   const noexcept { return theNodes; }
+  const std::map<std::string, Link>& links()   const noexcept { return theLinks; }
+  const std::vector<Node*>&          clients() const noexcept { return theClients; }
   // clang-format on
 
   //! \return the distance and next hop identifier from aSrc to aDst.
@@ -97,6 +100,7 @@ class Network
   std::map<std::string, Node> theNodes;
   std::map<std::string, Link> theLinks;
   std::vector<Element*>       theElements;
+  std::vector<Node*>          theClients;
   Graph                       theGraph;
 
   //

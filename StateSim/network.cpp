@@ -108,6 +108,13 @@ Network::Network(const std::string& aNodesPath,
     theLinks.emplace(myLink.name(), myLink);
   }
 
+  // identify clients as those nodes without "server" in their name
+  for (auto& elem : theNodes) {
+    if (elem.first.find("server") == std::string::npos) {
+      theClients.emplace_back(&elem.second);
+    }
+  }
+
   // add to theNodes the non-processing nodes
   for (const auto& myNodeList : myNodeLists) {
     for (const auto& myName : myNodeList) {
