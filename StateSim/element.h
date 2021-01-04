@@ -58,6 +58,10 @@ class Element
   size_t      id()       const noexcept { return theId;       }
   // clang-format on
 
+  bool operator<(const Element& aOther) const noexcept {
+    return theId < aOther.theId;
+  }
+
  protected:
   const std::string theName;
   const size_t      theId;

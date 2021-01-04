@@ -130,6 +130,17 @@ struct TestStateSim : public ::testing::Test {
     MapSave()("num-deps.dat", myNumDepsHisto);
   }
 
+  static void printNetwork(const Network& aNetwork) {
+    VLOG(2) << "network nodes";
+    for (const auto& myNode : aNetwork.nodes()) {
+      VLOG(2) << myNode.second.toString();
+    }
+    VLOG(2) << "network links";
+    for (const auto& myLink : aNetwork.links()) {
+      VLOG(2) << myLink.second.toString();
+    }
+  }
+
   const boost::filesystem::path theTestDir;
 };
 
@@ -207,17 +218,18 @@ TEST_F(TestStateSim, test_network_files) {
   ASSERT_EQ(myNodes.size() + myLinks.size() - 1, myLinks.back().id());
 }
 
-TEST_F(TestStateSim, test_network) {
+TEST_F(TestStateSim, test_network_from_files) {
   ASSERT_TRUE(prepareNetworkFiles());
   Network myNetwork((theTestDir / "nodes").string(),
                     (theTestDir / "links").string(),
                     (theTestDir / "edges").string());
+  printNetwork(myNetwork);
   ASSERT_EQ(140, myNetwork.links().size());
   ASSERT_EQ(159, myNetwork.nodes().size());
 
   const auto myDesc = myNetwork.nextHop("rpi3_0", "rpi3_53");
   ASSERT_FLOAT_EQ(0.216f, myDesc.first);
-  ASSERT_EQ("link_rpi3_53", myDesc.second);
+  ASSERT_EQ("link_rpi3_0", myDesc.second);
 
   for (const auto& mySrc : myNetwork.nodes()) {
     for (const auto& myDst : myNetwork.nodes()) {
@@ -233,6 +245,108 @@ TEST_F(TestStateSim, test_network) {
     ASSERT_TRUE(myClient != nullptr);
     ASSERT_EQ(std::string::npos, myClient->name().find("server"));
   }
+}
+
+TEST_F(TestStateSim, test_network) {
+  /*
+       +-----------+
+   +---+6  sw2     +--+
+   |   +-----------+  |
+   |12                |13
+   |                  |
++--+---+         +----+-+
+|      |         |      |
+|  D   +--+      |   E  |
+|3     |  |      |4     |
++------+  |      +------+
+          |11
+          |
+     +----+------+
+  +--+5   sw1    +------+
+  |  +--------+--+      |
+  |           |         |
+  |7          |8        |10
+  |           |         |
++-+----+  +---+--+  +---+--+
+|      |  |      |  |      |
+|  A   |  |  B   |  |  C   |
+|0     |  |1     |  |2     |
++------+  +---+--+  +---+--+
+              |    9    |
+              +---------+
+
+  A-E are processing nodes
+  sw1-sw2 are networking devices
+  A, B, and C are clients
+
+  All links have 10 Mb/s capacity except:
+  - BC (100 Mb/s)
+  - Dsw2 and Esw2 (1000 Mb/s)
+  */
+  const std::set<Node> myNodes({
+      Node("A", 0, 1e9, 1ull << 30, Affinity::Gpu),
+      Node("B", 1, 1e9, 1ull << 30, Affinity::Gpu),
+      Node("C", 2, 1e9, 1ull << 30, Affinity::Gpu),
+      Node("D", 3, 20 * 1e9, 1ull << 36, Affinity::Cpu),
+      Node("E", 4, 20 * 1e9, 1ull << 36, Affinity::Cpu),
+      Node("sw1", 5),
+      Node("sw2", 6),
+  });
+
+  const std::set<Link> myLinks({
+      Link(Link::Type::Node, "link_0_5", 7, 10e6f),
+      Link(Link::Type::Node, "link_1_5", 8, 10e6f),
+      Link(Link::Type::Node, "link_1_2", 9, 100e6f),
+      Link(Link::Type::Node, "link_2_5", 10, 10e6f),
+      Link(Link::Type::Node, "link_5_3", 11, 10e6f),
+      Link(Link::Type::Node, "link_3_6", 12, 1000e6f),
+      Link(Link::Type::Node, "link_4_6", 13, 1000e6f),
+  });
+
+  const std::map<std::string, std::set<std::string>> myEdges({
+      {"A", {"link_0_5"}},
+      {"B", {"link_1_5", "link_1_2"}},
+      {"C", {"link_2_5", "link_1_2"}},
+      {"D", {"link_5_3", "link_3_6"}},
+      {"E", {"link_4_6"}},
+      {"sw1", {"link_0_5", "link_1_5", "link_2_5", "link_5_3"}},
+      {"sw2", {"link_3_6", "link_4_6"}},
+      {"link_0_5", {"A", "sw1"}},
+      {"link_1_5", {"B", "sw1"}},
+      {"link_1_2", {"B", "C"}},
+      {"link_2_5", {"C", "sw1"}},
+      {"link_5_3", {"sw1", "D"}},
+      {"link_3_6", {"D", "sw2"}},
+      {"link_4_6", {"E", "sw2"}},
+  });
+
+  const std::set<std::string> myClients({
+      "A",
+      "B",
+      "C",
+  });
+
+  Network myNetwork(myNodes, myLinks, myEdges, myClients);
+  printNetwork(myNetwork);
+
+  ASSERT_EQ(myNodes.size(), myNetwork.nodes().size());
+  ASSERT_EQ(myLinks.size(), myNetwork.links().size());
+  ASSERT_EQ(myClients.size(), myNetwork.clients().size());
+
+  // check distance matrix
+  for (const auto& mySrc : myNetwork.nodes()) {
+    for (const auto& myDst : myNetwork.nodes()) {
+      const auto myDesc = myNetwork.nextHop(mySrc.first, myDst.first);
+      ASSERT_GE(myDesc.first, 0.0f);
+      VLOG(1) << mySrc.first << " -> " << myDst.first << ": " << myDesc.first
+              << " (" << myDesc.second << ")";
+    }
+  }
+  ASSERT_EQ("link_1_5", myNetwork.nextHop("B", "A").second);
+  ASSERT_EQ("B", myNetwork.nextHop("B", "B").second);
+  ASSERT_EQ("link_1_2", myNetwork.nextHop("B", "C").second);
+  ASSERT_EQ("link_1_5", myNetwork.nextHop("B", "D").second);
+  ASSERT_EQ("link_1_5", myNetwork.nextHop("B", "E").second);
 }
 
 TEST_F(TestStateSim, test_all_tasks) {

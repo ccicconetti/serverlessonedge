@@ -72,10 +72,10 @@ Link Link::make(const std::string& aString, Counter<int>& aCounter) {
 
 std::string Link::toString() const {
   static const std::map<Type, char> myTypes({
-      {Type::Node, 'N'},
-      {Type::Shared, 'S'},
-      {Type::Downlink, 'D'},
-      {Type::Uplink, 'U'},
+      {Type::Node, 'n'},
+      {Type::Shared, 's'},
+      {Type::Downlink, 'd'},
+      {Type::Uplink, 'u'},
   });
 
   const auto myType = myTypes.find(theType);

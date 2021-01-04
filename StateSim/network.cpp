@@ -37,6 +37,7 @@ SOFTWARE.
 
 #include <cassert>
 #include <fstream>
+#include <sstream>
 
 namespace uiiit {
 namespace statesim {
@@ -92,6 +93,7 @@ Network::Network(const std::string& aNodesPath,
     : theNodes()
     , theLinks()
     , theElements()
+    , theClients()
     , theGraph()
     , theCache() {
   // read from files
@@ -155,6 +157,96 @@ Network::Network(const std::string& aNodesPath,
     }
   }
 
+  initElementsGraph(myEdges, myWeights);
+}
+
+Network::Network(const std::set<Node>&                               aNodes,
+                 const std::set<Link>&                               aLinks,
+                 const std::map<std::string, std::set<std::string>>& aEdges,
+                 const std::set<std::string>&                        aClients)
+    : theNodes()
+    , theLinks()
+    , theElements()
+    , theClients()
+    , theGraph()
+    , theCache() {
+
+  // fill theNodes, theLinks, and theClients making sure that names and
+  // numeric identifiers are unique
+  std::set<size_t> myIds;
+  for (const auto& myNode : aNodes) {
+    const auto ret = theNodes.emplace(myNode.name(), myNode);
+    if (not ret.second) {
+      throw std::runtime_error("Duplicated node name: " + myNode.name());
+    }
+    if (not myIds.insert(myNode.id()).second) {
+      throw std::runtime_error("Duplicated identifier: " +
+                               std::to_string(myNode.id()));
+    }
+    assert(ret.first != theNodes.end());
+    if (aClients.count(myNode.name()) > 0) {
+      theClients.emplace_back(&ret.first->second);
+    }
+  }
+  for (const auto& myLink : aLinks) {
+    const auto ret = theLinks.emplace(myLink.name(), myLink);
+    if (not ret.second) {
+      throw std::runtime_error("Duplicated link name: " + myLink.name());
+    }
+    if (not myIds.insert(myLink.id()).second) {
+      throw std::runtime_error("Duplicated identifier: " +
+                               std::to_string(myLink.id()));
+    }
+  }
+
+  // make sure all the clients names exist
+  if (theClients.size() != aClients.size()) {
+    std::stringstream myStream;
+    for (const auto& myClient : aClients) {
+      auto myFound = false;
+      for (const auto& myInnerClient : theClients) {
+        if (myInnerClient->name() == myClient) {
+          myFound = true;
+          break;
+        }
+      }
+      if (not myFound) {
+        myStream << ' ' << myClient;
+      }
+    }
+    throw std::runtime_error("Invalid clients passed: " + myStream.str());
+  }
+
+  // create the list of edges (with weights)
+  std::vector<Edge>  myEdges;
+  std::vector<float> myWeights;
+  for (const auto& elem : aEdges) {
+    const auto mySourceId       = id(elem.first);
+    const auto mySourceCapacity = capacity(elem.first);
+    const auto mySourceLatency =
+        mySourceCapacity > 0 ? (2.0f / mySourceCapacity) : 0;
+    for (const auto& myDst : elem.second) {
+      const auto myTargetId       = id(myDst);
+      const auto myTargetCapacity = capacity(myDst);
+
+      // compute the weight as the sum of the half reciprocals of the source
+      // and target, but only if they are links
+      const auto myWeight =
+          mySourceLatency +
+          (myTargetCapacity > 0 ? (2.0f / myTargetCapacity) : 0);
+
+      myEdges.emplace_back(Edge(mySourceId, myTargetId));
+      myWeights.emplace_back(myWeight);
+
+      VLOG(2) << mySourceId << ' ' << myTargetId << ' ' << myWeight;
+    }
+  }
+
+  initElementsGraph(myEdges, myWeights);
+}
+
+void Network::initElementsGraph(const std::vector<Edge>&  aEdges,
+                                const std::vector<float>& aWeights) {
   // fill the nodes/links vector indexed by the identifiers
   theElements.resize(theNodes.size() + theLinks.size());
   for (auto& myNode : theNodes) {
@@ -170,9 +262,9 @@ Network::Network(const std::string& aNodesPath,
   }
 
   // create the network graph
-  theGraph = Graph(myEdges.data(),
-                   myEdges.data() + myEdges.size(),
-                   myWeights.data(),
+  theGraph = Graph(aEdges.data(),
+                   aEdges.data() + aEdges.size(),
+                   aWeights.data(),
                    theNodes.size() + theLinks.size());
   VLOG(1) << "Created a network with " << theNodes.size() << " nodes and "
           << theLinks.size() << " links";
@@ -182,23 +274,22 @@ Network::Network(const std::string& aNodesPath,
 
 std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
                                                const std::string& aDst) {
-  const auto mySrcId = id(aSrc);
   const auto myDstId = id(aDst);
-  assert(mySrcId >= 0);
-  assert(mySrcId < (int)theCache.size());
+  assert(myDstId >= 0);
+  assert(myDstId < (int)theCache.size());
 
-  auto& myCacheEntry = theCache[mySrcId];
+  auto& myCacheEntry = theCache[myDstId];
   if (myCacheEntry.first == false) {
     assert(myCacheEntry.second.size() == 0);
 
-    // create an entry in the cache for this source
+    // create an entry in the cache for this destination
 
     std::vector<VertexDescriptor> myPred(theCache.size());
     std::vector<float>            myDist(theCache.size());
 
     boost::dijkstra_shortest_paths(
         theGraph,
-        mySrcId,
+        myDstId,
         boost::predecessor_map(
             boost::make_iterator_property_map(
                 myPred.begin(), get(boost::vertex_index, theGraph)))
@@ -210,9 +301,11 @@ std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
       myCacheEntry.second[i] = {myDist[i], myPred[i]};
     }
   }
-  assert(myDstId >= 0);
-  assert(myDstId < (int)myCacheEntry.second.size());
-  const auto& myRet = myCacheEntry.second[myDstId];
+
+  const auto mySrcId = id(aSrc);
+  assert(mySrcId >= 0);
+  assert(mySrcId < (int)myCacheEntry.second.size());
+  const auto& myRet = myCacheEntry.second[mySrcId];
   assert(myRet.second < theElements.size());
   assert(theElements[myRet.second] != nullptr);
   return {myRet.first, theElements[myRet.second]->name()};

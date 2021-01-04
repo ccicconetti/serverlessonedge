@@ -90,7 +90,7 @@ std::string Node::toString() const {
   ret << (theType == Type::Networking ? 'N' : 'P') << ' ' << theId << ' '
       << theName;
   if (theType == Type::Processing) {
-    ret << "speed " << theSpeed / 1e9 << " GFLOPS, memory " << theMemory / 1e9
+    ret << " speed " << theSpeed / 1e9 << " GFLOPS, memory " << theMemory / 1e9
         << " GB, affinity " << ::uiiit::statesim::toString(theAffinity);
   }
   return ret.str();

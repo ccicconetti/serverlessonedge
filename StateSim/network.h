@@ -76,9 +76,31 @@ class Network
    * \param aEdgesPath The file containing the edges in the following format:
    *        switch_lan_0 link_rpi3_0 link_rpi3_1 link_0
    */
-  Network(const std::string& aNodesPath,
-          const std::string& aLinksPath,
-          const std::string& aEdgesPath);
+  explicit Network(const std::string& aNodesPath,
+                   const std::string& aLinksPath,
+                   const std::string& aEdgesPath);
+
+  /**
+   * Create a network from nodes, links, and edges.
+   *
+   * \param aNodes The set of nodes, both processing and non-processing
+   *
+   * \param aLinks The set of links
+   *
+   * \param aEdges The adjecency list of edges, i.e., for every <key,value>
+   *        key is the name of an element (node or link) and value is the set of
+   *        elements that have a directed edge towards it
+   *
+   * \param aClients The set of client names
+   *
+   * \throw std::runtime_error if there is any inconsistency such as aClients
+   *        or aEdges containing a name that is not a node or aNodes/aLinks
+   *        having duplicated identifiers
+   */
+  explicit Network(const std::set<Node>&                               aNodes,
+                   const std::set<Link>&                               aLinks,
+                   const std::map<std::string, std::set<std::string>>& aEdges,
+                   const std::set<std::string>& aClients);
 
   // clang-format off
   const std::map<std::string, Node>& nodes()   const noexcept { return theNodes; }
@@ -95,6 +117,9 @@ class Network
   int id(const std::string& aName) const;
   //! \return the capacity of the given element.
   float capacity(const std::string& aName) const;
+
+  void initElementsGraph(const std::vector<Edge>&  aEdges,
+                         const std::vector<float>& aWeights);
 
  private:
   std::map<std::string, Node> theNodes;
