@@ -226,6 +226,7 @@ TEST_F(TestStateSim, test_network_from_files) {
   printNetwork(myNetwork);
   ASSERT_EQ(140, myNetwork.links().size());
   ASSERT_EQ(159, myNetwork.nodes().size());
+  ASSERT_EQ(123, myNetwork.processing().size());
 
   const auto myDesc = myNetwork.nextHop("rpi3_0", "rpi3_53");
   ASSERT_FLOAT_EQ(0.216f, myDesc.first);
@@ -332,6 +333,7 @@ TEST_F(TestStateSim, test_network) {
   ASSERT_EQ(myNodes.size(), myNetwork.nodes().size());
   ASSERT_EQ(myLinks.size(), myNetwork.links().size());
   ASSERT_EQ(myClients.size(), myNetwork.clients().size());
+  ASSERT_EQ(5, myNetwork.processing().size());
 
   // check distance matrix
   for (const auto& mySrc : myNetwork.nodes()) {

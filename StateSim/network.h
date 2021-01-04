@@ -105,9 +105,10 @@ class Network
                    const std::set<std::string>& aClients);
 
   // clang-format off
-  const std::map<std::string, Node>& nodes()   const noexcept { return theNodes; }
-  const std::map<std::string, Link>& links()   const noexcept { return theLinks; }
-  const std::vector<Node*>&          clients() const noexcept { return theClients; }
+  const std::map<std::string, Node>& nodes()      const noexcept { return theNodes; }
+  const std::map<std::string, Link>& links()      const noexcept { return theLinks; }
+  const std::vector<Node*>&          clients()    const noexcept { return theClients; }
+  const std::vector<Node*>&          processing() const noexcept { return theProcessing; }
   // clang-format on
 
   //! \return the distance and next hop identifier from aSrc to aDst
@@ -135,6 +136,7 @@ class Network
   std::map<std::string, Link> theLinks;
   std::vector<Element*>       theElements;
   std::vector<Node*>          theClients;
+  std::vector<Node*>          theProcessing;
   Graph                       theGraph;
 
   //

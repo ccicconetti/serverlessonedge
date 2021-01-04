@@ -94,6 +94,7 @@ Network::Network(const std::string& aNodesPath,
     , theLinks()
     , theElements()
     , theClients()
+    , theProcessing()
     , theGraph()
     , theCache() {
   // read from files
@@ -111,10 +112,12 @@ Network::Network(const std::string& aNodesPath,
   }
 
   // identify clients as those nodes without "server" in their name
+  // and save the processing nodes in a dedicated container
   for (auto& elem : theNodes) {
     if (elem.first.find("server") == std::string::npos) {
       theClients.emplace_back(&elem.second);
     }
+    theProcessing.emplace_back(&elem.second);
   }
 
   // add to theNodes the non-processing nodes
@@ -168,11 +171,12 @@ Network::Network(const std::set<Node>&                               aNodes,
     , theLinks()
     , theElements()
     , theClients()
+    , theProcessing()
     , theGraph()
     , theCache() {
 
-  // fill theNodes, theLinks, and theClients making sure that names and
-  // numeric identifiers are unique
+  // fill theNodes, theLinks, theClients, and theProcessing making sure that
+  // names and numeric identifiers are unique
   std::set<size_t> myIds;
   for (const auto& myNode : aNodes) {
     const auto ret = theNodes.emplace(myNode.name(), myNode);
@@ -186,6 +190,9 @@ Network::Network(const std::set<Node>&                               aNodes,
     assert(ret.first != theNodes.end());
     if (aClients.count(myNode.name()) > 0) {
       theClients.emplace_back(&ret.first->second);
+    }
+    if (myNode.type() == Node::Type::Processing) {
+      theProcessing.emplace_back(&ret.first->second);
     }
   }
   for (const auto& myLink : aLinks) {
