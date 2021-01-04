@@ -75,6 +75,8 @@ class Link : public Element
   float       capacity() const noexcept { return theCapacity; }
   // clang-format on
 
+  double txTime(const size_t aBytes) const override;
+
  private:
   const Type  theType;
   const float theCapacity;

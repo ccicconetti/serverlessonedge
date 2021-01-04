@@ -58,6 +58,11 @@ class Element
   size_t      id()       const noexcept { return theId;       }
   // clang-format on
 
+  //! \return the transmission time to traverse this element, in s
+  virtual double txTime(const size_t aBytes) const {
+    return 0;
+  }
+
   bool operator<(const Element& aOther) const noexcept {
     return theId < aOther.theId;
   }

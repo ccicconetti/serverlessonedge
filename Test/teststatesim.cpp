@@ -347,6 +347,13 @@ TEST_F(TestStateSim, test_network) {
   ASSERT_EQ("link_1_2", myNetwork.nextHop("B", "C").second);
   ASSERT_EQ("link_1_5", myNetwork.nextHop("B", "D").second);
   ASSERT_EQ("link_1_5", myNetwork.nextHop("B", "E").second);
+
+  // check tx time
+  const size_t N = 1000000;
+  ASSERT_FLOAT_EQ(2 * N * 8 / 10e6, myNetwork.txTime("A", "B", N));
+  ASSERT_FLOAT_EQ(2 * N * 8 / 10e6 + 2 * N * 8 / 1000e6,
+                  myNetwork.txTime("A", "E", N));
+  ASSERT_FLOAT_EQ(N * 8 / 100e6, myNetwork.txTime("C", "B", N));
 }
 
 TEST_F(TestStateSim, test_all_tasks) {

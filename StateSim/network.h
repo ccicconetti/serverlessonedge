@@ -60,6 +60,8 @@ class Network
                             boost::listS>;
   using VertexDescriptor = boost::graph_traits<Graph>::vertex_descriptor;
   using Edge             = std::pair<int, int>;
+  using PredVec          = std::vector<std::pair<float, VertexDescriptor>>;
+  using Cache            = std::vector<std::pair<bool, PredVec>>;
 
  public:
   /**
@@ -108,15 +110,22 @@ class Network
   const std::vector<Node*>&          clients() const noexcept { return theClients; }
   // clang-format on
 
-  //! \return the distance and next hop identifier from aSrc to aDst.
+  //! \return the distance and next hop identifier from aSrc to aDst
   std::pair<float, std::string> nextHop(const std::string& aSrc,
                                         const std::string& aDst);
 
+  //! \return the transmission time from aSrc to aDst of a given amount of data
+  double
+  txTime(const std::string& aSrc, const std::string& aDst, const size_t aBytes);
+
  private:
   //! Convert name to numeric identifier.
-  int id(const std::string& aName) const;
+  size_t id(const std::string& aName) const;
   //! \return the capacity of the given element.
   float capacity(const std::string& aName) const;
+
+  //! \return the cache entry for the given node, create it if does not exist
+  Cache::value_type& cacheEntry(const size_t aDstId);
 
   void initElementsGraph(const std::vector<Edge>&  aEdges,
                          const std::vector<float>& aWeights);
@@ -134,8 +143,7 @@ class Network
   // content: <distance from source to destination, next hop>
   //
   // lazy-initialized as needed
-  using PredVec = std::vector<std::pair<float, VertexDescriptor>>;
-  std::vector<std::pair<bool, PredVec>> theCache;
+  Cache theCache;
 };
 
 std::vector<Node> loadNodes(const std::string& aPath, Counter<int>& aCounter);

@@ -87,5 +87,10 @@ std::string Link::toString() const {
   return ret.str();
 }
 
+double Link::txTime(const size_t aBytes) const {
+  assert(theCapacity > 0);
+  return (aBytes * 8) / theCapacity;
+}
+
 } // namespace statesim
 } // namespace uiiit

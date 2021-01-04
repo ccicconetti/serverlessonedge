@@ -274,44 +274,36 @@ void Network::initElementsGraph(const std::vector<Edge>&  aEdges,
 
 std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
                                                const std::string& aDst) {
-  const auto myDstId = id(aDst);
-  assert(myDstId >= 0);
-  assert(myDstId < (int)theCache.size());
+  const auto myDstId      = id(aDst);
+  auto&      myCacheEntry = cacheEntry(myDstId);
+  const auto mySrcId      = id(aSrc);
+  assert(mySrcId < myCacheEntry.second.size());
 
-  auto& myCacheEntry = theCache[myDstId];
-  if (myCacheEntry.first == false) {
-    assert(myCacheEntry.second.size() == 0);
-
-    // create an entry in the cache for this destination
-
-    std::vector<VertexDescriptor> myPred(theCache.size());
-    std::vector<float>            myDist(theCache.size());
-
-    boost::dijkstra_shortest_paths(
-        theGraph,
-        myDstId,
-        boost::predecessor_map(
-            boost::make_iterator_property_map(
-                myPred.begin(), get(boost::vertex_index, theGraph)))
-            .distance_map(myDist.data()));
-
-    myCacheEntry.first = true;
-    myCacheEntry.second.resize(theCache.size());
-    for (size_t i = 0; i < theCache.size(); i++) {
-      myCacheEntry.second[i] = {myDist[i], myPred[i]};
-    }
-  }
-
-  const auto mySrcId = id(aSrc);
-  assert(mySrcId >= 0);
-  assert(mySrcId < (int)myCacheEntry.second.size());
   const auto& myRet = myCacheEntry.second[mySrcId];
   assert(myRet.second < theElements.size());
   assert(theElements[myRet.second] != nullptr);
   return {myRet.first, theElements[myRet.second]->name()};
 }
 
-int Network::id(const std::string& aName) const {
+double Network::txTime(const std::string& aSrc,
+                       const std::string& aDst,
+                       const size_t       aBytes) {
+  const auto myDstId      = id(aDst);
+  auto&      myCacheEntry = cacheEntry(myDstId);
+  const auto mySrcId      = id(aSrc);
+  assert(mySrcId < myCacheEntry.second.size());
+
+  auto myTxTime = 0.0;
+  auto myCur    = mySrcId;
+  while (myCacheEntry.second[myCur].second != myDstId) {
+    myTxTime += theElements[myCacheEntry.second[myCur].second]->txTime(aBytes);
+    myCur = myCacheEntry.second[myCur].second;
+  }
+
+  return myTxTime;
+}
+
+size_t Network::id(const std::string& aName) const {
   const auto it = theNodes.find(aName);
   if (it != theNodes.end()) {
     return it->second.id();
@@ -333,6 +325,35 @@ float Network::capacity(const std::string& aName) const {
     return jt->second.capacity();
   }
   throw std::runtime_error("Unknown node with name: " + aName);
+}
+
+Network::Cache::value_type& Network::cacheEntry(const size_t aDstId) {
+  assert(aDstId < theCache.size());
+
+  auto& myCacheEntry = theCache[aDstId];
+  if (myCacheEntry.first == false) {
+    assert(myCacheEntry.second.size() == 0);
+
+    // create an entry in the cache for this destination
+
+    std::vector<VertexDescriptor> myPred(theCache.size());
+    std::vector<float>            myDist(theCache.size());
+
+    boost::dijkstra_shortest_paths(
+        theGraph,
+        aDstId,
+        boost::predecessor_map(
+            boost::make_iterator_property_map(
+                myPred.begin(), get(boost::vertex_index, theGraph)))
+            .distance_map(myDist.data()));
+
+    myCacheEntry.first = true;
+    myCacheEntry.second.resize(theCache.size());
+    for (size_t i = 0; i < theCache.size(); i++) {
+      myCacheEntry.second[i] = {myDist[i], myPred[i]};
+    }
+  }
+  return myCacheEntry;
 }
 
 } // namespace statesim
