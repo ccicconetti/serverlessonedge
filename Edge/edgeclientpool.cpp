@@ -45,20 +45,20 @@ EdgeClientPool::EdgeClientPool(const size_t aMaxClients)
     , thePool() {
 }
 
-std::pair<LambdaResponse, double> EdgeClientPool::
-                                  operator()(const std::string&   aDestination,
-           const LambdaRequest& aReq,
-           const bool           aDry) {
+std::pair<LambdaResponse, double>
+EdgeClientPool::operator()(const std::string&   aDestination,
+                           const LambdaRequest& aReq,
+                           const bool           aDry) {
   debugPrintPool();
 
   support::Chrono myChrono(true);
 
   // obtain a client from the pool
-  std::unique_ptr<EdgeClient> myClient = getClient(aDestination);
+  std::unique_ptr<EdgeClientGrpc> myClient = getClient(aDestination);
   assert(myClient);
 
   // execute the lambda function
-  const auto myReq = aReq.makeOneMoreHop();
+  const auto myReq  = aReq.makeOneMoreHop();
   auto       myResp = myClient->RunLambda(myReq, aDry);
 
   // if the lambda does not include the actual responder then we set it to the
@@ -73,7 +73,7 @@ std::pair<LambdaResponse, double> EdgeClientPool::
   return std::make_pair(myResp, myChrono.stop());
 }
 
-std::unique_ptr<EdgeClient>
+std::unique_ptr<EdgeClientGrpc>
 EdgeClientPool::getClient(const std::string& aDestination) {
   std::unique_lock<std::mutex> myLock(theMutex);
   auto&                        myDesc = thePool[aDestination]; // may insert
@@ -85,18 +85,18 @@ EdgeClientPool::getClient(const std::string& aDestination) {
   if (myDesc.theFree.empty()) {
     assert(theMaxClients == 0 or myDesc.theBusy < theMaxClients);
     myDesc.theBusy++;
-    return std::make_unique<EdgeClient>(aDestination);
+    return std::make_unique<EdgeClientGrpc>(aDestination);
   }
   assert(not myDesc.theFree.empty());
-  std::unique_ptr<EdgeClient> myNewClient;
+  std::unique_ptr<EdgeClientGrpc> myNewClient;
   myNewClient.swap(myDesc.theFree.front());
   myDesc.theFree.pop_front();
   myDesc.theBusy++;
   return myNewClient;
 }
 
-void EdgeClientPool::releaseClient(const std::string&            aDestination,
-                                   std::unique_ptr<EdgeClient>&& aClient) {
+void EdgeClientPool::releaseClient(const std::string& aDestination,
+                                   std::unique_ptr<EdgeClientGrpc>&& aClient) {
   const std::lock_guard<std::mutex> myLock(theMutex);
   auto& myDesc = thePool[aDestination]; // may insert
   myDesc.theFree.emplace_back(std::move(aClient));

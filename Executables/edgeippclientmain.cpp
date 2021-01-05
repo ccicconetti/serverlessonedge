@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "Edge/edgeclient.h"
+#include "Edge/edgeclientgrpc.h"
 #include "Simulation/ippclient.h"
 #include "Simulation/poissonclient.h"
 #include "Support/chrono.h"

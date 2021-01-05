@@ -145,7 +145,8 @@ class EdgeClientMulti final : public EdgeClientInterface
    * \pre aPersistenceProb is in [0, 1]
    */
   explicit EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
-                           const support::Conf&         aConf);
+                           const float                  aPersistenceProb);
+  // const support::Conf&         aConf);
 
   ~EdgeClientMulti() override;
 

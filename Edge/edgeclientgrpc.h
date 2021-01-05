@@ -27,33 +27,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeclient.h"
+#pragma once
 
-#include "RpcSupport/utils.h"
+#include "Edge/edgeclientinterface.h"
+#include "Edge/edgemessages.h"
+#include "RpcSupport/simpleclient.h"
 
-#include <grpc++/grpc++.h>
+#include <string>
 
 namespace uiiit {
 namespace edge {
 
-EdgeClient::EdgeClient(const std::string& aServerEndpoint)
-    : EdgeClientInterface()
-    , SimpleClient(aServerEndpoint) {
-}
+class EdgeClientGrpc final : public EdgeClientInterface,
+                             public rpc::SimpleClient<rpc::EdgeServer>
+{
+ public:
+  /**
+   * \param aServerEndpoint the edge server
+   */
+  explicit EdgeClientGrpc(const std::string& aServerEndpoint);
+  ~EdgeClientGrpc() override;
 
-EdgeClient::~EdgeClient() {
-  // nihil
-}
+  LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry) override;
+}; // end class EdgeClientGrpc
 
-LambdaResponse EdgeClient::RunLambda(const LambdaRequest& aReq,
-                                     const bool           aDry) {
-  rpc::LambdaResponse myRep;
-  grpc::ClientContext myContext;
-  auto                myReq = aReq.toProtobuf();
-  myReq.set_dry(aDry);
-  rpc::checkStatus(theStub->RunLambda(&myContext, myReq, &myRep));
-  return LambdaResponse(myRep);
-}
-
-} // namespace edge
-} // namespace uiiit
+} // end namespace edge
+} // end namespace uiiit

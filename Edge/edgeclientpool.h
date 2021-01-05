@@ -29,16 +29,16 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/edgeclientgrpc.h"
+#include "Edge/edgemessages.h"
 #include "Support/macros.h"
-#include "edgeclient.h"
-#include "edgemessages.h"
 
+#include <condition_variable>
 #include <list>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <condition_variable>
 #include <utility>
 
 namespace uiiit {
@@ -56,9 +56,9 @@ class EdgeClientPool
         , theAvailableCond() {
     }
 
-    std::list<std::unique_ptr<EdgeClient>> theFree;
-    size_t                                 theBusy;
-    std::condition_variable                theAvailableCond;
+    std::list<std::unique_ptr<EdgeClientGrpc>> theFree;
+    size_t                                     theBusy;
+    std::condition_variable                    theAvailableCond;
   };
 
  public:
@@ -89,10 +89,10 @@ class EdgeClientPool
                                                const bool           aDry);
 
  private:
-  std::unique_ptr<EdgeClient> getClient(const std::string& aDestination);
+  std::unique_ptr<EdgeClientGrpc> getClient(const std::string& aDestination);
 
-  void releaseClient(const std::string&            aDestination,
-                     std::unique_ptr<EdgeClient>&& aClient);
+  void releaseClient(const std::string&                aDestination,
+                     std::unique_ptr<EdgeClientGrpc>&& aClient);
 
   void debugPrintPool();
 

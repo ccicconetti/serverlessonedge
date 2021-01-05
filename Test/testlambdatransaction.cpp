@@ -29,7 +29,7 @@ SOFTWARE.
 
 #include "Edge/composer.h"
 #include "Edge/computer.h"
-#include "Edge/edgeclient.h"
+#include "Edge/edgeclientgrpc.h"
 #include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerclient.h"
 #include "Edge/edgecomputerserver.h"
@@ -204,8 +204,8 @@ TEST_F(TestLambdaTransaction, test_endtoend) {
 
       System mySystem(myType, mySubtype);
 
-      EdgeClient    myClient(mySystem.theRouterEndpoint);
-      LambdaRequest myReq("clambda0", std::string(1000, 'A'));
+      EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+      LambdaRequest  myReq("clambda0", std::string(1000, 'A'));
 
       support::Chrono myChrono(false);
       for (size_t i = 0; i < N; i++) {

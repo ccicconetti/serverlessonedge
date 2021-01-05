@@ -44,7 +44,7 @@ class AppContextManager;
 
 namespace edge {
 
-class EdgeClient;
+class EdgeClientGrpc;
 
 /**
  * An edge client that uses an ETSI application context manager to select the
@@ -69,9 +69,9 @@ class EtsiEdgeClient final : public EdgeClientInterface
   struct Desc final {
     NONCOPYABLE_NONMOVABLE(Desc);
 
-    explicit Desc(const std::string&            aUeAppId,
-                  const std::string&            aReferenceUri,
-                  std::unique_ptr<EdgeClient>&& aClient);
+    explicit Desc(const std::string&                aUeAppId,
+                  const std::string&                aReferenceUri,
+                  std::unique_ptr<EdgeClientGrpc>&& aClient);
 
     Desc(Desc&& aOther);
 
@@ -84,7 +84,7 @@ class EtsiEdgeClient final : public EdgeClientInterface
     std::string theReferenceUri;
 
     //! Edge client to actually perform execution of lambda functions.
-    std::unique_ptr<EdgeClient> theClient;
+    std::unique_ptr<EdgeClientGrpc> theClient;
   };
 
  public:
@@ -121,7 +121,7 @@ class EtsiEdgeClient final : public EdgeClientInterface
    * \throw std::runtime_error if there is no suitable application in the UE
    * application LCM proxy or the context creation procedure failed.
    */
-  EdgeClient& find(const std::string& aLambda);
+  EdgeClientGrpc& find(const std::string& aLambda);
 
  private:
   etsimec::AppContextManager& theAppContextManager;
