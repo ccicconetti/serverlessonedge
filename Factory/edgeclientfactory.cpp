@@ -29,7 +29,7 @@ SOFTWARE.
 
 #include "edgeclientfactory.h"
 
-#include "Edge/edgeclient.h"
+#include "Edge/edgeclientgrpc.h"
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgeclientmulti.h"
 #include "Quic/edgeclientquic.h"
@@ -52,14 +52,16 @@ EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
   const auto myType = aConf("transport-type");
   if (aEndpoints.size() == 1) {
     if (myType == std::string("grpc")) {
-      return std::make_unique<EdgeClient>(*aEndpoints.begin());
+      return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
     } else {
       return std::make_unique<EdgeClientQuic>(
           QuicParamsBuilder::build(aConf, *aEndpoints.begin(), false));
     }
   }
 
-  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
+  // return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
+  return std::make_unique<EdgeClientMulti>(aEndpoints,
+                                           aConf.getDouble("persistence"));
 }
 
 } // end namespace edge
