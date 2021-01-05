@@ -7,6 +7,7 @@ add_library(uiiitsimulation SHARED
 
 target_link_libraries(uiiitsimulation
   uiiitedge
+  uiiitedgefactory
   uiiitrpc
   uiiitsupport
 )
