@@ -163,8 +163,15 @@ EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
 
 EdgeClientQuic::~EdgeClientQuic() {
   LOG(INFO) << "EdgeClientQuic::dtor\n";
-  theSession->drain();
-  theSession->closeWhenIdle();
+  /**
+   * if we invoke startClient() theSession will not be null in any case, even if
+   * connectError callback is invoked, in the test_ctor this causes a
+   * segmentation fault
+   */
+  // if (theSession) {
+  //   theSession->drain();
+  //   theSession->closeWhenIdle();
+  // }
 }
 
 /**
@@ -176,6 +183,7 @@ EdgeClientQuic::~EdgeClientQuic() {
  * connectError() one.
  */
 void EdgeClientQuic::startClient() {
+  LOG(INFO) << "EdgeClientQuic::startClient";
 
   initializeQuicTransportClient();
 
@@ -204,7 +212,7 @@ void EdgeClientQuic::startClient() {
 
 void EdgeClientQuic::connectSuccess() {
   // sendKnobFrame false by default, no if branch
-  VLOG(10) << "EdgeClientQuic::connectSuccess\n";
+  LOG(INFO) << "EdgeClientQuic::connectSuccess\n";
   uint64_t myNumOpenableStreams =
       theQuicClient->getNumOpenableBidirectionalStreams();
   CHECK_GT(myNumOpenableStreams, 0);
@@ -214,7 +222,7 @@ void EdgeClientQuic::connectSuccess() {
 }
 
 void EdgeClientQuic::onReplaySafe() {
-  VLOG(10) << "EdgeClientQuic::onReplaySafe\n";
+  LOG(INFO) << "EdgeClientQuic::onReplaySafe\n";
   theEvb.terminateLoopSoon();
 }
 
@@ -271,61 +279,67 @@ static std::function<void()> onEOMTerminateLoop;
 
 LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
-  VLOG(10) << "EdgeClientQuic::RunLambda\n";
+  LOG(INFO) << "EdgeClientQuic::RunLambda\n";
+  std::unique_ptr<LambdaResponse> myLambdaRes;
+  // this check is needed in order to verify if the connectSuccess callback has
+  // been invoked
+  if (theHttpPaths.empty()) {
+    myLambdaRes.reset(new LambdaResponse(
+        "ERROR",
+        "Client Not Connected, try to invoke EdgeClientQuic::startClient() and "
+        "EdgeClientQuic::RunLambda() again on a started EdgeServerQuic"));
+  } else {
+    std::unique_ptr<CurlClient> myClient = std::make_unique<CurlClient>(
+        &theEvb,
+        proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
+        proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
+        nullptr,
+        theQuicParamsConf.httpHeaders,
+        "", // theQuicParamsConf.httpBody,
+        false,
+        theQuicParamsConf.httpVersion.major,
+        theQuicParamsConf.httpVersion.minor);
+    // set the onEOM() callback function
+    onEOMTerminateLoop = [&]() { theEvb.terminateLoopSoon(); };
+    myClient->setEOMFunc(onEOMTerminateLoop);
+    auto myTransaction = theSession->newTransaction(myClient.get());
+    if (!myTransaction) {
+      std::runtime_error("Failed to create an HTTPTRansaction\n");
+    }
+    // build manually the HTTP Request message
+    proxygen::HTTPMessage myHttpRequestMessage;
+    myHttpRequestMessage.setMethod("POST");
+    myHttpRequestMessage.setURL(theHttpPaths.front().str());
+    myHttpRequestMessage.setVersionString(
+        theQuicParamsConf.httpVersion.canonical);
+    myHttpRequestMessage.setIsChunked(true);
+    myTransaction->sendHeaders(myHttpRequestMessage);
 
-  std::unique_ptr<CurlClient> myClient = std::make_unique<CurlClient>(
-      &theEvb,
-      proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
-      proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
-      nullptr,
-      theQuicParamsConf.httpHeaders,
-      "", // theQuicParamsConf.httpBody,
-      false,
-      theQuicParamsConf.httpVersion.major,
-      theQuicParamsConf.httpVersion.minor);
+    // put the serialized LambdaRequest in the body
+    auto myProtobufLambdaReq = aReq.toProtobuf();
+    myProtobufLambdaReq.set_dry(aDry);
+    size_t mySize   = myProtobufLambdaReq.ByteSizeLong();
+    void*  myBuffer = malloc(mySize);
+    myProtobufLambdaReq.SerializeToArray(myBuffer, mySize);
+    auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
+    myTransaction->sendBody(std::move(myIOBuf));
+    myTransaction->sendEOM();
 
-  // set the onEOM() callback function
-  onEOMTerminateLoop = [&]() { theEvb.terminateLoopSoon(); };
-  myClient->setEOMFunc(onEOMTerminateLoop);
+    // blocking, will exit when the Response will be received
+    theEvb.loopForever();
 
-  // transaction creation
-  auto myTransaction = theSession->newTransaction(myClient.get());
-  if (!myTransaction) {
-    std::runtime_error("Failed to create an HTTPTRansaction\n");
+    // new method which extends the proxygen::CurlClient sample
+    auto myResponseBody = myClient->getResponseBody();
+
+    // LambdaResponse building after deserialization of the body of the
+    // response
+    rpc::LambdaResponse myProtobufLambdaRes;
+    myProtobufLambdaRes.ParseFromArray(myResponseBody->data(),
+                                       myResponseBody->length());
+    myLambdaRes.reset(new LambdaResponse(myProtobufLambdaRes));
   }
-
-  // build manually the HTTP Request message
-  proxygen::HTTPMessage myHttpRequestMessage;
-  myHttpRequestMessage.setMethod("POST");
-  myHttpRequestMessage.setURL(theHttpPaths.front().str());
-  myHttpRequestMessage.setVersionString(
-      theQuicParamsConf.httpVersion.canonical);
-  myHttpRequestMessage.setIsChunked(true);
-  myTransaction->sendHeaders(myHttpRequestMessage);
-
-  // put the serialized LambdaRequest in the body
-  auto   myProtobufLambdaReq = aReq.toProtobuf();
-  size_t mySize              = myProtobufLambdaReq.ByteSizeLong();
-  void*  myBuffer            = malloc(mySize);
-  myProtobufLambdaReq.SerializeToArray(myBuffer, mySize);
-  auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
-  myTransaction->sendBody(std::move(myIOBuf));
-  myTransaction->sendEOM();
-
-  // blocking, will exit when the Response will be received
-  theEvb.loopForever();
-
-  // new method which extends the proxygen::CurlClient sample
-  auto myResponseBody = myClient->getResponseBody();
-
-  // LambdaResponse building after deserialization of the body of the response
-  rpc::LambdaResponse myProtobufLambdaRes;
-  myProtobufLambdaRes.ParseFromArray(myResponseBody->data(),
-                                     myResponseBody->length());
-  LambdaResponse myLambdaRes(myProtobufLambdaRes);
-
-  return myLambdaRes;
-}
+  return *myLambdaRes;
+} // namespace edge
 
 } // namespace edge
 } // namespace uiiit
