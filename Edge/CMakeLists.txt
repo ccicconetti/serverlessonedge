@@ -6,7 +6,6 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryroundrobin.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryrandom.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryproportionalfairness.cpp
-
   ${CMAKE_CURRENT_SOURCE_DIR}/composer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/container.cpp
@@ -63,6 +62,7 @@ add_library(uiiitedge SHARED
 )
 
 target_link_libraries(uiiitedge
+  uiiitedgequic
   uiiitetsimec
   uiiitopenwhisk
   uiiitrpc
