@@ -131,7 +131,7 @@ struct HQParams {
   std::shared_ptr<quic::QuicPskCache> pskCache;
   fizz::server::ClientAuthMode clientAuth{fizz::server::ClientAuthMode::None};
 
-  HQParams(std::string aServerEndpoint, bool isServer) {
+  HQParams(const std::string& aServerEndpoint, bool isServer) {
     // aServerEndpoint format is "IPaddress:port"
     const auto myServerIPPortVector =
         support::split<std::vector<std::string>>(aServerEndpoint, ":");
@@ -273,8 +273,9 @@ class QuicParamsBuilder
    * build an EdgeServerQuic or an EdgeClientQuic starting from the given CLI
    * options
    */
-  static HQParams
-  build(const support::Conf& aConf, std::string aServerEndpoint, bool isServer);
+  static HQParams build(const support::Conf& aConf,
+                        const std::string&   aServerEndpoint,
+                        bool                 isServer);
 };
 
 } // namespace edge

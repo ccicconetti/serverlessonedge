@@ -33,7 +33,7 @@ namespace uiiit {
 namespace edge {
 
 HQParams QuicParamsBuilder::build(const support::Conf& aConf,
-                                  std::string          aServerEndpoint,
+                                  const std::string&   aServerEndpoint,
                                   bool                 isServer) {
   HQParams myHQParamsConf(aServerEndpoint, isServer);
 
