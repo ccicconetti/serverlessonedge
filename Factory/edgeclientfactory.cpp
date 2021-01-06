@@ -53,15 +53,13 @@ EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
   if (aEndpoints.size() == 1) {
     if (myType == std::string("grpc")) {
       return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
-    } else {
+    } else { // transport-type = quic
       return std::make_unique<EdgeClientQuic>(
           QuicParamsBuilder::build(aConf, *aEndpoints.begin(), false));
     }
   }
 
-  // return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
-  return std::make_unique<EdgeClientMulti>(aEndpoints,
-                                           aConf.getDouble("persistence"));
+  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
 }
 
 } // end namespace edge

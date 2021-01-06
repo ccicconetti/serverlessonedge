@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "Edge/edgeclientgrpc.h"
 #include "Factory/edgeclientfactory.h"
+#include "Quic/edgeclientquic.h"
 #include "Support/random.h"
 #include "Support/tostring.h"
 
@@ -43,24 +44,21 @@ namespace uiiit {
 namespace edge {
 
 EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
-                                 const float                  aPersistenceProb)
-    // const support::Conf&         aConf)
+                                 const support::Conf&         aClientConf)
     : EdgeClientInterface()
-    //, thePersistenceProb(aConf.getDouble("persistence"))
-    , thePersistenceProb(aPersistenceProb)
+    , thePersistenceProb(aClientConf.getDouble("persistence"))
     , theDesc(aServerEndpoints.size())
     , theConsumer()
     , theConsumerQueue()
     , theQueueOut()
     , thePendingRequest(nullptr)
     , thePrimary(0) {
-  // if (aConf.getDouble("persistence") < 0 or
-  //     aConf.getDouble("persistence") > 1) {
-  if (aPersistenceProb < 0 or aPersistenceProb > 1) {
+  if (aClientConf.getDouble("persistence") < 0 or
+      aClientConf.getDouble("persistence") > 1) {
     throw std::runtime_error(
         "Invalid configuration: persistence probability (" +
-        // std::to_string(aConf.getDouble("persistence")) +
-        std::to_string(aPersistenceProb) + ") cannot be < 0 or > 1");
+        std::to_string(aClientConf.getDouble("persistence")) +
+        ") cannot be < 0 or > 1");
   }
 
   if (aServerEndpoints.empty()) {
@@ -68,19 +66,19 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
   }
 
   // start executors
-  size_t i = 0;
-  // const auto myClientType = aConf("transport-type");
+  size_t     i            = 0;
+  const auto myClientType = aClientConf("transport-type");
   for (const auto& myEndpoint : aServerEndpoints) {
     auto& myDesc       = theDesc[i];
     myDesc.theIndex    = i;
     myDesc.theEndpoint = myEndpoint;
 
-    // if (myClientType == std::string("grpc")) {
-    myDesc.theClient.reset(new EdgeClientGrpc(myEndpoint));
-    //} else {
-    //  myDesc.theClient.reset(new EdgeClientQuic(
-    //      QuicParamsBuilder::build(aConf, myEndpoint, false)));
-    //}
+    if (myClientType == std::string("grpc")) {
+      myDesc.theClient.reset(new EdgeClientGrpc(myEndpoint));
+    } else {
+      myDesc.theClient.reset(new EdgeClientQuic(
+          QuicParamsBuilder::build(aClientConf, myEndpoint, false)));
+    }
 
     myDesc.theThread = std::thread([this, &myDesc]() {
       while (execLambda(myDesc)) {
@@ -104,8 +102,7 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
   LOG(INFO) << "starting an edge multi-client towards ["
             << toString(aServerEndpoints, ",")
             << "] with persistence probability "
-            //<< aConf.getDouble("persistence");
-            << aPersistenceProb;
+            << aClientConf.getDouble("persistence");
 }
 
 EdgeClientMulti::~EdgeClientMulti() {
@@ -194,7 +191,8 @@ LambdaResponse EdgeClientMulti::RunLambda(const LambdaRequest& aReq,
     return LambdaResponse("terminating", "");
   }
 
-  // find which clients should be reached in addition to the primary destination
+  // find which clients should be reached in addition to the primary
+  // destination
   auto myPending = secondary();
 
   // reach out for the primary, too

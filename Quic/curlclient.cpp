@@ -52,6 +52,7 @@ CurlClient::CurlClient(folly::EventBase*            aEvb,
                               aHttpMajor,
                               aHttpMinor,
                               aPartiallyReliable) {
+  VLOG(10) << "CurlClient::ctor";
 }
 
 void CurlClient::onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept {

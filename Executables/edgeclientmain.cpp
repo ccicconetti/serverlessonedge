@@ -125,6 +125,14 @@ int main(int argc, char* argv[]) {
       throw std::runtime_error("Empty end-points: " + myServerEndpoints);
     }
 
+    const auto myEdgeClientConf      = uiiit::support::Conf(myClientConf);
+    const auto myClientTransportType = myEdgeClientConf("transport-time");
+    if (myClientTransportType != std::string("grpc") ||
+        myClientTransportType != std::string("quic")) {
+      throw std::runtime_error("Invalid Client transport-type configuration in "
+                               "--client-conf option");
+    }
+
     const auto mySizeSet =
         uiiit::support::split<std::vector<size_t>>(mySizes, ",");
     if (mySizeSet.empty()) {
@@ -151,7 +159,7 @@ int main(int argc, char* argv[]) {
           i,
           myMaxRequests,
           uiiit::support::split<std::set<std::string>>(myServerEndpoints, ","),
-          uiiit::support::Conf(myClientConf),
+          myEdgeClientConf,
           myLambda,
           mySaver,
           myVarMap.count("dry") > 0));
