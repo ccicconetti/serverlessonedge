@@ -37,10 +37,12 @@ namespace edge {
 class LambdaRequestHandler : public BaseHandler
 {
  public:
-  explicit LambdaRequestHandler(const HQParams& aQuicParamsConf,
-                                EdgeServer&     aEdgeServer)
+  explicit LambdaRequestHandler(const HQParams&    aQuicParamsConf,
+                                EdgeServer&        aEdgeServer,
+                                const std::string& aServerEndpoint)
       : BaseHandler(aQuicParamsConf)
-      , theEdgeServer(aEdgeServer) {
+      , theEdgeServer(aEdgeServer)
+      , theResponder(aServerEndpoint) {
     VLOG(10) << "LambdaRequestHandler::CTOR\n";
   }
 
@@ -71,8 +73,9 @@ class LambdaRequestHandler : public BaseHandler
     rpc::LambdaResponse myProtobufLambdaResp =
         theEdgeServer.process(myProtobufLambdaReq);
 
-    // building of the LambdaResponse in order to check for theRetCode and set
-    // the HTTPMessage theStatusCode and theStatusMessage according to it
+    // building of the LambdaResponse in order to check for theRetCode and
+    // set the HTTPMessage theStatusCode and theStatusMessage according to
+    // it
     LambdaResponse myLambdaResp(myProtobufLambdaResp);
     if (myLambdaResp.theRetCode == std::string("OK")) {
       theResponse.setStatusCode(200);
@@ -82,6 +85,8 @@ class LambdaRequestHandler : public BaseHandler
       theResponse.setStatusMessage("Bad Request");
     }
     theTransaction->sendHeaders(theResponse);
+
+    myProtobufLambdaResp.set_responder(theResponder);
 
     // send the LambdaResponse as body of the HTTPResponse
     size_t size   = myProtobufLambdaResp.ByteSizeLong();
@@ -105,6 +110,7 @@ class LambdaRequestHandler : public BaseHandler
  private:
   EdgeServer&           theEdgeServer;
   proxygen::HTTPMessage theResponse;
+  const std::string     theResponder;
 };
 
 } // namespace edge

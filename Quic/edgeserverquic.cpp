@@ -42,8 +42,8 @@ namespace edge {
 
 using namespace std::chrono_literals;
 
-EdgeServerQuic::EdgeServerQuic(EdgeServer&    aEdgeServer,
-                               const HQParams aQuicParamsConf)
+EdgeServerQuic::EdgeServerQuic(EdgeServer&     aEdgeServer,
+                               const HQParams& aQuicParamsConf)
     : EdgeServerImpl(aEdgeServer)
     , theMutex()
     , theServerEndpoint(aQuicParamsConf.host)
@@ -55,7 +55,11 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&    aEdgeServer,
                  const HQParams& aParams) -> proxygen::HTTPTransactionHandler* {
             auto path = aMsg->getPathAsStringPiece();
             if (path == "/lambda") {
-              return new LambdaRequestHandler(aParams, theEdgeServer);
+              return new LambdaRequestHandler(
+                  aParams,
+                  theEdgeServer,
+                  theQuicParamsConf.host + ':' +
+                      std::to_string(theQuicParamsConf.port));
             }
             return new EchoHandler(aParams);
           })
@@ -64,7 +68,11 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&    aEdgeServer,
                         -> proxygen::HTTPTransactionHandler* {
                       auto path = aMsg->getPathAsStringPiece();
                       if (path == "/lambda") {
-                        return new LambdaRequestHandler(aParams, theEdgeServer);
+                        return new LambdaRequestHandler(
+                            aParams,
+                            theEdgeServer,
+                            theQuicParamsConf.host + ':' +
+                                std::to_string(theQuicParamsConf.port));
                       }
                       return new EchoHandler(aParams);
                     }) {

@@ -66,8 +66,8 @@ class EdgeServerQuic final : public EdgeServerImpl
   NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
   //! Create an edge server with a given number of threads.
-  explicit EdgeServerQuic(EdgeServer&    aEdgeServer,
-                          const HQParams aQuicParamsConf);
+  explicit EdgeServerQuic(EdgeServer&     aEdgeServer,
+                          const HQParams& aQuicParamsConf);
 
   virtual ~EdgeServerQuic();
 
