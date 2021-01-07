@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
   myDesc.add_options()
   ("server-conf",
    po::value<std::string>(&myServerConf)->default_value("type=grpc"),
-   "Comma-separated configuration of the server.") // endpoint, numthreads OR string of conf parameters to build HQParams
+   "Comma-separated configuration of the server.")
   ("table-conf",
    po::value<std::string>(&myTableConf)->default_value("type=random"),
    "Comma-separated configuration of the forwarding table.")

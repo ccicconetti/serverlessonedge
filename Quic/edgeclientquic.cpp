@@ -282,7 +282,7 @@ static std::function<void()> onEOMTerminateLoop;
 
 LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
-  LOG(INFO) << "EdgeClientQuic::RunLambda\n";
+  LOG(INFO) << "EdgeClientQuic::RunLambda";
   std::unique_ptr<LambdaResponse> myLambdaRes;
   // the following check is needed in order to verify if the connectSuccess()
   // callback has been invoked. The call to the connectSuccess() callback
@@ -290,7 +290,7 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   // connect to the EdgeServerQuic or the previous call to startClient() has not
   // succeeded, so the the connectError callback has been called
   if (theHttpPaths.empty()) {
-    LOG(INFO) << "EdgeClientQuic::RunLambdaFirst Check";
+    LOG(INFO) << "EdgeClientQuic::RunLambda First Check";
     startClient();
   }
   // if the connectError callback has been invoked

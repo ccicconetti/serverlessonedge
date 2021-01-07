@@ -174,7 +174,7 @@ class HQServer
       HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider);
 
   // Starts the QUIC transport in background thread
-  std::thread start();
+  std::thread start(size_t aNumberOfThreads);
 
   void stop();
 

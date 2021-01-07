@@ -80,8 +80,9 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&     aEdgeServer,
 
 void EdgeServerQuic::run() {
   VLOG(10) << "EdgeServerQuic::run";
-  theH2ServerThread   = theHttpServer.start();
-  theQuicServerThread = theQuicTransportServer.start();
+  theH2ServerThread = theHttpServer.start();
+  theQuicServerThread =
+      theQuicTransportServer.start(theQuicParamsConf.httpServerThreads);
 }
 
 void EdgeServerQuic::wait() {

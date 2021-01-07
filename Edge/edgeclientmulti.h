@@ -139,7 +139,7 @@ class EdgeClientMulti final : public EdgeClientInterface
    * \param aClientConf the edge client configuration
    * ("transport-type=grpc,persistence=0.05" by default): "transport-type" is
    * the edge client transport protocol and can be "grpc" or "quic",
-   * "persistence" is instead the the p-persistence probability to probe another
+   * "persistence" is instead the p-persistence probability to probe another
    * destination
    *
    * \pre aPersistenceProb is in [0, 1]

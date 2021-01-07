@@ -191,7 +191,6 @@ struct HQParams {
     transportSettings.partialReliabilityEnabled = false;
     if (!isServer) {
       transportSettings.shouldDrain = false;
-      // transportSettings.attemptEarlyData = false;
     }
     transportSettings.connectUDP =
         false; //"Whether or not to use connected udp sockets"
@@ -226,11 +225,6 @@ struct HQParams {
     transportSettings.tokenlessPacer                  = true;
 
     // *** HTTP Settings ***
-    // h2port         = 6667; // "HTTP/2 server port"
-    // localH2Address = folly::SocketAddress(host, h2port, true);
-
-    // std::thread::hardware_concurrency() << can be quite a lot...
-    httpServerThreads                  = 5;
     httpServerIdleTimeout              = std::chrono::milliseconds(60000);
     httpServerShutdownOn               = {};
     httpServerEnableContentCompression = false;
@@ -257,11 +251,18 @@ class QuicParamsBuilder
 {
  public:
   /**
-   * \param aConf server configuration specified through the --server-conf
-   * option from CLI. This configuration can be used to specify:
-   *    \li h2port (=6667): the port on which the server can receive HTTP2
-   * requests \li attempt-early-data (=false): flag to make the EdgeClientQuic
-   * trying to exploit the QUIC protocol 0-RTT feature
+   * \param aConf server or client configuration specified respectively through
+   * the --server-conf or the --client-conf option from CLI. For the server this
+   * configuration can be used to specify: \li h2port (=6667): the port on which
+   * the server can receive HTTP2 requests, \li attempt-early-data (=false):
+   * flag to make the EdgeClientQuic trying to exploit the QUIC protocol 0-RTT
+   * feature, \li httpServerThreads (=5): number of threads spawned in the
+   * HTTP2Server.
+   *
+   * For the client this configuration can be used to specify: \li
+   * transport-type (=grpc): the protocol to exchange
+   * lambdaRequest/lambdaResponse, can be "grpc" or "quic", \li persistence
+   * (=0.5): the p-persistence probability to probe another destination
    *
    * \param aServerEndpoint server endpoint specified through the
    * --server-endpoint option from CLI (format: "IPAddress:Port")

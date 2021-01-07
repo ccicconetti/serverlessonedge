@@ -66,11 +66,11 @@ HQServer::HQServer(
   }
 }
 
-std::thread HQServer::start() {
+std::thread HQServer::start(size_t aNumberOfThreads) {
   VLOG(10) << "HQServer::start\n";
-  std::thread t = std::thread([this]() mutable {
+  std::thread t = std::thread([this, aNumberOfThreads]() mutable {
     theQuicServer->start(theQuicParamsConf.localAddress.value(),
-                         5); //, std::thread::hardware_concurrency());
+                         aNumberOfThreads);
 
     theQuicServer->waitUntilInitialized();
     const auto& boundAddr = theQuicServer->getAddress();

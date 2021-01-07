@@ -49,20 +49,33 @@ HQParams QuicParamsBuilder::build(const support::Conf& aConf,
   myHQParamsConf.localH2Address =
       folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.h2port, true);
 
-  // attempt early-data (bool) -> "whether to use 0-RTT"
-  if (aConf.find(std::string("attempt-early-data")) != aConf.end()) {
-    if (!isServer) {
+  // (Server Only) httpServerThreads (size_t)
+  if (isServer) {
+    if (aConf.find(std::string("httpServerThreads")) != aConf.end()) {
+      myHQParamsConf.httpServerThreads = aConf.getUint("httpServerThreads");
+      LOG(INFO) << "httpServerThreads in Conf = "
+                << myHQParamsConf.httpServerThreads;
+    } else {
+      myHQParamsConf.httpServerThreads = 5;
+      LOG(INFO) << "httpServerThreads default = "
+                << myHQParamsConf.httpServerThreads;
+    }
+  }
+
+  // (Client Only) attempt early-data (bool) -> "whether to use 0-RTT"
+  if (!isServer) {
+    if (aConf.find(std::string("attempt-early-data")) != aConf.end()) {
       myHQParamsConf.transportSettings.attemptEarlyData =
           aConf.getBool("attempt-early-data");
       VLOG(10) << "attempt-early-data in Conf = "
                << myHQParamsConf.transportSettings.attemptEarlyData;
+      myHQParamsConf.earlyData = aConf.getBool("attempt-early-data");
+    } else {
+      myHQParamsConf.transportSettings.attemptEarlyData = false;
+      VLOG(10) << "attempt-early-data default = "
+               << myHQParamsConf.transportSettings.attemptEarlyData;
+      myHQParamsConf.earlyData = false;
     }
-    myHQParamsConf.earlyData = aConf.getBool("attempt-early-data");
-  } else {
-    myHQParamsConf.transportSettings.attemptEarlyData = false;
-    VLOG(10) << "attempt-early-data default = "
-             << myHQParamsConf.transportSettings.attemptEarlyData;
-    myHQParamsConf.earlyData = false;
   }
 
   return myHQParamsConf;
