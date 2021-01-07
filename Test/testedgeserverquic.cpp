@@ -45,37 +45,59 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-struct TestEdgeServerQuic : public ::testing::Test {};
+struct TestEdgeServerQuic : public ::testing::Test {
+
+  TestEdgeServerQuic()
+      : theServerEndpoint("127.0.0.1:1001")
+      , theFTServerEndpoint("127.0.0.1:6474")
+      , theGrpcClientConf("transport-type=grpc,persistence=0.5")
+      , theQuicClientConf("transport-type=quic,persistence=0.5")
+      , theQuicServerConf("type=quic") {
+  }
+
+  const std::string   theServerEndpoint;
+  const std::string   theFTServerEndpoint;
+  const support::Conf theGrpcClientConf;
+  const support::Conf theQuicClientConf;
+  const support::Conf theQuicServerConf;
+};
 
 TEST_F(TestEdgeServerQuic, test_connection) {
 
-  // folly::ssl::init();
-
-  HQParams myEdgeServerQuicParams = QuicParamsBuilder::build(
-      support::Conf("transport-type=quic"), "127.0.0.1:6473", true);
-  HQParams myEdgeClientQuicParams = QuicParamsBuilder::build(
-      support::Conf("transport-type=quic"), "127.0.0.1:6473", false);
+  HQParams myEdgeServerQuicParams =
+      QuicParamsBuilder::build(theQuicServerConf, theServerEndpoint, true);
+  HQParams myEdgeClientQuicParams =
+      QuicParamsBuilder::build(theQuicClientConf, theServerEndpoint, false);
 
   std::unique_ptr<EdgeRouter> theRouter;
-  LOG(INFO) << myEdgeServerQuicParams.host + ':' +
-                   std::to_string(myEdgeServerQuicParams.port) + '\n';
-
   theRouter.reset(
-      new EdgeRouter(myEdgeServerQuicParams.host + ':' +
-                         std::to_string(myEdgeServerQuicParams.port),
-                     myEdgeServerQuicParams.host + ":6474",
+      new EdgeRouter(theServerEndpoint,
+                     theFTServerEndpoint,
                      "",
                      support::Conf(EdgeLambdaProcessor::defaultConf()),
                      support::Conf("type=random"),
                      support::Conf("type=trivial,period=10,stat=mean")));
 
   std::unique_ptr<EdgeServerImpl> myServerImpl;
+
+  /**
+   * This test succeed only if we use the uncommented way to proceed but not
+   * with the second one, why?
+   */
   myServerImpl.reset(new EdgeServerQuic(*theRouter, myEdgeServerQuicParams));
+  //   myServerImpl.reset(new EdgeServerQuic(
+  //       *theRouter,
+  //       QuicParamsBuilder::build(theQuicServerConf, theServerEndpoint,
+  //       true)));
   assert(myServerImpl != nullptr);
   myServerImpl->run();
 
   EdgeClientQuic myClient(myEdgeClientQuicParams);
-  myClient.startClient();
+  //   EdgeClientQuic myClient(
+  //       QuicParamsBuilder::build(theQuicClientConf, theServerEndpoint,
+  //       false));
+
+  // myClient.startClient();
 
   LambdaRequest  myReq("clambda0", std::string(50, 'A'));
   LambdaResponse myResp = myClient.RunLambda(myReq, false);
