@@ -159,19 +159,15 @@ class InsecureVerifierDangerousDoNotUseInProduction
 EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
     : EdgeClientInterface()
     , theQuicParamsConf(aQuicParamsConf) {
+  LOG(INFO) << "EdgeClientQuic::ctor";
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
   LOG(INFO) << "EdgeClientQuic::dtor\n";
-  /**
-   * if we invoke startClient() theSession will not be null in any case, even if
-   * connectError callback is invoked, in the test_ctor this causes a
-   * segmentation fault
-   */
-  // if (theSession) {
-  //   theSession->drain();
-  //   theSession->closeWhenIdle();
-  // }
+  if (theSession) {
+    theSession->drain();
+    theSession->closeWhenIdle();
+  }
 }
 
 /**
@@ -211,7 +207,6 @@ void EdgeClientQuic::startClient() {
 }
 
 void EdgeClientQuic::connectSuccess() {
-  // sendKnobFrame false by default, no if branch
   LOG(INFO) << "EdgeClientQuic::connectSuccess\n";
   uint64_t myNumOpenableStreams =
       theQuicClient->getNumOpenableBidirectionalStreams();
@@ -234,6 +229,19 @@ void EdgeClientQuic::connectError(
 }
 
 void EdgeClientQuic::initializeQuicTransportClient() {
+  LOG(INFO) << "EdgeClientQuic::initializeQuicTransportClient()";
+
+  /**
+   * By now the following statement raises the exception in EdgeClientMulti
+   */
+  try {
+    auto remoteAddressCreated = theQuicParamsConf.remoteAddress.value();
+  } catch (const std::exception& e) {
+    LOG(INFO) << "initializeQuicTransportClient check";
+    std::cerr << e.what() << '\n';
+    throw std::runtime_error("EdgeClientQuic must be created after an "
+                             "EdgeServerQuic is up and running");
+  }
   auto mySocket              = std::make_unique<folly::AsyncUDPSocket>(&theEvb);
   auto myQuicTransportClient = std::make_shared<quic::QuicClientTransport>(
       &theEvb,
@@ -247,16 +255,11 @@ void EdgeClientQuic::initializeQuicTransportClient() {
   myQuicTransportClient->setHostname(theQuicParamsConf.host);
   myQuicTransportClient->addNewPeerAddress(
       theQuicParamsConf.remoteAddress.value());
-  // this if should not be invoked since local address is empty
-  if (theQuicParamsConf.localAddress.has_value()) {
-    myQuicTransportClient->setLocalAddress(*theQuicParamsConf.localAddress);
-  }
   myQuicTransportClient->setCongestionControllerFactory(
       std::make_shared<quic::DefaultCongestionControllerFactory>());
   myQuicTransportClient->setTransportSettings(
       theQuicParamsConf.transportSettings);
   myQuicTransportClient->setSupportedVersions(theQuicParamsConf.quicVersions);
-
   theQuicClient = std::move(myQuicTransportClient);
 }
 
@@ -281,14 +284,25 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
   LOG(INFO) << "EdgeClientQuic::RunLambda\n";
   std::unique_ptr<LambdaResponse> myLambdaRes;
-  // this check is needed in order to verify if the connectSuccess callback has
-  // been invoked
+  // the following check is needed in order to verify if the connectSuccess()
+  // callback has been invoked. The call to the connectSuccess() callback
+  // can have two causes: it is the first time that the EdgeClientQuic try to
+  // connect to the EdgeServerQuic or the previous call to startClient() has not
+  // succeeded, so the the connectError callback has been called
   if (theHttpPaths.empty()) {
-    myLambdaRes.reset(new LambdaResponse(
-        "ERROR",
-        "Client Not Connected, try to invoke EdgeClientQuic::startClient() and "
-        "EdgeClientQuic::RunLambda() again on a started EdgeServerQuic"));
-  } else {
+    LOG(INFO) << "EdgeClientQuic::RunLambdaFirst Check";
+    startClient();
+  }
+  // if the connectError callback has been invoked
+  if (theHttpPaths.empty()) {
+    LOG(INFO) << "ConnectError has been Invoked";
+    myLambdaRes.reset(
+        new LambdaResponse("Connection Error",
+                           "Cannot establish a connection with ServerEndpoint" +
+                               theQuicParamsConf.host + ':' +
+                               std::to_string(theQuicParamsConf.port)));
+  } else { // if the connectSuccess callback has been invoked
+    LOG(INFO) << "ConnectSuccess has been invoked";
     std::unique_ptr<CurlClient> myClient = std::make_unique<CurlClient>(
         &theEvb,
         proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
