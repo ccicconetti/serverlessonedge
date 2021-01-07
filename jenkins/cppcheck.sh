@@ -1,26 +1,27 @@
 #!/bin/bash
 
+if [ "$TEXT" -eq 1 ] ; then
+  OPTS="--output-file=report.txt"
+else
+  OPTS="--xml --xml-version=2 --output-file=report.xml"
+fi
+
 CPPCHECK=/usr/local/bin/cppcheck
 OPTIONS="--library=gnu --library=posix \
          --platform=unix64 --std=c++17 \
          --suppressions-list=cppcheck.suppression \
          --enable=all \
-         --xml \
-         --xml-version=2 \
-         -I../emulator \
-         -I../build/debug/emulator/proto-src \
          --suppress=syntaxError \
          -j 8 \
          --force \
-         --output-file=report.xml"
+         $OPTS"
          
-#-I../build/debug/googletest-src/googletest/include \
-
 ${CPPCHECK} ${OPTIONS} \
   ../Edge \
   ../Executables \
   ../Factory \
   ../OpenCV \
+  ../Quic \
   ../Rpc \
   ../Simulation \
   ../Test \
