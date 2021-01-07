@@ -48,7 +48,7 @@ namespace edge {
 struct TestEdgeServerQuic : public ::testing::Test {
 
   TestEdgeServerQuic()
-      : theServerEndpoint("127.0.0.1:1001")
+      : theServerEndpoint("127.0.0.1:10001")
       , theFTServerEndpoint("127.0.0.1:6474")
       , theGrpcClientConf("transport-type=grpc,persistence=0.5")
       , theQuicClientConf("transport-type=quic,persistence=0.5")
