@@ -11,7 +11,8 @@ OPTIONS="--library=gnu --library=posix \
          -I../build/debug/emulator/proto-src \
          --suppress=syntaxError \
          -j 8 \
-         --force"
+         --force \
+         --output-file=report.xml"
          
 #-I../build/debug/googletest-src/googletest/include \
 
@@ -31,5 +32,4 @@ ${CPPCHECK} ${OPTIONS} \
   ../etsimec/rest/Test \
   ../etsimec/rest/support/RpcSupport \
   ../etsimec/rest/support/Support \
-  ../etsimec/rest/support/Test \
-  2>report.xml
+  ../etsimec/rest/support/Test
