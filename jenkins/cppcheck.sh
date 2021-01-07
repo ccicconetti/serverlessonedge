@@ -22,7 +22,7 @@ ${CPPCHECK} ${OPTIONS} \
   ../Factory \
   ../OpenCV \
   ../Rpc \
-  ../Simulation
+  ../Simulation \
   ../Test \
   ../etsimec/EtsiMec \
   ../etsimec/Executables \
