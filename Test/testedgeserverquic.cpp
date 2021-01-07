@@ -63,41 +63,20 @@ struct TestEdgeServerQuic : public ::testing::Test {
 };
 
 TEST_F(TestEdgeServerQuic, test_connection) {
+  EdgeRouter myRouter(theServerEndpoint,
+                      theFTServerEndpoint,
+                      "",
+                      support::Conf(EdgeLambdaProcessor::defaultConf()),
+                      support::Conf("type=random"),
+                      support::Conf("type=trivial,period=10,stat=mean"));
 
-  HQParams myEdgeServerQuicParams =
-      QuicParamsBuilder::build(theQuicServerConf, theServerEndpoint, true);
-  HQParams myEdgeClientQuicParams =
-      QuicParamsBuilder::build(theQuicClientConf, theServerEndpoint, false);
+  EdgeServerQuic myServerImpl(
+      myRouter,
+      QuicParamsBuilder::build(theQuicServerConf, theServerEndpoint, true));
+  myServerImpl.run();
 
-  std::unique_ptr<EdgeRouter> theRouter;
-  theRouter.reset(
-      new EdgeRouter(theServerEndpoint,
-                     theFTServerEndpoint,
-                     "",
-                     support::Conf(EdgeLambdaProcessor::defaultConf()),
-                     support::Conf("type=random"),
-                     support::Conf("type=trivial,period=10,stat=mean")));
-
-  std::unique_ptr<EdgeServerImpl> myServerImpl;
-
-  /**
-   * This test succeed only if we use the uncommented way to proceed but not
-   * with the second one, why?
-   */
-  myServerImpl.reset(new EdgeServerQuic(*theRouter, myEdgeServerQuicParams));
-  //   myServerImpl.reset(new EdgeServerQuic(
-  //       *theRouter,
-  //       QuicParamsBuilder::build(theQuicServerConf, theServerEndpoint,
-  //       true)));
-  assert(myServerImpl != nullptr);
-  myServerImpl->run();
-
-  EdgeClientQuic myClient(myEdgeClientQuicParams);
-  //   EdgeClientQuic myClient(
-  //       QuicParamsBuilder::build(theQuicClientConf, theServerEndpoint,
-  //       false));
-
-  // myClient.startClient();
+  EdgeClientQuic myClient(
+      QuicParamsBuilder::build(theQuicClientConf, theServerEndpoint, false));
 
   LambdaRequest  myReq("clambda0", std::string(50, 'A'));
   LambdaResponse myResp = myClient.RunLambda(myReq, false);

@@ -82,7 +82,7 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
   LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry) override;
 
  private:
-  const HQParams&                            theQuicParamsConf;
+  const HQParams                             theQuicParamsConf;
   std::thread                                theQuicClientEvbThread;
   std::shared_ptr<quic::QuicClientTransport> theQuicClient;
   folly::EventBase                           theEvb;
