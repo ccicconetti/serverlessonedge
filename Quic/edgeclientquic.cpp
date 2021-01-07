@@ -164,7 +164,7 @@ EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
 
 EdgeClientQuic::~EdgeClientQuic() {
   LOG(INFO) << "EdgeClientQuic::dtor\n";
-  if (theSession) {
+  if (!theHttpPaths.empty()) {
     theSession->drain();
     theSession->closeWhenIdle();
   }
