@@ -13,6 +13,8 @@ target_compile_options(uiiitedgequic PRIVATE "-DNDEBUG")
 
 if(APPLE)
 target_link_libraries(uiiitedgequic
+    uiiitrpc
+
     #boost_iostreams
     #boost_regex
     #event
@@ -86,6 +88,8 @@ target_link_libraries(uiiitedgequic
 )
 else()
 target_link_libraries(uiiitedgequic
+    uiiitrpc
+
     fizz
     fmt
     folly
