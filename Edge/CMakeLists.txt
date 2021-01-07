@@ -79,6 +79,7 @@ add_library(uiiitedgequic STATIC
 )
 
 target_link_libraries(uiiitedgequic
+    uiiitrpc
     ${PROXYGENLIB}
     ${PROXYGENCURLLIB}
     ${PROXYGENHTTPSERVERLIB}
