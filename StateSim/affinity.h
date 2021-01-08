@@ -29,6 +29,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <map>
+#include <random>
 #include <string>
 
 namespace uiiit {
@@ -39,6 +41,12 @@ enum class Affinity : int {
   Cpu          = 0,
   Gpu          = 1,
 };
+
+//! \return a random allocation of affinities
+std::map<std::string, Affinity>
+randomAffinities(const std::map<std::string, double>& aFuncWeights,
+                 const std::map<Affinity, double>&    aAffinityWeights,
+                 std::default_random_engine&          aRng);
 
 std::string toString(const Affinity);
 

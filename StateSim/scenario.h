@@ -100,11 +100,6 @@ class Scenario
   PerformanceData performance() const;
 
  private:
-  static std::map<std::string, Affinity>
-  makeAffinities(const std::map<std::string, double> aFuncWeights,
-                 const std::map<Affinity, double>&   aAffinityWeights,
-                 std::default_random_engine&         aRng);
-
   /**
    * Return the execution time (processing vs. network) if a new task
    * is allocated to the candidate node.

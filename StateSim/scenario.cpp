@@ -38,7 +38,7 @@ namespace statesim {
 
 Scenario::Scenario(const Conf& aConf)
     : theRng(aConf.theSeed)
-    , theAffinities(makeAffinities(
+    , theAffinities(randomAffinities(
           aConf.theFuncWeights, aConf.theAffinityWeights, theRng))
     , theNetwork(std::make_unique<Network>(
           aConf.theNodesPath, aConf.theLinksPath, aConf.theEdgesPath))
@@ -66,31 +66,6 @@ Scenario::Scenario(const std::map<std::string, Affinity>& aAffinities,
     , theLoad()
     , theAllocation() {
   // noop
-}
-
-std::map<std::string, Affinity>
-Scenario::makeAffinities(const std::map<std::string, double> aFuncWeights,
-                         const std::map<Affinity, double>&   aAffinities,
-                         std::default_random_engine&         aRng) {
-  std::map<std::string, Affinity> ret;
-
-  double mySum = 0;
-  for (const auto& elem : aAffinities) {
-    mySum += elem.second;
-  }
-  std::uniform_real_distribution<double> myRv(0.0, mySum);
-  for (const auto& elem : aFuncWeights) {
-    const auto myRandomValue = myRv(aRng);
-    auto       myCur         = 0.0;
-    auto       it            = aAffinities.begin();
-    for (; myRandomValue < myCur and it != aAffinities.end(); ++it) {
-      myCur += it->second;
-    }
-    assert(it != aAffinities.end());
-    ret.emplace(elem.first, it->first);
-  }
-
-  return ret;
 }
 
 void Scenario::allocateTasks() {
