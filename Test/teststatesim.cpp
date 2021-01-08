@@ -504,6 +504,17 @@ TEST_F(TestStateSim, test_scenario) {
 
   const auto myData = myScenario.performance(Policy::PureFaaS);
   ASSERT_TRUE(check(myData));
+
+  const auto myDataFilename = (theTestDir / "data").string();
+  {
+    std::ofstream myDataFile(myDataFilename);
+    myData.save(myDataFile);
+  }
+  {
+    std::ifstream myDataFile(myDataFilename);
+    const auto    myDataFromFile = PerformanceData::load(myDataFile);
+    ASSERT_TRUE(myData == myDataFromFile);
+  }
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {

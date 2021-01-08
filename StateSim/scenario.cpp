@@ -37,6 +37,60 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
+bool PerformanceData::operator==(const PerformanceData& aOther) const {
+  return theProcDelays == aOther.theProcDelays and
+         theNetDelays == aOther.theNetDelays and
+         theDataTransfer == aOther.theDataTransfer;
+}
+
+void PerformanceData::save(std::ofstream& aOutput) const {
+  // save version number
+  aOutput.write(reinterpret_cast<const char*>(&theVersion), sizeof(theVersion));
+
+  // save number of elements
+  const size_t N = theProcDelays.size();
+  aOutput.write(reinterpret_cast<const char*>(&N), sizeof(N));
+
+  // save samples
+  aOutput.write(reinterpret_cast<const char*>(theProcDelays.data()),
+                sizeof(double) * N);
+  aOutput.write(reinterpret_cast<const char*>(theNetDelays.data()),
+                sizeof(double) * N);
+  aOutput.write(reinterpret_cast<const char*>(theDataTransfer.data()),
+                sizeof(size_t) * N);
+}
+
+PerformanceData PerformanceData::load(std::ifstream& aInput) {
+  PerformanceData ret;
+  // read version number, abort if wrong
+  size_t myVersion;
+  aInput.read(reinterpret_cast<char*>(&myVersion), sizeof(myVersion));
+  if (myVersion != theVersion) {
+    throw std::runtime_error("Wrong version number: expected " +
+                             std::to_string(theVersion) + ", found " +
+                             std::to_string(myVersion));
+  }
+
+  // read number of elements
+  size_t myNumJobs;
+  aInput.read(reinterpret_cast<char*>(&myNumJobs), sizeof(myNumJobs));
+
+  // read samples
+  ret.theProcDelays.resize(myNumJobs);
+  aInput.read(reinterpret_cast<char*>(ret.theProcDelays.data()),
+              sizeof(double) * myNumJobs);
+
+  ret.theNetDelays.resize(myNumJobs);
+  aInput.read(reinterpret_cast<char*>(ret.theNetDelays.data()),
+              sizeof(double) * myNumJobs);
+
+  ret.theDataTransfer.resize(myNumJobs);
+  aInput.read(reinterpret_cast<char*>(ret.theDataTransfer.data()),
+              sizeof(size_t) * myNumJobs);
+
+  return ret;
+}
+
 Scenario::Scenario(const Conf& aConf)
     : theRng(aConf.theSeed)
     , theAffinities(randomAffinities(

@@ -34,6 +34,7 @@ SOFTWARE.
 #include "StateSim/network.h"
 #include "Support/macros.h"
 
+#include <fstream>
 #include <map>
 #include <memory>
 #include <random>
@@ -50,6 +51,13 @@ struct PerformanceData {
   std::vector<double> theNetDelays;
   //! For each job, the amount of data transferred, in bytes.
   std::vector<size_t> theDataTransfer;
+
+  bool operator==(const PerformanceData& aOther) const;
+
+  void                   save(std::ofstream& aOutput) const;
+  static PerformanceData load(std::ifstream& aInput);
+
+  static constexpr size_t theVersion = 1;
 };
 
 enum class Policy : int {
