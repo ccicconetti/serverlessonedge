@@ -43,7 +43,7 @@ Link::Link(const Type         aType,
            const std::string& aName,
            const size_t       aId,
            const float        aCapacity)
-    : Element(aName, aId)
+    : Element(aName, aId, Device::Link)
     , theType(aType)
     , theCapacity(aCapacity) {
   if (aCapacity <= 0) {

@@ -39,7 +39,7 @@ namespace uiiit {
 namespace statesim {
 
 Node::Node(const std::string& aName, const size_t aId)
-    : Element(aName, aId)
+    : Element(aName, aId, Device::Node)
     , theType(Type::Networking)
     , theSpeed(0)
     , theMemory(0)
@@ -52,7 +52,7 @@ Node::Node(const std::string& aName,
            const float        aSpeed,
            const size_t       aMemory,
            const Affinity     aAffinity)
-    : Element(aName, aId)
+    : Element(aName, aId, Device::Node)
     , theType(Type::Processing)
     , theSpeed(aSpeed)
     , theMemory(aMemory)

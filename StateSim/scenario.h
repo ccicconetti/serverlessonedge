@@ -42,6 +42,15 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
+struct PerformanceData {
+  //! For each job, the processing time, in s.
+  std::vector<double> theProcDelays;
+  //! For each job, the network delay, in s.
+  std::vector<double> theNetDelays;
+  //! For each job, the amount of data transferred, in bytes.
+  std::vector<size_t> theDataTransfer;
+};
+
 class Scenario
 {
   NONCOPYABLE_NONMOVABLE(Scenario);
@@ -88,8 +97,7 @@ class Scenario
   void allocateTasks();
 
   //! \return the execution and transmission delays of jobs.
-  void performance(std::vector<double>& aProcDelays,
-                   std::vector<double>& aNetDelays);
+  PerformanceData performance() const;
 
  private:
   static std::map<std::string, Affinity>
@@ -98,6 +106,8 @@ class Scenario
                  std::default_random_engine&         aRng);
 
   /**
+   * Return the execution time (processing vs. network) if a new task
+   * is allocated to the candidate node.
    *
    * \param aOps The number of operations of the task
    *
@@ -109,20 +119,35 @@ class Scenario
    *
    * \param aNode The candidate node
    *
-   * \param aCandidate True if we are evaluating aNode as a possible candidate
-   *        node for the execution, false otherwise
+   * \return execution time (network transfer, processing), in s
+   */
+  std::pair<double, double> execTimeNew(const size_t aOps,
+                                        const size_t aInSize,
+                                        const size_t aOutSize,
+                                        const Node&  aClient,
+                                        const Node&  aNode);
+
+  /**
+   * Return the execution time (processing vs. network) of a given task
+   * allocated to a candidate node.
    *
-   * \return execution time <network transfer,processing> if
-   *         the given task, identified by the number of
-   *         operations and input/output sizes (including state transfer), is
-   *         executed on the given processing node
+   * \param aOps The number of operations of the task
+   *
+   * \param aInSize The total input size (argument + state, if any)
+   *
+   * \param aOutSize The total output size (argument + state, if any)
+   *
+   * \param aClient The client node
+   *
+   * \param aNode The node to which this task is allocated
+   *
+   * \return execution time (network transfer, processing), in s
    */
   std::pair<double, double> execTime(const size_t aOps,
                                      const size_t aInSize,
                                      const size_t aOutSize,
                                      const Node&  aClient,
-                                     const Node&  aNode,
-                                     const bool   aCandidate);
+                                     const Node&  aNode) const;
 
   //! \return a random order of the job identifiers
   std::vector<size_t> shuffleJobIds();

@@ -181,6 +181,18 @@ struct TestStateSim : public ::testing::Test {
     }
   }
 
+  static bool check(const PerformanceData& aData) {
+    const auto N = std::min(
+        aData.theProcDelays.size(),
+        std::min(aData.theNetDelays.size(), aData.theDataTransfer.size()));
+    for (size_t i = 0; i < N; i++) {
+      VLOG(1) << '#' << i << ' ' << aData.theProcDelays[i] << ' '
+              << aData.theNetDelays[i] << ' ' << aData.theDataTransfer[i];
+    }
+    return aData.theProcDelays.size() == aData.theNetDelays.size() and
+           aData.theProcDelays.size() == aData.theDataTransfer.size();
+  }
+
   /*
    *               +-----------+
    *           +---+6  sw2     +--+
@@ -358,11 +370,27 @@ TEST_F(TestStateSim, test_network) {
   const auto&  A = myNetwork.nodes().find("A")->second;
   const auto&  B = myNetwork.nodes().find("B")->second;
   const auto&  C = myNetwork.nodes().find("C")->second;
+  const auto&  D = myNetwork.nodes().find("D")->second;
   const auto&  E = myNetwork.nodes().find("E")->second;
   ASSERT_FLOAT_EQ(2 * N * 8 / 10e6, myNetwork.txTime(A, B, N));
   ASSERT_FLOAT_EQ(2 * N * 8 / 10e6 + 2 * N * 8 / 1000e6,
                   myNetwork.txTime(A, E, N));
   ASSERT_FLOAT_EQ(N * 8 / 100e6, myNetwork.txTime(C, B, N));
+
+  // check number of hops
+  ASSERT_EQ(0, myNetwork.hops(A, A));
+  ASSERT_EQ(0, myNetwork.hops(B, B));
+  ASSERT_EQ(0, myNetwork.hops(C, C));
+  ASSERT_EQ(0, myNetwork.hops(D, D));
+  ASSERT_EQ(0, myNetwork.hops(E, E));
+
+  ASSERT_EQ(1, myNetwork.hops(B, C));
+
+  ASSERT_EQ(2, myNetwork.hops(A, B));
+  ASSERT_EQ(2, myNetwork.hops(A, C));
+  ASSERT_EQ(2, myNetwork.hops(D, E));
+
+  ASSERT_EQ(4, myNetwork.hops(A, E));
 }
 
 TEST_F(TestStateSim, test_all_tasks) {
@@ -445,12 +473,8 @@ TEST_F(TestStateSim, test_scenario_from_files) {
 
   ASSERT_NO_THROW(myScenario.allocateTasks());
 
-  std::vector<double> myProcDelays;
-  std::vector<double> myNetDelays;
-  myScenario.performance(myProcDelays, myNetDelays);
-  for (size_t i = 0; i < myProcDelays.size(); i++) {
-    LOG(INFO) << myProcDelays[i] << ' ' << myNetDelays[i];
-  }
+  const auto myData = myScenario.performance();
+  ASSERT_TRUE(check(myData));
 }
 
 TEST_F(TestStateSim, test_scenario) {
@@ -478,13 +502,8 @@ TEST_F(TestStateSim, test_scenario) {
 
   myScenario.allocateTasks();
 
-  std::vector<double> myProcDelays;
-  std::vector<double> myNetDelays;
-  myScenario.performance(myProcDelays, myNetDelays);
-
-  for (size_t i = 0; i < 3; i++) {
-    LOG(INFO) << myProcDelays[i] << ' ' << myNetDelays[i];
-  }
+  const auto myData = myScenario.performance();
+  ASSERT_TRUE(check(myData));
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {

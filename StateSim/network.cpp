@@ -307,6 +307,22 @@ Network::txTime(const Node& aSrc, const Node& aDst, const size_t aBytes) {
   return myTxTime;
 }
 
+size_t Network::hops(const Node& aSrc, const Node& aDst) {
+  auto& myCacheEntry = cacheEntry(aDst.id());
+  assert(aSrc.id() < myCacheEntry.second.size());
+
+  size_t ret   = 0;
+  auto   myCur = aSrc.id();
+  while (myCacheEntry.second[myCur].second != aDst.id()) {
+    const auto myNext = myCacheEntry.second[myCur].second;
+    if (theElements[myNext]->device() == Element::Device::Link) {
+      ret++;
+    }
+    myCur = myNext;
+  }
+  return ret;
+}
+
 size_t Network::id(const std::string& aName) const {
   const auto it = theNodes.find(aName);
   if (it != theNodes.end()) {
@@ -360,5 +376,17 @@ Network::Cache::value_type& Network::cacheEntry(const size_t aDstId) {
   return myCacheEntry;
 }
 
+const Network::Cache::value_type&
+Network::cacheEntry(const size_t aDstId) const {
+  assert(aDstId < theCache.size());
+  const auto& myCacheEntry = theCache[aDstId];
+  if (myCacheEntry.first == false) {
+    assert(aDstId < theElements.size());
+    throw std::runtime_error(
+        "Routing cache entry does not exist for destination: " +
+        theElements[aDstId]->name());
+  }
+  return myCacheEntry;
+}
 } // namespace statesim
 } // namespace uiiit

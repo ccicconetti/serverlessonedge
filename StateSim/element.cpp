@@ -32,9 +32,12 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
-Element::Element(const std::string& aName, const size_t aId)
+Element::Element(const std::string& aName,
+                 const size_t       aId,
+                 const Device       aDevice)
     : theName(aName)
-    , theId(aId) {
+    , theId(aId)
+    , theDevice(aDevice) {
   if (aName.empty()) {
     throw std::runtime_error("Invalid empty name for an element: " +
                              std::to_string(aId));

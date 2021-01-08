@@ -40,22 +40,32 @@ namespace statesim {
 class Element
 {
  public:
+  enum class Device : int {
+    Link = 0,
+    Node = 1,
+  };
+
   /**
    *  Create an Element.
    *
-   * \param aName The string identifier.
+   * \param aName The string identifier
    *
-   * \param aId The numeric identifier.
+   * \param aId The numeric identifier
    *
-   * \throw std::runtime_error if the name is empty.
+   * \param aCategory The device
+   *
+   * \throw std::runtime_error if the name is empty
    */
-  explicit Element(const std::string& aName, const size_t aId);
+  explicit Element(const std::string& aName,
+                   const size_t       aId,
+                   const Device       aDevice);
 
   virtual ~Element();
 
   // clang-format off
   std::string name()     const noexcept { return theName;     }
   size_t      id()       const noexcept { return theId;       }
+  Device      device()   const noexcept { return theDevice;   }
   // clang-format on
 
   //! \return the transmission time to traverse this element, in s
@@ -70,6 +80,7 @@ class Element
  protected:
   const std::string theName;
   const size_t      theId;
+  const Device      theDevice;
 };
 
 } // namespace statesim

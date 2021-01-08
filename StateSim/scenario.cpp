@@ -136,8 +136,8 @@ void Scenario::allocateTasks() {
         if (myNode->affinity() != myAffinity) {
           continue;
         }
-        const auto myExecPair = execTime(
-            myTask.ops(), myInSize, myOutSize, *myClient, *myNode, true);
+        const auto myExecPair =
+            execTimeNew(myTask.ops(), myInSize, myOutSize, *myClient, *myNode);
         const auto myCurExectime = myExecPair.first + myExecPair.second;
         if (myMinNode == nullptr or myCurExectime < myMinExecTime) {
           myMinExecTime = myCurExectime;
@@ -163,16 +163,16 @@ void Scenario::allocateTasks() {
   }
 }
 
-void Scenario::performance(std::vector<double>& aProcDelays,
-                           std::vector<double>& aNetDelays) {
+PerformanceData Scenario::performance() const {
+  PerformanceData ret;
+  ret.theProcDelays.reserve(theJobs.size());
+  ret.theNetDelays.reserve(theJobs.size());
+  ret.theDataTransfer.reserve(theJobs.size());
+
   if (theLoad.empty()) {
     throw std::runtime_error(
         "Cannot measure performance without an allocation");
   }
-
-  // clear output arguments
-  aProcDelays.clear();
-  aNetDelays.clear();
 
   // measure performance for each job
   for (const auto& myJob : theJobs) {
@@ -180,8 +180,9 @@ void Scenario::performance(std::vector<double>& aProcDelays,
     assert(myJob.id() < theClients.size());
     const auto myClient = theClients[myJob.id()];
 
-    double myProcDelay = 0;
-    double myNetDelay  = 0;
+    double myProcDelay       = 0;
+    double myNetDelay        = 0;
+    size_t myDataTransferred = 0;
     for (const auto& myTask : myJob.tasks()) {
       // retrieve the node to which this task has been allocated
       assert(myJob.id() < theAllocation.size());
@@ -193,28 +194,46 @@ void Scenario::performance(std::vector<double>& aProcDelays,
       size_t myOutSize;
       std::tie(myInSize, myOutSize) = sizes(myJob, myTask);
 
-      // select the processing node with shortest execution time
-      const auto myExecPair = execTime(
-          myTask.ops(), myInSize, myOutSize, *myClient, *myNode, false);
+      // retrieve execution time
+      const auto myExecPair =
+          execTime(myTask.ops(), myInSize, myOutSize, *myClient, *myNode);
       myProcDelay += myExecPair.first;
       myNetDelay += myExecPair.second;
+
+      // compute the amount of data transferred based on the number of hops
+      myDataTransferred +=
+          theNetwork->hops(*myClient, *myNode) * (myInSize + myOutSize);
     }
-    aProcDelays.emplace_back(myProcDelay);
-    aNetDelays.emplace_back(myNetDelay);
+    ret.theProcDelays.emplace_back(myProcDelay);
+    ret.theNetDelays.emplace_back(myNetDelay);
+    ret.theDataTransfer.emplace_back(myDataTransferred);
   }
+
+  return ret;
+}
+
+std::pair<double, double> Scenario::execTimeNew(const size_t aOps,
+                                                const size_t aInSize,
+                                                const size_t aOutSize,
+                                                const Node&  aClient,
+                                                const Node&  aNode) {
+  assert(aNode.id() < theLoad.size());
+  const auto myProcTime = aOps / (aNode.speed() / (theLoad[aNode.id()] + 1));
+  const auto myTxTime   = theNetwork->txTime(aClient, aNode, aInSize) +
+                        theNetwork->txTime(aNode, aClient, aOutSize);
+
+  return {myProcTime, myTxTime};
 }
 
 std::pair<double, double> Scenario::execTime(const size_t aOps,
                                              const size_t aInSize,
                                              const size_t aOutSize,
                                              const Node&  aClient,
-                                             const Node&  aNode,
-                                             const bool   aCandidate) {
+                                             const Node&  aNode) const {
   assert(aNode.id() < theLoad.size());
-  assert(aCandidate or theLoad[aNode.id()] > 0);
-  const auto myProcTime =
-      aOps / (aNode.speed() / (theLoad[aNode.id()] + (aCandidate ? 1 : 0)));
-  const auto myTxTime = theNetwork->txTime(aClient, aNode, aInSize) +
+  assert(theLoad[aNode.id()] > 0);
+  const auto myProcTime = aOps / (aNode.speed() / theLoad[aNode.id()]);
+  const auto myTxTime   = theNetwork->txTime(aClient, aNode, aInSize) +
                         theNetwork->txTime(aNode, aClient, aOutSize);
 
   return {myProcTime, myTxTime};

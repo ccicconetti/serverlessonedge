@@ -118,6 +118,9 @@ class Network
   //! \return the transmission time from aSrc to aDst of a given amount of data
   double txTime(const Node& aSrc, const Node& aDst, const size_t aBytes);
 
+  //! \return the number of hops between two nodes
+  size_t hops(const Node& aSrc, const Node& aDst);
+
  private:
   //! Convert name to numeric identifier.
   size_t id(const std::string& aName) const;
@@ -126,6 +129,9 @@ class Network
 
   //! \return the cache entry for the given node, create it if does not exist
   Cache::value_type& cacheEntry(const size_t aDstId);
+
+  //! \return the cache entry for the given node, throw if it does not exist
+  const Cache::value_type& cacheEntry(const size_t aDstId) const;
 
   void initElementsGraph(const std::vector<Edge>&  aEdges,
                          const std::vector<float>& aWeights);
