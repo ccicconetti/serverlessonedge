@@ -31,6 +31,7 @@ SOFTWARE.
 #include "StateSim/job.h"
 #include "StateSim/network.h"
 #include "StateSim/scenario.h"
+#include "StateSim/simulation.h"
 
 #include "gtest/gtest.h"
 
@@ -189,8 +190,9 @@ struct TestStateSim : public ::testing::Test {
       VLOG(1) << '#' << i << ' ' << aData.theProcDelays[i] << ' '
               << aData.theNetDelays[i] << ' ' << aData.theDataTransfer[i];
     }
-    return aData.theProcDelays.size() == aData.theNetDelays.size() and
-           aData.theProcDelays.size() == aData.theDataTransfer.size();
+    return aData.size() == aData.theProcDelays.size() and
+           aData.size() == aData.theNetDelays.size() and
+           aData.size() == aData.theDataTransfer.size();
   }
 
   /*
@@ -471,6 +473,8 @@ TEST_F(TestStateSim, test_scenario_from_files) {
                                      true,
                                      myAffinityWeights});
 
+  ASSERT_EQ(42, myScenario.seed());
+
   ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
 
   const auto myData = myScenario.performance(Policy::PureFaaS);
@@ -491,7 +495,7 @@ TEST_F(TestStateSim, test_scenario) {
           {"lambda2", Affinity::Gpu},
           {"lambda3", Affinity::Cpu},
       },
-      std::make_unique<Network>(
+      std::make_shared<Network>(
           theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients),
       {
           Job(0, 0, myTasks, {N, N}, N),
@@ -499,6 +503,8 @@ TEST_F(TestStateSim, test_scenario) {
           Job(2, 2, myTasks, {N, N}, N),
       },
       42);
+
+  ASSERT_EQ(42, myScenario.seed());
 
   ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
 
@@ -514,6 +520,30 @@ TEST_F(TestStateSim, test_scenario) {
     std::ifstream myDataFile(myDataFilename);
     const auto    myDataFromFile = PerformanceData::load(myDataFile);
     ASSERT_TRUE(myData == myDataFromFile);
+  }
+}
+
+TEST_F(TestStateSim, test_simulation) {
+  ASSERT_TRUE(prepareNetworkFiles());
+  ASSERT_TRUE(prepareTaskFiles());
+
+  Simulation mySim(5);
+  mySim.run({(theTestDir / "nodes").string(),
+             (theTestDir / "links").string(),
+             (theTestDir / "edges").string(),
+             (theTestDir / "tasks").string(),
+             (theTestDir / "data").string(),
+             theTestDir.string(),
+             3,
+             5},
+            10,
+            20);
+
+  ASSERT_TRUE(boost::filesystem::exists(theTestDir / "data"));
+  for (size_t i = 10; i < 30; i++) {
+    ASSERT_TRUE(boost::filesystem::exists(
+        theTestDir /
+        ("out-alloc=PureFaaS.exec=PureFaaS.seed=" + std::to_string(i))));
   }
 }
 

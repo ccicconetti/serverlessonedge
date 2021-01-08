@@ -31,6 +31,10 @@ SOFTWARE.
 
 #include "StateSim/scenario.h"
 #include "Support/macros.h"
+#include "Support/queue.h"
+#include "Support/threadpool.h"
+
+#include <boost/filesystem.hpp>
 
 namespace uiiit {
 namespace statesim {
@@ -38,6 +42,29 @@ namespace statesim {
 class Simulation final
 {
   NONCOPYABLE_NONMOVABLE(Simulation);
+
+  class Worker final
+  {
+   public:
+    Worker(Simulation& aSimulation);
+    void operator()();
+    void stop();
+
+   private:
+    Simulation& theSimulation;
+  };
+
+  struct Desc {
+    // conf
+    std::unique_ptr<Scenario> theScenario;
+    Policy                    theAllocationPolicy;
+    Policy                    theExecutionPolicy;
+
+    // output
+    PerformanceData thePerformanceData;
+
+    std::string toString() const;
+  };
 
  public:
   struct Conf {
@@ -49,6 +76,14 @@ class Simulation final
     const std::string theEdgesPath;
     //! File containing the info about tasks
     const std::string theTasksPath;
+    //! File where to save performance data (can be empty)
+    const std::string theOutfile;
+    //! Directory where to save performance data (can be empty)
+    const std::string theOutdir;
+    //! Number of lambda functions
+    const size_t theNumFunctions;
+    //! Number of jobs per replication
+    const size_t theNumJobs;
 
     std::string toString() const;
   };
@@ -56,13 +91,39 @@ class Simulation final
   //! Create a simulation environment.
   explicit Simulation(const size_t aNumThreads);
 
+  ~Simulation();
+
   //! Run a batch of simulations.
   void run(const Conf&  aConf,
            const size_t aStartingSeed,
            const size_t aNumReplications);
 
  private:
-  const size_t theNumThreads;
+  /**
+   * Select jobs from a pool.
+   *
+   * \param aJobs The jobs' pool
+   *
+   * \param aNumJobs The target number of jobs to be selected
+   *
+   * \param aRng The RNG
+   */
+  static std::vector<Job> selectJobs(const std::vector<Job>&     aJobs,
+                                     const size_t                aNumJobs,
+                                     std::default_random_engine& aRng);
+
+  //! Save current performance data to the given file.
+  void save(const std::string& aOutfile);
+
+  //! Save current performance data to the given file.
+  void saveDir(const boost::filesystem::path& aDir);
+
+ private:
+  const size_t                theNumThreads;
+  support::ThreadPool<Worker> theWorkers;
+  support::Queue<size_t>      theQueueIn;
+  support::Queue<size_t>      theQueueOut;
+  std::vector<Desc>           theDesc;
 };
 
 } // namespace statesim

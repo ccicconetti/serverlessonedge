@@ -93,9 +93,10 @@ PerformanceData PerformanceData::load(std::ifstream& aInput) {
 
 Scenario::Scenario(const Conf& aConf)
     : theRng(aConf.theSeed)
+    , theSeed(aConf.theSeed)
     , theAffinities(randomAffinities(
           aConf.theFuncWeights, aConf.theAffinityWeights, theRng))
-    , theNetwork(std::make_unique<Network>(
+    , theNetwork(std::make_shared<Network>(
           aConf.theNodesPath, aConf.theLinksPath, aConf.theEdgesPath))
     , theJobs(loadJobs(aConf.theTasksPath,
                        aConf.theOpsFactor,
@@ -106,21 +107,22 @@ Scenario::Scenario(const Conf& aConf)
     , theClients(randomClients(theJobs.size(), *theNetwork, theRng))
     , theLoad()
     , theAllocation() {
-  // noop
+  LOG(INFO) << "Created scenario seed " << theSeed;
 }
 
 Scenario::Scenario(const std::map<std::string, Affinity>& aAffinities,
-                   std::unique_ptr<Network>&&             aNetwork,
+                   const std::shared_ptr<Network>&        aNetwork,
                    const std::vector<Job>&                aJobs,
                    const size_t                           aSeed)
     : theRng(aSeed)
+    , theSeed(aSeed)
     , theAffinities(aAffinities)
-    , theNetwork(std::move(aNetwork))
+    , theNetwork(aNetwork)
     , theJobs(aJobs)
     , theClients(randomClients(theJobs.size(), *theNetwork, theRng))
     , theLoad()
     , theAllocation() {
-  // noop
+  LOG(INFO) << "Created scenario seed " << theSeed;
 }
 
 void Scenario::allocateTasks(const Policy aPolicy) {

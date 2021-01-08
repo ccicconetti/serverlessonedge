@@ -52,6 +52,10 @@ struct PerformanceData {
   //! For each job, the amount of data transferred, in bytes.
   std::vector<size_t> theDataTransfer;
 
+  size_t size() const noexcept {
+    return theProcDelays.size();
+  }
+
   bool operator==(const PerformanceData& aOther) const;
 
   void                   save(std::ofstream& aOutput) const;
@@ -99,9 +103,14 @@ class Scenario
 
   //! Create a scenario with the given structures.
   explicit Scenario(const std::map<std::string, Affinity>& aAffinities,
-                    std::unique_ptr<Network>&&             aNetwork,
+                    const std::shared_ptr<Network>&        aNetwork,
                     const std::vector<Job>&                aJobs,
                     const size_t                           aSeed);
+
+  //! \return the seed of this scenario
+  size_t seed() const noexcept {
+    return theSeed;
+  }
 
   /**
    * Allocate the tasks of all jobs to processing nodes in the network using
@@ -172,8 +181,9 @@ class Scenario
 
  private:
   std::default_random_engine            theRng;
+  const size_t                          theSeed;
   const std::map<std::string, Affinity> theAffinities;
-  const std::unique_ptr<Network>        theNetwork;
+  const std::shared_ptr<Network>        theNetwork;
   std::vector<Job>                      theJobs;
 
   // for each job this is the client node picked at random

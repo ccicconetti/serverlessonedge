@@ -92,6 +92,14 @@ Job::Job(const size_t               aId,
   // noop
 }
 
+Job Job::clone(const Job& aAnother, const size_t aId) {
+  return Job(aId,
+             aAnother.theStart,
+             aAnother.theTasks,
+             aAnother.theStateSizes,
+             aAnother.theRetSize);
+}
+
 std::string Job::toString() const {
   std::stringstream myStream;
   myStream << "#" << theId << ", at " << theStart << " s, return " << theRetSize

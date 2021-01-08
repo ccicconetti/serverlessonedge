@@ -65,6 +65,9 @@ class Job
                const std::vector<size_t>& aStateSizes,
                const size_t               aRetSize);
 
+  //! \return a job identical but with different identifier.
+  static Job clone(const Job& aAnother, const size_t aId);
+
   //! \return a human-readable string.
   std::string toString() const;
 
