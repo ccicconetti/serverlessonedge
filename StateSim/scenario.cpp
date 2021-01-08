@@ -271,9 +271,9 @@ std::pair<size_t, size_t> Scenario::sizes(const Job& aJob, const Task& aTask) {
   return {myInSize, myOutSize};
 }
 
-std::string toString(const Scenario::Policy aPolicy) {
+std::string toString(const Policy aPolicy) {
   switch (aPolicy) {
-    case Scenario::Policy::PureFaaS:
+    case Policy::PureFaaS:
       return "PureFaaS";
   }
 
@@ -281,11 +281,18 @@ std::string toString(const Scenario::Policy aPolicy) {
   return std::string();
 }
 
-Scenario::Policy policyFromString(const std::string& aValue) {
+Policy policyFromString(const std::string& aValue) {
   if (aValue == "PureFaaS") {
-    return Scenario::Policy::PureFaaS;
+    return Policy::PureFaaS;
   }
   throw std::runtime_error("Invalid scenario policy: " + aValue);
+}
+
+const std::set<Policy>& allPolicies() {
+  static const std::set<Policy> myAllPolicies({
+      Policy::PureFaaS,
+  });
+  return myAllPolicies;
 }
 
 } // namespace statesim

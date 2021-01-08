@@ -37,6 +37,7 @@ SOFTWARE.
 #include <map>
 #include <memory>
 #include <random>
+#include <set>
 #include <string>
 
 namespace uiiit {
@@ -49,6 +50,10 @@ struct PerformanceData {
   std::vector<double> theNetDelays;
   //! For each job, the amount of data transferred, in bytes.
   std::vector<size_t> theDataTransfer;
+};
+
+enum class Policy : int {
+  PureFaaS = 0,
 };
 
 class Scenario
@@ -79,10 +84,6 @@ class Scenario
     const bool theStatefulOnly;
     //! Weights to draw randomly affinity of lambda functions
     const std::map<Affinity, double> theAffinityWeights;
-  };
-
-  enum class Policy : int {
-    PureFaaS = 0,
   };
 
   //! Create a scenario with a given configuration.
@@ -177,8 +178,9 @@ class Scenario
   Allocation theAllocation;
 };
 
-std::string      toString(const Scenario::Policy aPolicy);
-Scenario::Policy policyFromString(const std::string& aValue);
+std::string             toString(const Policy aPolicy);
+Policy                  policyFromString(const std::string& aValue);
+const std::set<Policy>& allPolicies();
 
 } // namespace statesim
 } // namespace uiiit

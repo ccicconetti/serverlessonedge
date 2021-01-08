@@ -471,9 +471,9 @@ TEST_F(TestStateSim, test_scenario_from_files) {
                                      true,
                                      myAffinityWeights});
 
-  ASSERT_NO_THROW(myScenario.allocateTasks(Scenario::Policy::PureFaaS));
+  ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
 
-  const auto myData = myScenario.performance(Scenario::Policy::PureFaaS);
+  const auto myData = myScenario.performance(Policy::PureFaaS);
   ASSERT_TRUE(check(myData));
 }
 
@@ -500,9 +500,9 @@ TEST_F(TestStateSim, test_scenario) {
       },
       42);
 
-  ASSERT_NO_THROW(myScenario.allocateTasks(Scenario::Policy::PureFaaS));
+  ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
 
-  const auto myData = myScenario.performance(Scenario::Policy::PureFaaS);
+  const auto myData = myScenario.performance(Policy::PureFaaS);
   ASSERT_TRUE(check(myData));
 }
 
