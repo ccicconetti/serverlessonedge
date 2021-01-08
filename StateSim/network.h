@@ -40,12 +40,20 @@ SOFTWARE.
 
 #include <map>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
 namespace uiiit {
 namespace statesim {
 
+/**
+ * Model a network of nodes and links.
+ *
+ * Routing information is lazy-initialized and cached for performance reasons.
+ *
+ * The class is thread-safe.
+ */
 class Network
 {
   NONCOPYABLE_NONMOVABLE(Network);
@@ -128,7 +136,7 @@ class Network
   float capacity(const std::string& aName) const;
 
   //! \return the cache entry for the given node, create it if does not exist
-  Cache::value_type& cacheEntry(const size_t aDstId);
+  const Cache::value_type& cacheEntry(const size_t aDstId);
 
   //! \return the cache entry for the given node, throw if it does not exist
   const Cache::value_type& cacheEntry(const size_t aDstId) const;
@@ -137,6 +145,7 @@ class Network
                          const std::vector<float>& aWeights);
 
  private:
+  mutable std::mutex          theMutex;
   std::map<std::string, Node> theNodes;
   std::map<std::string, Link> theLinks;
   std::vector<Element*>       theElements;
@@ -151,7 +160,7 @@ class Network
   //
   // lazy-initialized as needed
   Cache theCache;
-};
+}; // namespace statesim
 
 std::vector<Node> loadNodes(const std::string& aPath, Counter<int>& aCounter);
 std::vector<Link> loadLinks(const std::string& aPath, Counter<int>& aCounter);

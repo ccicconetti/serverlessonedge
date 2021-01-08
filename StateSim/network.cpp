@@ -90,7 +90,8 @@ std::vector<NodeList> loadNodeLists(const std::string& aPath) {
 Network::Network(const std::string& aNodesPath,
                  const std::string& aLinksPath,
                  const std::string& aEdgesPath)
-    : theNodes()
+    : theMutex()
+    , theNodes()
     , theLinks()
     , theElements()
     , theClients()
@@ -167,7 +168,8 @@ Network::Network(const std::set<Node>&                               aNodes,
                  const std::set<Link>&                               aLinks,
                  const std::map<std::string, std::set<std::string>>& aEdges,
                  const std::set<std::string>&                        aClients)
-    : theNodes()
+    : theMutex()
+    , theNodes()
     , theLinks()
     , theElements()
     , theClients()
@@ -294,7 +296,7 @@ std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
 
 double
 Network::txTime(const Node& aSrc, const Node& aDst, const size_t aBytes) {
-  auto& myCacheEntry = cacheEntry(aDst.id());
+  const auto& myCacheEntry = cacheEntry(aDst.id());
   assert(aSrc.id() < myCacheEntry.second.size());
 
   auto myTxTime = 0.0;
@@ -308,7 +310,7 @@ Network::txTime(const Node& aSrc, const Node& aDst, const size_t aBytes) {
 }
 
 size_t Network::hops(const Node& aSrc, const Node& aDst) {
-  auto& myCacheEntry = cacheEntry(aDst.id());
+  const auto& myCacheEntry = cacheEntry(aDst.id());
   assert(aSrc.id() < myCacheEntry.second.size());
 
   size_t ret   = 0;
@@ -347,32 +349,37 @@ float Network::capacity(const std::string& aName) const {
   throw std::runtime_error("Unknown node with name: " + aName);
 }
 
-Network::Cache::value_type& Network::cacheEntry(const size_t aDstId) {
+const Network::Cache::value_type& Network::cacheEntry(const size_t aDstId) {
   assert(aDstId < theCache.size());
 
   auto& myCacheEntry = theCache[aDstId];
-  if (myCacheEntry.first == false) {
-    assert(myCacheEntry.second.size() == 0);
 
-    // create an entry in the cache for this destination
+  {
+    const std::lock_guard<std::mutex> myLock(theMutex);
+    if (myCacheEntry.first == false) {
+      assert(myCacheEntry.second.size() == 0);
 
-    std::vector<VertexDescriptor> myPred(theCache.size());
-    std::vector<float>            myDist(theCache.size());
+      // create an entry in the cache for this destination
 
-    boost::dijkstra_shortest_paths(
-        theGraph,
-        aDstId,
-        boost::predecessor_map(
-            boost::make_iterator_property_map(
-                myPred.begin(), get(boost::vertex_index, theGraph)))
-            .distance_map(myDist.data()));
+      std::vector<VertexDescriptor> myPred(theCache.size());
+      std::vector<float>            myDist(theCache.size());
 
-    myCacheEntry.first = true;
-    myCacheEntry.second.resize(theCache.size());
-    for (size_t i = 0; i < theCache.size(); i++) {
-      myCacheEntry.second[i] = {myDist[i], myPred[i]};
+      boost::dijkstra_shortest_paths(
+          theGraph,
+          aDstId,
+          boost::predecessor_map(
+              boost::make_iterator_property_map(
+                  myPred.begin(), get(boost::vertex_index, theGraph)))
+              .distance_map(myDist.data()));
+
+      myCacheEntry.first = true;
+      myCacheEntry.second.resize(theCache.size());
+      for (size_t i = 0; i < theCache.size(); i++) {
+        myCacheEntry.second[i] = {myDist[i], myPred[i]};
+      }
     }
   }
+
   return myCacheEntry;
 }
 
