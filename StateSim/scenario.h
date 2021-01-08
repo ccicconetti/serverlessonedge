@@ -81,6 +81,10 @@ class Scenario
     const std::map<Affinity, double> theAffinityWeights;
   };
 
+  enum class Policy : int {
+    PureFaaS = 0,
+  };
+
   //! Create a scenario with a given configuration.
   explicit Scenario(const Conf& aConf);
 
@@ -93,11 +97,13 @@ class Scenario
   /**
    * Allocate the tasks of all jobs to processing nodes in the network using
    * a shortest processing time first.
+   *
+   * \param aPolicy The policy used
    */
-  void allocateTasks();
+  void allocateTasks(const Policy aPolicy);
 
-  //! \return the execution and transmission delays of jobs.
-  PerformanceData performance() const;
+  //! \return the execution and transmission delays of jobs with a given policy
+  PerformanceData performance(const Policy aPolicy) const;
 
  private:
   /**
@@ -170,6 +176,9 @@ class Scenario
   // for each job, for each task, this is the node allocated
   Allocation theAllocation;
 };
+
+std::string      toString(const Scenario::Policy aPolicy);
+Scenario::Policy policyFromString(const std::string& aValue);
 
 } // namespace statesim
 } // namespace uiiit

@@ -32,6 +32,7 @@ SOFTWARE.
 #include <glog/logging.h>
 
 #include <limits>
+#include <stdexcept>
 
 namespace uiiit {
 namespace statesim {
@@ -68,7 +69,9 @@ Scenario::Scenario(const std::map<std::string, Affinity>& aAffinities,
   // noop
 }
 
-void Scenario::allocateTasks() {
+void Scenario::allocateTasks(const Policy aPolicy) {
+  LOG(INFO) << "allocating tasks using policy " << toString(aPolicy);
+
   // clear any previous allocation and resize data structures
   theLoad       = std::vector<size_t>(theNetwork->nodes().size(), 0);
   theAllocation = Allocation(theJobs.size());
@@ -138,7 +141,9 @@ void Scenario::allocateTasks() {
   }
 }
 
-PerformanceData Scenario::performance() const {
+PerformanceData Scenario::performance(const Policy aPolicy) const {
+  LOG(INFO) << "measuring performance using policy " << toString(aPolicy);
+
   PerformanceData ret;
   ret.theProcDelays.reserve(theJobs.size());
   ret.theNetDelays.reserve(theJobs.size());
@@ -264,6 +269,23 @@ std::pair<size_t, size_t> Scenario::sizes(const Job& aJob, const Task& aTask) {
                          aJob.tasks()[aTask.id() + 1].size());
 
   return {myInSize, myOutSize};
+}
+
+std::string toString(const Scenario::Policy aPolicy) {
+  switch (aPolicy) {
+    case Scenario::Policy::PureFaaS:
+      return "PureFaaS";
+  }
+
+  assert(false);
+  return std::string();
+}
+
+Scenario::Policy policyFromString(const std::string& aValue) {
+  if (aValue == "PureFaaS") {
+    return Scenario::Policy::PureFaaS;
+  }
+  throw std::runtime_error("Invalid scenario policy: " + aValue);
 }
 
 } // namespace statesim
