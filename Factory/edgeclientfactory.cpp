@@ -49,11 +49,11 @@ EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
         "Cannot create an edge client with an empty set of destinations");
   }
 
-  const auto myType = aConf("transport-type");
+  const auto myType = aConf("type");
   if (aEndpoints.size() == 1) {
     if (myType == std::string("grpc")) {
       return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
-    } else { // transport-type = quic
+    } else { // type = quic
       return std::make_unique<EdgeClientQuic>(
           QuicParamsBuilder::build(aConf, *aEndpoints.begin(), false));
     }

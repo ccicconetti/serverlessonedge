@@ -262,7 +262,7 @@ class QuicParamsBuilder
    * HTTP2Server.
    *
    * For the client this configuration can be used to specify: \li
-   * transport-type (=grpc): the protocol to exchange
+   * type (=grpc): the protocol to exchange
    * lambdaRequest/lambdaResponse, can be "grpc" or "quic", \li persistence
    * (=0.5): the p-persistence probability to probe another destination
    *

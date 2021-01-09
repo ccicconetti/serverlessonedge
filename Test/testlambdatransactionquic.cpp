@@ -29,7 +29,6 @@ SOFTWARE.
 
 #include "Edge/composer.h"
 #include "Edge/computer.h"
-#include "Edge/edgeclientgrpc.h" //<<<<<
 #include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerclient.h"
 #include "Edge/edgecomputerserver.h"
@@ -39,7 +38,6 @@ SOFTWARE.
 #include "Edge/edgecontrollerserver.h"
 #include "Edge/edgedispatcher.h"
 #include "Edge/edgerouter.h"
-#include "Edge/edgeservergrpc.h" //<<<<
 #include "Edge/edgeserverimpl.h"
 #include "Edge/forwardingtableserver.h"
 #include "Edge/ptimeestimatorfactory.h"
@@ -73,7 +71,7 @@ struct TestLambdaTransactionQuic : public ::testing::Test {
         , theQuicRouterServerConf("type=quic,h2port=6668,httpServerThreads=2")
         , theQuicDispatcherServerConf(
               "type=quic,h2port=6669,httpServerThreads=2")
-        , theQuicClientConf("transport-type=quic,persistence=0.5")
+        , theQuicClientConf("type=quic,persistence=0.5")
         , theController(theControllerEndpoint)
         , theUtilServer(theUtilEndpoint)
         , theComputer(theComputerEndpoint,

@@ -67,7 +67,7 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
 
   // start executors
   size_t     i            = 0;
-  const auto myClientType = aClientConf("transport-type");
+  const auto myClientType = aClientConf("type");
   for (const auto& myEndpoint : aServerEndpoints) {
     auto& myDesc       = theDesc[i];
     myDesc.theIndex    = i;

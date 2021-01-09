@@ -50,8 +50,8 @@ struct TestEdgeClientMulti : public ::testing::Test {
       : theEndpoint1("localhost:10000")
       , theEndpoint2("localhost:10001")
       , theEndpoint3("localhost:10002")
-      , theGrpcClientConf("transport-type=grpc,persistence=0.5")
-      , theQuicClientConf("transport-type=quic,persistence=0.5")
+      , theGrpcClientConf("type=grpc,persistence=0.5")
+      , theQuicClientConf("type=quic,persistence=0.5")
       , theQuicServerConf1("type=quic,h2port=6667,httpServerThreads=1")
       , theQuicServerConf2("type=quic,h2port=6668,httpServerThreads=1")
       , theQuicServerConf3("type=quic,h2port=6669,httpServerThreads=1") {

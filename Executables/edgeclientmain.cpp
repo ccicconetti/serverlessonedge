@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
      po::value<std::string>(&myServerEndpoints)->default_value("localhost:6473"),
      "Server end-points (comma-separated list).")
     ("client-conf",
-     po::value<std::string>(&myClientConf)->default_value("transport-type=grpc, persistence=0.05"),
+     po::value<std::string>(&myClientConf)->default_value("type=grpc, persistence=0.05"),
      "Configuration of the edge clients.")
     ("lambda",
      po::value<std::string>(&myLambda)->default_value("clambda0"),
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     const auto myClientTransportType = myEdgeClientConf("transport-time");
     if (myClientTransportType != std::string("grpc") ||
         myClientTransportType != std::string("quic")) {
-      throw std::runtime_error("Invalid Client transport-type configuration in "
+      throw std::runtime_error("Invalid Client type configuration in "
                                "--client-conf option");
     }
 
