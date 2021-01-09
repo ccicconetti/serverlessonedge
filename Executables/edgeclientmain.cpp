@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
     }
 
     const auto myEdgeClientConf      = uiiit::support::Conf(myClientConf);
-    const auto myClientTransportType = myEdgeClientConf("transport-time");
+    const auto myClientTransportType = myEdgeClientConf("type");
     if (myClientTransportType != std::string("grpc") ||
         myClientTransportType != std::string("quic")) {
       throw std::runtime_error("Invalid Client type configuration in "
