@@ -77,7 +77,7 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
       myDesc.theClient.reset(new EdgeClientGrpc(myEndpoint));
     } else {
       myDesc.theClient.reset(new EdgeClientQuic(
-          QuicParamsBuilder::build(aClientConf, myEndpoint, false)));
+          QuicParamsBuilder::buildClientHQParams(aClientConf, myEndpoint)));
     }
 
     myDesc.theThread = std::thread([this, &myDesc]() {

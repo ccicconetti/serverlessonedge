@@ -52,7 +52,7 @@ struct TestEdgeServerQuic : public ::testing::Test {
       , theFTServerEndpoint("127.0.0.1:6474")
       , theGrpcClientConf("type=grpc,persistence=0.5")
       , theQuicClientConf("type=quic,persistence=0.5")
-      , theQuicServerConf("type=quic,httpServerThreads=1") {
+      , theQuicServerConf("type=quic, h2port=6667") {
   }
 
   const std::string   theServerEndpoint;
@@ -62,22 +62,12 @@ struct TestEdgeServerQuic : public ::testing::Test {
   const support::Conf theQuicServerConf;
 };
 
-// TEST_F(TestEdgeServerQuic, test_buildparam) {
-//   EdgeRouter myRouter(theServerEndpoint,
-//                       theFTServerEndpoint,
-//                       "",
-//                       support::Conf(EdgeLambdaProcessor::defaultConf()),
-//                       support::Conf("type=random"),
-//                       support::Conf("type=trivial,period=10,stat=mean"));
-
-//   std::unique_ptr<EdgeServerImpl> myRouterEdgeServerImpl;
-//   myRouterEdgeServerImpl.reset(new EdgeServerQuic(
-//       myRouter,
-//       QuicParamsBuilder::build(theQuicServerConf, theServerEndpoint, true)));
-
-//   EdgeClientQuic myClient(
-//       QuicParamsBuilder::build(theQuicClientConf, theServerEndpoint, false));
-// }
+TEST_F(TestEdgeServerQuic, test_buildparam) {
+  auto paramServer = QuicParamsBuilder::buildServerHQParams(
+      theQuicServerConf, theServerEndpoint, 2);
+  auto paramClient = QuicParamsBuilder::buildClientHQParams(theQuicClientConf,
+                                                            theServerEndpoint);
+}
 
 TEST_F(TestEdgeServerQuic, test_connection) {
 
@@ -89,14 +79,15 @@ TEST_F(TestEdgeServerQuic, test_connection) {
                       support::Conf("type=trivial,period=10,stat=mean"));
 
   std::unique_ptr<EdgeServerImpl> myRouterEdgeServerImpl;
-  myRouterEdgeServerImpl.reset(new EdgeServerQuic(
-      myRouter,
-      QuicParamsBuilder::build(theQuicServerConf, theServerEndpoint, true)));
+  myRouterEdgeServerImpl.reset(
+      new EdgeServerQuic(myRouter,
+                         QuicParamsBuilder::buildServerHQParams(
+                             theQuicServerConf, theServerEndpoint, 1)));
 
   myRouterEdgeServerImpl->run();
 
-  EdgeClientQuic myClient(
-      QuicParamsBuilder::build(theQuicClientConf, theServerEndpoint, false));
+  EdgeClientQuic myClient(QuicParamsBuilder::buildClientHQParams(
+      theQuicClientConf, theServerEndpoint));
 
   LambdaRequest  myReq("clambda0", std::string(50, 'A'));
   LambdaResponse myResp = myClient.RunLambda(myReq, false);

@@ -144,8 +144,8 @@ int main(int argc, char* argv[]) {
     } else if (myServerImplConf("type") == "quic") {
       myServerImpl.reset(new ec::EdgeServerQuic(
           myServer,
-          ec::QuicParamsBuilder::build(
-              myServerImplConf, myCli.serverEndpoint(), true)));
+          ec::QuicParamsBuilder::buildServerHQParams(
+              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
                                myServerImplConf("type"));

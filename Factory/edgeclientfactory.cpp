@@ -55,7 +55,7 @@ EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
       return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
     } else { // type = quic
       return std::make_unique<EdgeClientQuic>(
-          QuicParamsBuilder::build(aConf, *aEndpoints.begin(), false));
+          QuicParamsBuilder::buildClientHQParams(aConf, *aEndpoints.begin()));
     }
   }
 

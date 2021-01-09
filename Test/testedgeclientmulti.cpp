@@ -52,9 +52,9 @@ struct TestEdgeClientMulti : public ::testing::Test {
       , theEndpoint3("localhost:10002")
       , theGrpcClientConf("type=grpc,persistence=0.5")
       , theQuicClientConf("type=quic,persistence=0.5")
-      , theQuicServerConf1("type=quic,h2port=6667,httpServerThreads=1")
-      , theQuicServerConf2("type=quic,h2port=6668,httpServerThreads=1")
-      , theQuicServerConf3("type=quic,h2port=6669,httpServerThreads=1") {
+      , theQuicServerConf1("type=quic,h2port=6667")
+      , theQuicServerConf2("type=quic,h2port=6668")
+      , theQuicServerConf3("type=quic,h2port=6669") {
   }
 
   static std::unique_ptr<EdgeComputer>
@@ -131,9 +131,10 @@ TEST_F(TestEdgeClientMulti, test_quic_one_destination) {
 
   // start computer: now lambda exec succeeds
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl;
-  myComputerEdgeServerImpl.reset(new EdgeServerQuic(
-      *myComputer,
-      QuicParamsBuilder::build(theQuicServerConf1, theEndpoint1, true)));
+  myComputerEdgeServerImpl.reset(
+      new EdgeServerQuic(*myComputer,
+                         QuicParamsBuilder::buildServerHQParams(
+                             theQuicServerConf1, theEndpoint1, 1)));
   myComputerEdgeServerImpl->run();
 
   ASSERT_TRUE(support::waitFor<std::string>(
@@ -239,13 +240,16 @@ TEST_F(TestEdgeClientMulti, test_grpc_three_destinations) {
 
 // myComputerEdgeServerImpl1.reset(new EdgeServerQuic(
 //     *myComputer1,
-//     QuicParamsBuilder::build(theQuicServerConf1, theEndpoint1, true)));
+//     QuicParamsBuilder::buildServerHQParams(theQuicServerConf1, theEndpoint1,
+//     1)));
 // myComputerEdgeServerImpl2.reset(new EdgeServerQuic(
 //     *myComputer2,
-//     QuicParamsBuilder::build(theQuicServerConf2, theEndpoint2, true)));
+//     QuicParamsBuilder::buildServerHQParams(theQuicServerConf2, theEndpoint2,
+//     1)));
 // myComputerEdgeServerImpl3.reset(new EdgeServerQuic(
 //     *myComputer3,
-//     QuicParamsBuilder::build(theQuicServerConf3, theEndpoint3, true)));
+//     QuicParamsBuilder::buildServerHQParams(theQuicServerConf3, theEndpoint3,
+//     1)));
 
 // myComputerEdgeServerImpl1->run();
 // myComputerEdgeServerImpl2->run();

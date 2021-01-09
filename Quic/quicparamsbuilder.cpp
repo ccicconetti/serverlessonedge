@@ -32,10 +32,60 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-HQParams QuicParamsBuilder::build(const support::Conf& aConf,
-                                  const std::string&   aServerEndpoint,
-                                  bool                 isServer) {
-  HQParams myHQParamsConf(aServerEndpoint, isServer);
+HQParams
+QuicParamsBuilder::buildClientHQParams(const support::Conf& aConf,
+                                       const std::string&   aServerEndpoint) {
+  VLOG(10) << "HQParamsBuilder::buildClientHQParams";
+
+  HQParams myHQParamsConf;
+
+  // aServerEndpoint format is "IPaddress:port"
+  const auto myServerIPPortVector =
+      support::split<std::vector<std::string>>(aServerEndpoint, ":");
+
+  // *** Common Settings Section ***
+  myHQParamsConf.host = myServerIPPortVector[0];
+  myHQParamsConf.port = std::stoi(myServerIPPortVector[1]); // possible overflow
+
+  myHQParamsConf.remoteAddress =
+      folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.port, true);
+
+  myHQParamsConf.transportSettings.shouldDrain = false;
+
+  // (Client Only) attempt early-data (bool) -> "whether to use 0-RTT"
+  if (aConf.find(std::string("attempt-early-data")) != aConf.end()) {
+    myHQParamsConf.transportSettings.attemptEarlyData =
+        aConf.getBool("attempt-early-data");
+    VLOG(10) << "attempt-early-data in Conf = "
+             << myHQParamsConf.transportSettings.attemptEarlyData;
+    myHQParamsConf.earlyData = aConf.getBool("attempt-early-data");
+  } else {
+    myHQParamsConf.transportSettings.attemptEarlyData = false;
+    VLOG(10) << "attempt-early-data default = "
+             << myHQParamsConf.transportSettings.attemptEarlyData;
+    myHQParamsConf.earlyData = false;
+  }
+
+  return myHQParamsConf;
+}
+
+HQParams
+QuicParamsBuilder::buildServerHQParams(const support::Conf& aConf,
+                                       const std::string&   aServerEndpoint,
+                                       const size_t         aNumThreads) {
+  VLOG(10) << "HQParamsBuilder::buildServerHQParams";
+  HQParams myHQParamsConf;
+
+  // aServerEndpoint format is "IPaddress:port"
+  const auto myServerIPPortVector =
+      support::split<std::vector<std::string>>(aServerEndpoint, ":");
+
+  // *** Common Settings Section ***
+  myHQParamsConf.host = myServerIPPortVector[0];
+  myHQParamsConf.port = std::stoi(myServerIPPortVector[1]); // possible overflow
+
+  myHQParamsConf.localAddress =
+      folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.port, true);
 
   // h2serverport (uint16_t)
   if (aConf.find(std::string("h2port")) != aConf.end()) {
@@ -50,36 +100,10 @@ HQParams QuicParamsBuilder::build(const support::Conf& aConf,
       folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.h2port, true);
 
   // (Server Only) httpServerThreads (size_t)
-  if (isServer) {
-    if (aConf.find(std::string("httpServerThreads")) != aConf.end()) {
-      myHQParamsConf.httpServerThreads = aConf.getUint("httpServerThreads");
-      VLOG(10) << "httpServerThreads in Conf = "
-               << myHQParamsConf.httpServerThreads;
-    } else {
-      myHQParamsConf.httpServerThreads = 5;
-      VLOG(10) << "httpServerThreads default = "
-               << myHQParamsConf.httpServerThreads;
-    }
-  }
-
-  // (Client Only) attempt early-data (bool) -> "whether to use 0-RTT"
-  if (!isServer) {
-    if (aConf.find(std::string("attempt-early-data")) != aConf.end()) {
-      myHQParamsConf.transportSettings.attemptEarlyData =
-          aConf.getBool("attempt-early-data");
-      VLOG(10) << "attempt-early-data in Conf = "
-               << myHQParamsConf.transportSettings.attemptEarlyData;
-      myHQParamsConf.earlyData = aConf.getBool("attempt-early-data");
-    } else {
-      myHQParamsConf.transportSettings.attemptEarlyData = false;
-      VLOG(10) << "attempt-early-data default = "
-               << myHQParamsConf.transportSettings.attemptEarlyData;
-      myHQParamsConf.earlyData = false;
-    }
-  }
+  myHQParamsConf.httpServerThreads = aNumThreads;
 
   return myHQParamsConf;
-}
+} // namespace edge
 
 } // namespace edge
 } // namespace uiiit

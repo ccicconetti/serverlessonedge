@@ -131,21 +131,7 @@ struct HQParams {
   std::shared_ptr<quic::QuicPskCache> pskCache;
   fizz::server::ClientAuthMode clientAuth{fizz::server::ClientAuthMode::None};
 
-  HQParams(const std::string& aServerEndpoint, bool isServer) {
-    // aServerEndpoint format is "IPaddress:port"
-    const auto myServerIPPortVector =
-        support::split<std::vector<std::string>>(aServerEndpoint, ":");
-
-    // *** Common Settings Section ***
-    host = myServerIPPortVector[0];
-    port = std::stoi(myServerIPPortVector[1]); // possible overflow
-
-    if (isServer) {
-      localAddress = folly::SocketAddress(host, port, true);
-    } else {
-      remoteAddress = folly::SocketAddress(host, port, true);
-    }
-
+  HQParams() {
     // *** TransportSettings ***
     quicVersions   = {quic::QuicVersion::MVFST,
                     quic::QuicVersion::MVFST_D24,
@@ -190,9 +176,6 @@ struct HQParams {
                                         // batched in Quic"
     transportSettings.turnoffPMTUD              = true;
     transportSettings.partialReliabilityEnabled = false;
-    if (!isServer) {
-      transportSettings.shouldDrain = false;
-    }
     transportSettings.connectUDP =
         false; //"Whether or not to use connected udp sockets"
     transportSettings.maxCwndInMss =
@@ -253,32 +236,42 @@ class QuicParamsBuilder
 {
  public:
   /**
-   * \param aConf server or client configuration specified respectively through
-   * the --server-conf or the --client-conf option from CLI. For the server this
-   * configuration can be used to specify: \li h2port (=6667): the port on which
-   * the server can receive HTTP2 requests, \li attempt-early-data (=false):
-   * flag to make the EdgeClientQuic trying to exploit the QUIC protocol 0-RTT
-   * feature, \li httpServerThreads (=5): number of threads spawned in the
-   * HTTP2Server.
+   * \param aClientConf client configuration specified through the --client-conf
+   * option from CLI. This configuration can be used to specify: \li type
+   * (=grpc): the protocol to exchange lambdaRequest/lambdaResponse (can be
+   * "grpc" or "quic"), \li persistence (=0.5): the p-persistence probability to
+   * probe another destination
    *
-   * For the client this configuration can be used to specify: \li
-   * type (=grpc): the protocol to exchange
-   * lambdaRequest/lambdaResponse, can be "grpc" or "quic", \li persistence
-   * (=0.5): the p-persistence probability to probe another destination
+   * \param aServerEndpoint server endpoint to which the client must
+   * connect, specified through the --server-endpoint option from CLI (format:
+   * "IPAddress:Port")
+   *
+   * \returns the HQParams configuration (both QUIC and HTTP parameters) to
+   * build an EdgeClientQuic starting from the given CLI options
+   */
+  static HQParams buildClientHQParams(const support::Conf& aClientConf,
+                                      const std::string&   aServerEndpoint);
+
+  /**
+   * \param aServerConf server configuration specified through the --server-conf
+   * option from CLI. For the server this configuration can be used to specify:
+   * \li type(=grpc): the protocol to exchange lambdaRequest/lambdaResponse (can
+   * be "grpc" or "quic"), \li h2port (=6667): the port on which the server can
+   * receive HTTP2 requests, \li attempt-early-data (=false): flag to make the
+   * EdgeClientQuic trying to exploit the QUIC protocol 0-RTT feature
    *
    * \param aServerEndpoint server endpoint specified through the
    * --server-endpoint option from CLI (format: "IPAddress:Port")
    *
-   * \param isServer boolean parameter to discriminate between server and client
-   * HQParams building
+   * \param aNumThreads number of threads to be spawned in both the H2server and
+   * the HQServer
    *
    * \returns the HQParams configuration (both QUIC and HTTP parameters) to
-   * build an EdgeServerQuic or an EdgeClientQuic starting from the given CLI
-   * options
+   * build an EdgeServerQuic starting from the given CLI options
    */
-  static HQParams build(const support::Conf& aConf,
-                        const std::string&   aServerEndpoint,
-                        bool                 isServer);
+  static HQParams buildServerHQParams(const support::Conf& aServerConf,
+                                      const std::string&   aServerEndpoint,
+                                      const size_t         aNumThreads);
 };
 
 } // namespace edge

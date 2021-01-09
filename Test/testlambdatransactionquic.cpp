@@ -67,10 +67,9 @@ struct TestLambdaTransactionQuic : public ::testing::Test {
         , theComputerEndpoint("127.0.0.1:10000")
         , theUtilEndpoint("127.0.0.1:6476")
         , theNumThreads(5)
-        , theQuicComputerServerConf("type=quic,h2port=6667,httpServerThreads=2")
-        , theQuicRouterServerConf("type=quic,h2port=6668,httpServerThreads=2")
-        , theQuicDispatcherServerConf(
-              "type=quic,h2port=6669,httpServerThreads=2")
+        , theQuicComputerServerConf("type=quic,h2port=6667")
+        , theQuicRouterServerConf("type=quic,h2port=6668")
+        , theQuicDispatcherServerConf("type=quic,h2port=6669")
         , theQuicClientConf("type=quic,persistence=0.5")
         , theController(theControllerEndpoint)
         , theUtilServer(theUtilEndpoint)
@@ -112,8 +111,8 @@ struct TestLambdaTransactionQuic : public ::testing::Test {
       // start all the servers (in a non-blocking fashion, obviously)
       theComputerServerImpl.reset(new EdgeServerQuic(
           theComputer,
-          QuicParamsBuilder::build(
-              theQuicComputerServerConf, theComputerEndpoint, true)));
+          QuicParamsBuilder::buildServerHQParams(
+              theQuicComputerServerConf, theComputerEndpoint, 2)));
 
       theController.run(false);
       theUtilServer.run(false);
@@ -122,8 +121,8 @@ struct TestLambdaTransactionQuic : public ::testing::Test {
       if (theRouter) {
         theEdgeServerImpl.reset(new EdgeServerQuic(
             *theRouter,
-            QuicParamsBuilder::build(
-                theQuicRouterServerConf, theRouterEndpoint, true)));
+            QuicParamsBuilder::buildServerHQParams(
+                theQuicRouterServerConf, theRouterEndpoint, 2)));
         theEdgeServerImpl->run();
         theForwardingTableServer.reset(
             new ForwardingTableServer(theForwardingEndpoint,
@@ -133,8 +132,8 @@ struct TestLambdaTransactionQuic : public ::testing::Test {
       if (theDispatcher) {
         theEdgeServerImpl.reset(new EdgeServerQuic(
             *theDispatcher,
-            QuicParamsBuilder::build(
-                theQuicDispatcherServerConf, theRouterEndpoint, true)));
+            QuicParamsBuilder::buildServerHQParams(
+                theQuicDispatcherServerConf, theRouterEndpoint, 2)));
         theEdgeServerImpl->run();
         theForwardingTableServer.reset(new ForwardingTableServer(
             theForwardingEndpoint, *theDispatcher->tables()[0]));
@@ -221,8 +220,8 @@ TEST_F(TestLambdaTransactionQuic, test_quic_endtoend) {
 
       System mySystem(myType, mySubtype);
 
-      EdgeClientQuic myClient(QuicParamsBuilder::build(
-          mySystem.theQuicClientConf, mySystem.theRouterEndpoint, false));
+      EdgeClientQuic myClient(QuicParamsBuilder::buildClientHQParams(
+          mySystem.theQuicClientConf, mySystem.theRouterEndpoint));
       LambdaRequest  myReq("clambda0", std::string(1000, 'A'));
 
       support::Chrono myChrono(false);
