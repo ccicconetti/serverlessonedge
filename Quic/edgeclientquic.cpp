@@ -159,11 +159,12 @@ class InsecureVerifierDangerousDoNotUseInProduction
 EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
     : EdgeClientInterface()
     , theQuicParamsConf(aQuicParamsConf) {
-  LOG(INFO) << "EdgeClientQuic::ctor";
+  VLOG(10) << "EdgeClientQuic::ctor";
+  initializeClient();
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
-  LOG(INFO) << "EdgeClientQuic::dtor\n";
+  VLOG(10) << "EdgeClientQuic::dtor";
   if (!theHttpPaths.empty()) {
     theSession->drain();
     theSession->closeWhenIdle();
@@ -179,9 +180,43 @@ EdgeClientQuic::~EdgeClientQuic() {
  * connectError() one.
  */
 void EdgeClientQuic::startClient() {
-  LOG(INFO) << "EdgeClientQuic::startClient";
+  VLOG(10) << "EdgeClientQuic::startClient";
 
-  initializeQuicTransportClient();
+  theSession->startNow();
+  theQuicClient->start(theSession);
+  LOG(INFO) << "EdgeClientQuic connecting to "
+            << theQuicParamsConf.remoteAddress->describe();
+
+  // This is to flush the CFIN out so the server will see the handshake as
+  // complete.
+  theEvb.loopForever();
+}
+
+void EdgeClientQuic::connectSuccess() {
+  VLOG(10) << "EdgeClientQuic::connectSuccess";
+
+  theHttpPaths.insert(theHttpPaths.end(),
+                      theQuicParamsConf.httpPaths.begin(),
+                      theQuicParamsConf.httpPaths.end());
+}
+
+void EdgeClientQuic::onReplaySafe() {
+  VLOG(10) << "EdgeClientQuic::onReplaySafe";
+  theEvb.terminateLoopSoon();
+}
+
+void EdgeClientQuic::connectError(
+    std::pair<quic::QuicErrorCode, std::string> aError) {
+  VLOG(10) << "EdgeClientQuic::connectError";
+  LOG(ERROR) << "EdgeClientQuic failed to connect, Error="
+             << toString(aError.first) << ", msg=" << aError.second;
+  theEvb.terminateLoopSoon();
+}
+
+void EdgeClientQuic::initializeClient() {
+  VLOG(10) << "EdgeClientQuic::initializeClient";
+
+  initializeQuicTransport();
 
   wangle::TransportInfo myTransportInfo;
   theSession = new proxygen::HQUpstreamSession(theQuicParamsConf.txnTimeout,
@@ -190,58 +225,15 @@ void EdgeClientQuic::startClient() {
                                                myTransportInfo,
                                                nullptr); // codecfiltercallback
 
-  // Need this for Interop since we use HTTP0.9
   theSession->setForceUpstream1_1(false);
   theSession->setSocket(theQuicClient);
   CHECK(theSession->getQuicSocket());
   theSession->setConnectCallback(this);
-  LOG(INFO) << "EdgeClientQuic connecting to "
-            << theQuicParamsConf.remoteAddress->describe();
-  theSession->startNow();
-  theQuicClient->start(theSession);
-
-  // This is to flush the CFIN out so the server will see the handshake as
-  // complete.
-  theEvb.loopForever();
-  // migrateClient false by default, no if branch
 }
 
-void EdgeClientQuic::connectSuccess() {
-  LOG(INFO) << "EdgeClientQuic::connectSuccess\n";
-  uint64_t myNumOpenableStreams =
-      theQuicClient->getNumOpenableBidirectionalStreams();
-  CHECK_GT(myNumOpenableStreams, 0);
-  theHttpPaths.insert(theHttpPaths.end(),
-                      theQuicParamsConf.httpPaths.begin(),
-                      theQuicParamsConf.httpPaths.end());
-}
+void EdgeClientQuic::initializeQuicTransport() {
+  VLOG(10) << "EdgeClientQuic::initializeQuicTransport";
 
-void EdgeClientQuic::onReplaySafe() {
-  LOG(INFO) << "EdgeClientQuic::onReplaySafe\n";
-  theEvb.terminateLoopSoon();
-}
-
-void EdgeClientQuic::connectError(
-    std::pair<quic::QuicErrorCode, std::string> aError) {
-  LOG(ERROR) << "EdgeClientQuic failed to connect, Error="
-             << toString(aError.first) << ", msg=" << aError.second;
-  theEvb.terminateLoopSoon();
-}
-
-void EdgeClientQuic::initializeQuicTransportClient() {
-  LOG(INFO) << "EdgeClientQuic::initializeQuicTransportClient()";
-
-  /**
-   * By now the following statement raises the exception in EdgeClientMulti
-   */
-  try {
-    auto remoteAddressCreated = theQuicParamsConf.remoteAddress.value();
-  } catch (const std::exception& e) {
-    LOG(INFO) << "initializeQuicTransportClient check";
-    std::cerr << e.what() << '\n';
-    throw std::runtime_error("EdgeClientQuic must be created after an "
-                             "EdgeServerQuic is up and running");
-  }
   auto mySocket              = std::make_unique<folly::AsyncUDPSocket>(&theEvb);
   auto myQuicTransportClient = std::make_shared<quic::QuicClientTransport>(
       &theEvb,
@@ -282,7 +274,7 @@ static std::function<void()> onEOMTerminateLoop;
 
 LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
-  LOG(INFO) << "EdgeClientQuic::RunLambda";
+  VLOG(10) << "EdgeClientQuic::RunLambda";
   std::unique_ptr<LambdaResponse> myLambdaRes;
   // the following check is needed in order to verify if the connectSuccess()
   // callback has been invoked. The call to the connectSuccess() callback
@@ -290,19 +282,24 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   // connect to the EdgeServerQuic or the previous call to startClient() has not
   // succeeded, so the the connectError callback has been called
   if (theHttpPaths.empty()) {
-    LOG(INFO) << "EdgeClientQuic::RunLambda First Check";
+    VLOG(10) << "EdgeClientQuic::RunLambda First Check";
     startClient();
   }
   // if the connectError callback has been invoked
   if (theHttpPaths.empty()) {
-    LOG(INFO) << "ConnectError has been Invoked";
+
     myLambdaRes.reset(
         new LambdaResponse("Connection Error",
                            "Cannot establish a connection with ServerEndpoint" +
                                theQuicParamsConf.host + ':' +
                                std::to_string(theQuicParamsConf.port)));
+
+    // when the connectError callback is called, theSession is lost so we need
+    // to recreate it otherwise the next startclient will produce a seg fault
+    initializeClient();
+
   } else { // if the connectSuccess callback has been invoked
-    LOG(INFO) << "ConnectSuccess has been invoked";
+
     std::unique_ptr<CurlClient> myClient = std::make_unique<CurlClient>(
         &theEvb,
         proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
@@ -313,13 +310,17 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
         false,
         theQuicParamsConf.httpVersion.major,
         theQuicParamsConf.httpVersion.minor);
+
     // set the onEOM() callback function
     onEOMTerminateLoop = [&]() { theEvb.terminateLoopSoon(); };
     myClient->setEOMFunc(onEOMTerminateLoop);
+    myClient->setLogging(false);
+
     auto myTransaction = theSession->newTransaction(myClient.get());
     if (!myTransaction) {
       std::runtime_error("Failed to create an HTTPTRansaction\n");
     }
+
     // build manually the HTTP Request message
     proxygen::HTTPMessage myHttpRequestMessage;
     myHttpRequestMessage.setMethod("POST");
@@ -353,7 +354,7 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     myLambdaRes.reset(new LambdaResponse(myProtobufLambdaRes));
   }
   return *myLambdaRes;
-} // namespace edge
+}
 
 } // namespace edge
 } // namespace uiiit

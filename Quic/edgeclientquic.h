@@ -59,16 +59,6 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
 
   ~EdgeClientQuic() override;
 
-  void startClient();
-
-  void initializeQuicTransportClient();
-
-  FizzClientContextPtr createFizzClientContext(const HQParams& aQuicParamsConf);
-
-  proxygen::HTTPTransaction* sendRequest(const proxygen::URL& aRequestUrl);
-
-  void sendRequests(bool aCloseSession, uint64_t aNumOpenableStreams);
-
   // these 3 functions override the pure virtual ones in ConnectCallback
   void connectSuccess() override;
 
@@ -82,6 +72,14 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
   LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry) override;
 
  private:
+  void startClient();
+
+  void initializeQuicTransport();
+
+  void initializeClient();
+
+  FizzClientContextPtr createFizzClientContext(const HQParams& aQuicParamsConf);
+
   const HQParams                             theQuicParamsConf;
   std::thread                                theQuicClientEvbThread;
   std::shared_ptr<quic::QuicClientTransport> theQuicClient;
