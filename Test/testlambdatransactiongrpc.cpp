@@ -55,7 +55,7 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-struct TestLambdaTransaction : public ::testing::Test {
+struct TestLambdaTransactionGrpc : public ::testing::Test {
 
   struct System {
     enum Type { ROUTER = 0, DISPATCHER = 1 };
@@ -183,7 +183,7 @@ struct TestLambdaTransaction : public ::testing::Test {
   };
 };
 
-TEST_F(TestLambdaTransaction, test_endtoend) {
+TEST_F(TestLambdaTransactionGrpc, test_grpc_endtoend) {
   const size_t N = 50;
 
   const std::list<System::Type> myTypes({System::ROUTER, System::DISPATCHER});
