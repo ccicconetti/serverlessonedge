@@ -76,13 +76,16 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&     aEdgeServer,
                       }
                       return new EchoHandler(aParams);
                     }) {
+  VLOG(10) << "EdgeServerQuic::ctor";
 }
 
 void EdgeServerQuic::run() {
   VLOG(10) << "EdgeServerQuic::run";
   theH2ServerThread = theHttpServer.start();
-  theQuicServerThread =
-      theQuicTransportServer.start(theQuicParamsConf.httpServerThreads);
+  theQuicTransportServer.start(
+      theQuicParamsConf.httpServerThreads); // blocking until server initialized
+  theQuicServerThread = std::thread(
+      [this]() mutable { theQuicTransportServer.theEvb.loopForever(); });
 }
 
 void EdgeServerQuic::wait() {

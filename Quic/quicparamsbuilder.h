@@ -139,6 +139,7 @@ struct HQParams {
     // *** Common Settings Section ***
     host = myServerIPPortVector[0];
     port = std::stoi(myServerIPPortVector[1]); // possible overflow
+
     if (isServer) {
       localAddress = folly::SocketAddress(host, port, true);
     } else {
@@ -230,7 +231,8 @@ struct HQParams {
     httpServerEnableContentCompression = false;
     h2cEnabled                         = false;
     httpVersion.parse("1.1");
-    txnTimeout = std::chrono::milliseconds(120000);
+    txnTimeout           = std::chrono::milliseconds(120000);
+    httpServerShutdownOn = {SIGINT, SIGTERM};
     folly::split(',', "/lambda", httpPaths);
     // parse HTTP headers
     httpHeaders = CurlService::CurlClient::parseHeaders("");

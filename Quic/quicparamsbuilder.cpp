@@ -53,12 +53,12 @@ HQParams QuicParamsBuilder::build(const support::Conf& aConf,
   if (isServer) {
     if (aConf.find(std::string("httpServerThreads")) != aConf.end()) {
       myHQParamsConf.httpServerThreads = aConf.getUint("httpServerThreads");
-      LOG(INFO) << "httpServerThreads in Conf = "
-                << myHQParamsConf.httpServerThreads;
+      VLOG(10) << "httpServerThreads in Conf = "
+               << myHQParamsConf.httpServerThreads;
     } else {
       myHQParamsConf.httpServerThreads = 5;
-      LOG(INFO) << "httpServerThreads default = "
-                << myHQParamsConf.httpServerThreads;
+      VLOG(10) << "httpServerThreads default = "
+               << myHQParamsConf.httpServerThreads;
     }
   }
 

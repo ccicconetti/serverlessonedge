@@ -46,6 +46,7 @@ HQServer::HQServer(
     HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider)
     : theQuicParamsConf(aQuicParamsConf)
     , theQuicServer(quic::QuicServer::createQuicServer()) {
+  VLOG(10) << "HQServer::ctor";
   theQuicServer->setBindV6Only(false);
   theQuicServer->setCongestionControllerFactory(
       std::make_shared<quic::ServerCongestionControllerFactory>());
@@ -66,22 +67,17 @@ HQServer::HQServer(
   }
 }
 
-std::thread HQServer::start(size_t aNumberOfThreads) {
+void HQServer::start(size_t aNumberOfThreads) {
   VLOG(10) << "HQServer::start\n";
-  std::thread t = std::thread([this, aNumberOfThreads]() mutable {
-    theQuicServer->start(theQuicParamsConf.localAddress.value(),
-                         aNumberOfThreads);
-
-    theQuicServer->waitUntilInitialized();
-    const auto& boundAddr = theQuicServer->getAddress();
-    LOG(INFO) << "EdgeServerQuic started at: " << boundAddr.describe();
-
-    theEvb.loopForever();
-  });
-  return t;
-}
+  theQuicServer->start(theQuicParamsConf.localAddress.value(),
+                       aNumberOfThreads);
+  theQuicServer->waitUntilInitialized(); // blocking, no race conditions
+  const auto& boundAddr = theQuicServer->getAddress();
+  LOG(INFO) << "EdgeServerQuic started at: " << boundAddr.describe();
+} // namespace edge
 
 void HQServer::stop() {
+  VLOG(10) << "HQServer::stop";
   theQuicServer->shutdown();
   theEvb.terminateLoopSoon();
 }

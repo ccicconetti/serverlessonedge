@@ -86,9 +86,6 @@ class EdgeServerQuic final : public EdgeServerImpl
   std::set<std::thread::id> threadIds() const;
 
  private:
-  //! Thread execution body.
-  void handle();
-
   //! Perform actual processing of a lambda request.
   rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
 
@@ -98,9 +95,9 @@ class EdgeServerQuic final : public EdgeServerImpl
   const size_t       theNumThreads;
 
  private:
+  const HQParams theQuicParamsConf;
   std::thread    theH2ServerThread;
   std::thread    theQuicServerThread;
-  const HQParams theQuicParamsConf;
   HQServer       theQuicTransportServer;
   H2Server       theHttpServer;
 
