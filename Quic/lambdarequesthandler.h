@@ -86,7 +86,10 @@ class LambdaRequestHandler : public BaseHandler
     }
     theTransaction->sendHeaders(theResponse);
 
-    myProtobufLambdaResp.set_responder(theResponder);
+    if (myLambdaResp.theResponder.empty()) {
+      VLOG(10) << "theResponder = " << myLambdaResp.theResponder;
+      myProtobufLambdaResp.set_responder(theResponder);
+    }
 
     // send the LambdaResponse as body of the HTTPResponse
     size_t size   = myProtobufLambdaResp.ByteSizeLong();
