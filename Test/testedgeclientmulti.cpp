@@ -34,6 +34,7 @@ SOFTWARE.
 #include "Edge/edgeserverimpl.h"
 #include "Edge/lambda.h"
 #include "Edge/processortype.h"
+#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/wait.h"
 
@@ -50,7 +51,10 @@ struct TestEdgeClientMulti : public ::testing::Test {
       , theEndpoint2("localhost:10001")
       , theEndpoint3("localhost:10002")
       , theGrpcClientConf("transport-type=grpc,persistence=0.5")
-      , theQuicClientConf("transport-type=quic,persistence=0.5") {
+      , theQuicClientConf("transport-type=quic,persistence=0.5")
+      , theQuicServerConf1("type=quic,h2port=6667,httpServerThreads=1")
+      , theQuicServerConf2("type=quic,h2port=6668,httpServerThreads=1")
+      , theQuicServerConf3("type=quic,h2port=6669,httpServerThreads=1") {
   }
 
   static std::unique_ptr<EdgeComputer>
@@ -72,6 +76,9 @@ struct TestEdgeClientMulti : public ::testing::Test {
   const std::string   theEndpoint3;
   const support::Conf theGrpcClientConf;
   const support::Conf theQuicClientConf;
+  const support::Conf theQuicServerConf1;
+  const support::Conf theQuicServerConf2;
+  const support::Conf theQuicServerConf3;
 };
 
 TEST_F(TestEdgeClientMulti, test_ctor) {
@@ -82,9 +89,8 @@ TEST_F(TestEdgeClientMulti, test_ctor) {
   ASSERT_THROW(EdgeClientMulti({}, theQuicClientConf), std::runtime_error);
 }
 
-TEST_F(TestEdgeClientMulti, test_one_destination) {
+TEST_F(TestEdgeClientMulti, test_grpc_one_destination) {
   EdgeClientMulti myGrpcClient({theEndpoint1}, theGrpcClientConf);
-  EdgeClientMulti myQuicClient({theEndpoint1}, theQuicClientConf);
 
   auto myComputer = makeComputer(theEndpoint1);
 
@@ -92,16 +98,6 @@ TEST_F(TestEdgeClientMulti, test_one_destination) {
   LambdaRequest myReq("lambda0", "hello");
   ASSERT_NE("OK", myGrpcClient.RunLambda(myReq, false).theRetCode);
   ASSERT_NE("OK", myGrpcClient.RunLambda(myReq, true).theRetCode);
-
-  // Il seguente statement non è applicabile perché startClient() non fa parte
-  // di EdgeClientInterface. Mettendo la startClient() nel costrutture di
-  // EdgeClientQuic però, se un client fallisce la prima connessione non può più
-  // tentare di ristabilirla e diventa inutilizzabile
-
-  // myQuicClient.theDesc[0].theClient->startClient();
-
-  ASSERT_NE("OK", myQuicClient.RunLambda(myReq, false).theRetCode);
-  ASSERT_NE("OK", myQuicClient.RunLambda(myReq, true).theRetCode);
 
   // start computer: now lambda exec succeeds
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl;
@@ -123,7 +119,38 @@ TEST_F(TestEdgeClientMulti, test_one_destination) {
   ASSERT_NE("OK", myGrpcClient.RunLambda(myReqBad, true).theRetCode);
 }
 
-TEST_F(TestEdgeClientMulti, test_three_destinations) {
+TEST_F(TestEdgeClientMulti, test_quic_one_destination) {
+  EdgeClientMulti myQuicClient({theEndpoint1}, theQuicClientConf);
+
+  auto myComputer = makeComputer(theEndpoint1);
+
+  // exec lambda before the computer exists: failure
+  LambdaRequest myReq("lambda0", "hello");
+  ASSERT_NE("OK", myQuicClient.RunLambda(myReq, false).theRetCode);
+  ASSERT_NE("OK", myQuicClient.RunLambda(myReq, true).theRetCode);
+
+  // start computer: now lambda exec succeeds
+  std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl;
+  myComputerEdgeServerImpl.reset(new EdgeServerQuic(
+      *myComputer,
+      QuicParamsBuilder::build(theQuicServerConf1, theEndpoint1, true)));
+  myComputerEdgeServerImpl->run();
+
+  ASSERT_TRUE(support::waitFor<std::string>(
+      [&]() { return myQuicClient.RunLambda(myReq, false).theRetCode; },
+      "OK",
+      1.0));
+  ASSERT_EQ(theEndpoint1, myQuicClient.RunLambda(myReq, false).theResponder);
+  ASSERT_EQ("OK", myQuicClient.RunLambda(myReq, true).theRetCode);
+  ASSERT_EQ(theEndpoint1, myQuicClient.RunLambda(myReq, true).theResponder);
+
+  // bad lambda name: failure
+  LambdaRequest myReqBad("lambdaXXX", "");
+  ASSERT_NE("OK", myQuicClient.RunLambda(myReqBad, false).theRetCode);
+  ASSERT_NE("OK", myQuicClient.RunLambda(myReqBad, true).theRetCode);
+}
+
+TEST_F(TestEdgeClientMulti, test_grpc_three_destinations) {
   // create three computers, one with slower speed
   auto myComputer1 = makeComputer(theEndpoint1, 1e9);
   auto myComputer2 = makeComputer(theEndpoint2, 1e9);
@@ -146,7 +173,6 @@ TEST_F(TestEdgeClientMulti, test_three_destinations) {
   myComputerEdgeServerImpl3->run();
 
   // create the multi-client
-  // EdgeClientMulti myClient({theEndpoint1, theEndpoint2, theEndpoint3}, 0.5f);
   EdgeClientMulti myClient({theEndpoint1, theEndpoint2, theEndpoint3},
                            theGrpcClientConf);
 
@@ -199,6 +225,90 @@ TEST_F(TestEdgeClientMulti, test_three_destinations) {
   ASSERT_GT(myCounter[theEndpoint1], 0u);
   ASSERT_GT(myCounter[theEndpoint2], 0u);
 }
+
+// TEST_F(TestEdgeClientMulti, test_quic_three_destinations) {
+// create three computers, one with slower speed
+// auto myComputer1 = makeComputer(theEndpoint1, 1e9);
+// auto myComputer2 = makeComputer(theEndpoint2, 1e9);
+// auto myComputer3 = makeComputer(theEndpoint3, 1e8);
+
+// create three EdgeServerGrpc to handle lambda requests
+// std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl1;
+// std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl2;
+// std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl3;
+
+// myComputerEdgeServerImpl1.reset(new EdgeServerQuic(
+//     *myComputer1,
+//     QuicParamsBuilder::build(theQuicServerConf1, theEndpoint1, true)));
+// myComputerEdgeServerImpl2.reset(new EdgeServerQuic(
+//     *myComputer2,
+//     QuicParamsBuilder::build(theQuicServerConf2, theEndpoint2, true)));
+// myComputerEdgeServerImpl3.reset(new EdgeServerQuic(
+//     *myComputer3,
+//     QuicParamsBuilder::build(theQuicServerConf3, theEndpoint3, true)));
+
+// myComputerEdgeServerImpl1->run();
+// myComputerEdgeServerImpl2->run();
+// myComputerEdgeServerImpl3->run();
+
+//   std::this_thread::sleep_for(std::chrono::seconds(1));
+
+// create the multi-client
+// EdgeClientMulti myClient({theEndpoint1, theEndpoint2, theEndpoint3},
+//                          theQuicClientConf);
+
+// wait for the fast computers to be ready and set
+// std::set<std::string> myResponders;
+// LambdaRequest         myReq("lambda0", "hello");
+// ASSERT_TRUE(support::waitFor<bool>(
+//     [&]() {
+//       const auto ret = myClient.RunLambda(myReq, false);
+//       if (ret.theRetCode == "OK") {
+//         myResponders.insert(ret.theResponder);
+//       }
+//       return myResponders.size() == 2;
+//     },
+//     true,
+//     1.0))
+//     << myResponders.size();
+//   ASSERT_EQ(std::set<std::string>({theEndpoint1, theEndpoint2}),
+//   myResponders);
+
+// // make sure also the slow computer is ready
+// EdgeClientMulti myAnotherClient({theEndpoint3}, theQuicClientConf);
+// ASSERT_TRUE(support::waitFor<std::string>(
+//     [&]() { return myAnotherClient.RunLambda(myReq, false).theRetCode; },
+//     "OK",
+//     1.0))
+//     << myResponders.size();
+
+// // execute 100 lambdas, check that are served evenly by the fast computers
+// std::map<std::string, size_t> myCounter;
+// for (size_t i = 0; i < 100; i++) {
+//   const auto ret = myClient.RunLambda(myReq, false);
+//   ASSERT_EQ("OK", ret.theRetCode);
+//   myCounter[ret.theResponder]++;
+// }
+
+// ASSERT_EQ(2u, myCounter.size());
+// ASSERT_EQ(1u, myCounter.count(theEndpoint1));
+// ASSERT_EQ(1u, myCounter.count(theEndpoint2));
+
+// const auto myDelta = myCounter[theEndpoint1] > myCounter[theEndpoint2] ?
+//                          (myCounter[theEndpoint1] -
+//                          myCounter[theEndpoint2]) :
+//                          (myCounter[theEndpoint2] -
+//                          myCounter[theEndpoint1]);
+
+// LOG(INFO) << "delta = " << myDelta;
+
+// // both destinations are used evenly
+// // ASSERT_LT(myDelta, 20);
+
+// // both destinations are used
+// ASSERT_GT(myCounter[theEndpoint1], 0u);
+// ASSERT_GT(myCounter[theEndpoint2], 0u);
+//}
 
 } // namespace edge
 } // namespace uiiit
