@@ -215,7 +215,7 @@ struct HQParams {
     h2cEnabled                         = false;
     httpVersion.parse("1.1");
     txnTimeout           = std::chrono::milliseconds(120000);
-    httpServerShutdownOn = {};
+    httpServerShutdownOn = {SIGINT, SIGTERM};
     folly::split(',', "/lambda", httpPaths);
     // parse HTTP headers
     httpHeaders = CurlService::CurlClient::parseHeaders("");

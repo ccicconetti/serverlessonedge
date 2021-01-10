@@ -91,18 +91,18 @@ void EdgeServerQuic::run() {
 void EdgeServerQuic::wait() {
   VLOG(1) << "EdgeServerQuic::wait()\n";
   theH2ServerThread.join();
-  theQuicServerThread.join();
 }
 
 EdgeServerQuic::~EdgeServerQuic() {
   VLOG(1) << "EdgeServerQuic::dtor()\n";
-  theHttpServer.stop();
   theQuicTransportServer.stop();
+  theHttpServer.stop();
   // these repetitions should not create problems since
   // std::thread::join() is idempotent and if a thread is already ended the
   // this function returns immediately
-  theH2ServerThread.join();
   theQuicServerThread.join();
+  if (theH2ServerThread.joinable())
+    theH2ServerThread.join();
 }
 
 rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
