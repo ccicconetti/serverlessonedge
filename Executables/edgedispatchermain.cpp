@@ -88,14 +88,11 @@ int main(int argc, char* argv[]) {
         myServerType == "quic");
 
     std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
     if (myServerType == "grpc") {
-      // if (myServerImplConf("type") == "grpc") {
       myServerImpl.reset(new ec::EdgeServerGrpc(
           myEdgeDispatcher, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerType == "quic") {
-      // } else if (myServerImplConf("type") == "quic") {
       myServerImpl.reset(new ec::EdgeServerQuic(
           myEdgeDispatcher,
           ec::QuicParamsBuilder::buildServerHQParams(
