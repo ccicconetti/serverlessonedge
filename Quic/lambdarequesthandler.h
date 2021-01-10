@@ -38,20 +38,20 @@ class LambdaRequestHandler : public BaseHandler
 {
  public:
   explicit LambdaRequestHandler(const HQParams&    aQuicParamsConf,
-                                EdgeServer&        aEdgeServer,
+                                EdgeServerQuic&    aEdgeServer,
                                 const std::string& aServerEndpoint)
       : BaseHandler(aQuicParamsConf)
       , theEdgeServer(aEdgeServer)
       , theResponder(aServerEndpoint) {
-    VLOG(10) << "LambdaRequestHandler::CTOR\n";
+    VLOG(1) << "LambdaRequestHandler::ctor\n";
   }
 
   LambdaRequestHandler() = delete;
 
   void onHeadersComplete(
       std::unique_ptr<proxygen::HTTPMessage> aMsg) noexcept override {
-    VLOG(10) << "LambdaRequestHandler::onHeadersComplete";
-    VLOG(10) << "Setting http-version to " << getHttpVersion();
+    VLOG(1) << "LambdaRequestHandler::onHeadersComplete";
+    VLOG(1) << "Setting http-version to " << getHttpVersion();
 
     theResponse.setVersionString(getHttpVersion());
     theResponse.setWantsKeepalive(true);
@@ -59,7 +59,7 @@ class LambdaRequestHandler : public BaseHandler
   }
 
   void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override {
-    VLOG(10) << "LambdaRequestHandler::onBody";
+    VLOG(1) << "LambdaRequestHandler::onBody";
 
     // converting the folly::IOBuf in a rpc::LambdaRequest
     rpc::LambdaRequest myProtobufLambdaReq;
@@ -67,7 +67,7 @@ class LambdaRequestHandler : public BaseHandler
 
     // useful for debugging
     LambdaRequest myLambdaReq(myProtobufLambdaReq);
-    VLOG(10) << "LambdaRequest.toString() = \n" << myLambdaReq.toString();
+    VLOG(1) << "LambdaRequest.toString() = \n" << myLambdaReq.toString();
 
     // actual LambdaRequest processing
     rpc::LambdaResponse myProtobufLambdaResp =
@@ -87,7 +87,7 @@ class LambdaRequestHandler : public BaseHandler
     theTransaction->sendHeaders(theResponse);
 
     if (myLambdaResp.theResponder.empty()) {
-      VLOG(10) << "theResponder = " << myLambdaResp.theResponder;
+      VLOG(1) << "theResponder = " << myLambdaResp.theResponder;
       myProtobufLambdaResp.set_responder(theResponder);
     }
 
@@ -100,7 +100,7 @@ class LambdaRequestHandler : public BaseHandler
   }
 
   void onEOM() noexcept override {
-    VLOG(10) << "LambdaRequestHandler::onEOM";
+    VLOG(1) << "LambdaRequestHandler::onEOM";
     theTransaction->sendEOM();
   }
 
@@ -111,7 +111,7 @@ class LambdaRequestHandler : public BaseHandler
   }
 
  private:
-  EdgeServer&           theEdgeServer;
+  EdgeServerQuic&       theEdgeServer;
   proxygen::HTTPMessage theResponse;
   const std::string     theResponder;
 };

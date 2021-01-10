@@ -77,6 +77,9 @@ class EdgeServerQuic final : public EdgeServerImpl
   //! Wait until H2Server and HQServer terminations.
   void wait() override;
 
+  //! Perform actual processing of a lambda request.
+  rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
+
  protected:
   /**
    * \return the set of the identifiers of the threads that have been
@@ -86,9 +89,6 @@ class EdgeServerQuic final : public EdgeServerImpl
   std::set<std::thread::id> threadIds() const;
 
  private:
-  //! Perform actual processing of a lambda request.
-  rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
-
  protected:
   mutable std::mutex theMutex;
   const std::string  theServerEndpoint;

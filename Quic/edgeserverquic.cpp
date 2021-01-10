@@ -57,7 +57,7 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&     aEdgeServer,
             if (path == "/lambda") {
               return new LambdaRequestHandler(
                   aParams,
-                  theEdgeServer,
+                  *this,
                   theQuicParamsConf.host + ':' +
                       std::to_string(theQuicParamsConf.port));
             }
@@ -70,17 +70,17 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&     aEdgeServer,
                       if (path == "/lambda") {
                         return new LambdaRequestHandler(
                             aParams,
-                            theEdgeServer,
+                            *this,
                             theQuicParamsConf.host + ':' +
                                 std::to_string(theQuicParamsConf.port));
                       }
                       return new EchoHandler(aParams);
                     }) {
-  VLOG(10) << "EdgeServerQuic::ctor";
+  VLOG(1) << "EdgeServerQuic::ctor";
 }
 
 void EdgeServerQuic::run() {
-  VLOG(10) << "EdgeServerQuic::run";
+  VLOG(1) << "EdgeServerQuic::run";
   theH2ServerThread = theHttpServer.start();
   theQuicTransportServer.start(
       theQuicParamsConf.httpServerThreads); // blocking until server initialized
@@ -89,15 +89,15 @@ void EdgeServerQuic::run() {
 }
 
 void EdgeServerQuic::wait() {
-  VLOG(10) << "EdgeServerQuic::wait()\n";
+  VLOG(1) << "EdgeServerQuic::wait()\n";
   theH2ServerThread.join();
   theQuicServerThread.join();
 }
 
 EdgeServerQuic::~EdgeServerQuic() {
-  VLOG(10) << "EdgeServerQuic::dtor()\n";
-  theQuicTransportServer.stop();
+  VLOG(1) << "EdgeServerQuic::dtor()\n";
   theHttpServer.stop();
+  theQuicTransportServer.stop();
   // these repetitions should not create problems since
   // std::thread::join() is idempotent and if a thread is already ended the
   // this function returns immediately
@@ -106,12 +106,12 @@ EdgeServerQuic::~EdgeServerQuic() {
 }
 
 rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
-  VLOG(10) << "EdgeServerQuic::process\n";
+  VLOG(1) << "EdgeServerQuic::process\n";
   return theEdgeServer.process(aReq);
 }
 
 std::set<std::thread::id> EdgeServerQuic::threadIds() const {
-  VLOG(10) << "EdgeServerQuic::threadIds";
+  VLOG(1) << "EdgeServerQuic::threadIds";
   std::set<std::thread::id> ret;
   ret.insert(theH2ServerThread.get_id());
   ret.insert(theQuicServerThread.get_id());
