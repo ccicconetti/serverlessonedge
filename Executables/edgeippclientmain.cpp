@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
      po::value<std::string>(&myServerEndpoints)->default_value("localhost:6473"),
      "Server end-points (comma-separated list).")
     ("client-conf",
-     po::value<std::string>(&myClientConf)->default_value("persistence=0.05"),
+     po::value<std::string>(&myClientConf)->default_value("type=grpc,persistence=0.05"),
      "Configuration of the edge clients.")
     ("lambda",
      po::value<std::string>(&myLambda)->default_value("clambda0"),
