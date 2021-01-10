@@ -138,6 +138,7 @@ int main(int argc, char* argv[]) {
   std::string myInputFile;
   std::string myOutputFile;
   size_t      myNumThreads;
+  bool        myQuicEnabled;
 
   po::options_description myDesc("Allowed options");
   // clang-format off
@@ -152,6 +153,9 @@ int main(int argc, char* argv[]) {
     ("output-file",
      po::value<std::string>(&myOutputFile)->default_value(""),
      "Output file name. Do not save latencies if empty.")
+     ("quic-enabled", 
+     po::value<bool>(&myQuicEnabled)->default_value(false),
+     "Whether to use QUIC protocol")
     ;
   // clang-format on
 
@@ -179,7 +183,7 @@ int main(int argc, char* argv[]) {
     const uiiit::support::Saver mySaver(myOutputFile, true, false, false);
     uiiit::support::SummaryStat myStat;
     // by now EdgeClientMulti supports only GRPC
-    ec::EdgeClientPool myClientPool(false, 0); // unlimited clients
+    ec::EdgeClientPool myClientPool(myQuicEnabled, 0); // unlimited clients
 
     std::list<Consumer>    myConsumers;
     std::list<std::thread> myThreads;
