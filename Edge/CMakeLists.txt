@@ -10,6 +10,7 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/computer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/container.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientgrpc.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientfactory.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientmulti.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientpool.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputer.cpp

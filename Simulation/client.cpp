@@ -31,7 +31,7 @@ SOFTWARE.
 
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
-#include "Factory/edgeclientfactory.h"
+#include "Edge/edgeclientfactory.h"
 #include "Support/saver.h"
 #include "Support/stat.h"
 

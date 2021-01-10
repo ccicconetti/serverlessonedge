@@ -29,8 +29,8 @@ SOFTWARE.
 
 #include "edgeclientmulti.h"
 
+#include "Edge/edgeclientfactory.h"
 #include "Edge/edgeclientgrpc.h"
-#include "Factory/edgeclientfactory.h"
 #include "Quic/edgeclientquic.h"
 #include "Support/random.h"
 #include "Support/tostring.h"

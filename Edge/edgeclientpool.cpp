@@ -29,10 +29,10 @@ SOFTWARE.
 
 #include "edgeclientpool.h"
 
-#include "Factory/edgeclientfactory.h"
-
+#include "Edge/edgeclientfactory.h"
 #include "Support/chrono.h"
 #include "Support/conf.h"
+
 #include <glog/logging.h>
 
 #include <sstream>
