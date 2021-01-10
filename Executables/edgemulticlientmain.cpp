@@ -178,7 +178,8 @@ int main(int argc, char* argv[]) {
     uiiit::support::Chrono      myChrono(true);
     const uiiit::support::Saver mySaver(myOutputFile, true, false, false);
     uiiit::support::SummaryStat myStat;
-    ec::EdgeClientPool          myClientPool(0); // unlimited clients
+    // by now EdgeClientMulti supports only GRPC
+    ec::EdgeClientPool myClientPool(false, 0); // unlimited clients
 
     std::list<Consumer>    myConsumers;
     std::list<std::thread> myThreads;
