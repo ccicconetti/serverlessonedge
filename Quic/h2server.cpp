@@ -208,13 +208,13 @@ H2Server::createServerAcceptorConfig(const HQParams& aQuicParamsConf) {
 }
 
 std::thread H2Server::start() {
-  VLOG(1) << "H2Server::start()";
+  VLOG(1) << "H2Server::start";
   std::thread t([&]() mutable { theHttpServer->start(); });
   return t;
 }
 
 void H2Server::stop() {
-  VLOG(1) << "H2Server::stop()";
+  VLOG(1) << "H2Server::stop";
   theHttpServer->stop();
 }
 

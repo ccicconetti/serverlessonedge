@@ -65,8 +65,8 @@ EdgeClientPool::operator()(const std::string&   aDestination,
   const auto myReq  = aReq.makeOneMoreHop();
   auto       myResp = myClient->RunLambda(myReq, aDry);
 
-  // if the lambda does not include the actual responder then we set it to the
-  // destination
+  // if the lambda does not include the actual responder then we set it to
+  // the destination
   if (myResp.theResponder.empty()) {
     myResp.theResponder = aDestination;
   }
@@ -91,13 +91,11 @@ EdgeClientPool::getClient(const std::string& aDestination) {
     myDesc.theBusy++;
 
     // vedere eventualmente come passare attempt-early-data
-    if (!theQuicEnabled) {
+    if (!theQuicEnabled)
       return EdgeClientFactory::make({aDestination},
                                      support::Conf("type=grpc"));
-    } else {
-      return EdgeClientFactory::make({aDestination},
-                                     support::Conf("type=quic"));
-    }
+
+    return EdgeClientFactory::make({aDestination}, support::Conf("type=quic"));
 
     // return std::make_unique<EdgeClientGrpc>(aDestination);
   }

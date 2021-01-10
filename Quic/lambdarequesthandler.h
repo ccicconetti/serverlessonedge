@@ -66,8 +66,10 @@ class LambdaRequestHandler : public BaseHandler
     myProtobufLambdaReq.ParseFromArray(aChain->data(), aChain->length());
 
     // useful for debugging
-    LambdaRequest myLambdaReq(myProtobufLambdaReq);
-    VLOG(1) << "LambdaRequest.toString() = \n" << myLambdaReq.toString();
+    if (VLOG_IS_ON(2)) {
+      LambdaRequest myLambdaReq(myProtobufLambdaReq);
+      LOG(INFO) << "LambdaRequest Received = \n" << myLambdaReq.toString();
+    }
 
     // actual LambdaRequest processing
     rpc::LambdaResponse myProtobufLambdaResp =
@@ -77,6 +79,8 @@ class LambdaRequestHandler : public BaseHandler
     // set the HTTPMessage theStatusCode and theStatusMessage according to
     // it
     LambdaResponse myLambdaResp(myProtobufLambdaResp);
+    VLOG(2) << "LambdaResponse Produced = \n" << myLambdaResp.toString();
+
     if (myLambdaResp.theRetCode == std::string("OK")) {
       theResponse.setStatusCode(200);
       theResponse.setStatusMessage("Ok");
