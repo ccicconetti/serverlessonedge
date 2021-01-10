@@ -84,7 +84,8 @@ struct TestLambdaTransactionQuic : public ::testing::Test {
                             theControllerEndpoint,
                             support::Conf(EdgeLambdaProcessor::defaultConf()),
                             support::Conf("type=random"),
-                            support::Conf("type=trivial,period=10,stat=mean")) :
+                            support::Conf("type=trivial,period=10,stat=mean"),
+                            true) :
                         nullptr)
         , theDispatcher(
               aType == DISPATCHER ?
@@ -94,7 +95,8 @@ struct TestLambdaTransactionQuic : public ::testing::Test {
                       theControllerEndpoint,
                       support::Conf(EdgeLambdaProcessor::defaultConf()),
                       support::Conf(
-                          PtimeEstimatorFactory::defaultConf(aSubtype))) :
+                          PtimeEstimatorFactory::defaultConf(aSubtype)),
+                      true) :
                   nullptr)
         , theForwardingTableServer(nullptr)
         , theUtils() {

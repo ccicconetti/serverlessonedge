@@ -76,7 +76,8 @@ TEST_F(TestEdgeServerQuic, test_connection) {
                       "",
                       support::Conf(EdgeLambdaProcessor::defaultConf()),
                       support::Conf("type=random"),
-                      support::Conf("type=trivial,period=10,stat=mean"));
+                      support::Conf("type=trivial,period=10,stat=mean"),
+                      true);
 
   std::unique_ptr<EdgeServerImpl> myRouterEdgeServerImpl;
   myRouterEdgeServerImpl.reset(

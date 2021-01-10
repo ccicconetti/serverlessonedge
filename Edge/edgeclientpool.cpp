@@ -29,8 +29,10 @@ SOFTWARE.
 
 #include "edgeclientpool.h"
 
-#include "Support/chrono.h"
+#include "Factory/edgeclientfactory.h"
 
+#include "Support/chrono.h"
+#include "Support/conf.h"
 #include <glog/logging.h>
 
 #include <sstream>
@@ -39,9 +41,11 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeClientPool::EdgeClientPool(const size_t aMaxClients)
+EdgeClientPool::EdgeClientPool(const bool   aQuicEnabled,
+                               const size_t aMaxClients)
     : theMaxClients(aMaxClients)
     , theMutex()
+    , theQuicEnabled(aQuicEnabled)
     , thePool() {
 }
 
@@ -54,7 +58,7 @@ EdgeClientPool::operator()(const std::string&   aDestination,
   support::Chrono myChrono(true);
 
   // obtain a client from the pool
-  std::unique_ptr<EdgeClientGrpc> myClient = getClient(aDestination);
+  std::unique_ptr<EdgeClientInterface> myClient = getClient(aDestination);
   assert(myClient);
 
   // execute the lambda function
@@ -73,7 +77,7 @@ EdgeClientPool::operator()(const std::string&   aDestination,
   return std::make_pair(myResp, myChrono.stop());
 }
 
-std::unique_ptr<EdgeClientGrpc>
+std::unique_ptr<EdgeClientInterface>
 EdgeClientPool::getClient(const std::string& aDestination) {
   std::unique_lock<std::mutex> myLock(theMutex);
   auto&                        myDesc = thePool[aDestination]; // may insert
@@ -85,18 +89,29 @@ EdgeClientPool::getClient(const std::string& aDestination) {
   if (myDesc.theFree.empty()) {
     assert(theMaxClients == 0 or myDesc.theBusy < theMaxClients);
     myDesc.theBusy++;
-    return std::make_unique<EdgeClientGrpc>(aDestination);
+
+    // vedere eventualmente come passare attempt-early-data
+    if (!theQuicEnabled) {
+      return EdgeClientFactory::make({aDestination},
+                                     support::Conf("type=grpc"));
+    } else {
+      return EdgeClientFactory::make({aDestination},
+                                     support::Conf("type=quic"));
+    }
+
+    // return std::make_unique<EdgeClientGrpc>(aDestination);
   }
   assert(not myDesc.theFree.empty());
-  std::unique_ptr<EdgeClientGrpc> myNewClient;
+  std::unique_ptr<EdgeClientInterface> myNewClient;
   myNewClient.swap(myDesc.theFree.front());
   myDesc.theFree.pop_front();
   myDesc.theBusy++;
   return myNewClient;
 }
 
-void EdgeClientPool::releaseClient(const std::string& aDestination,
-                                   std::unique_ptr<EdgeClientGrpc>&& aClient) {
+void EdgeClientPool::releaseClient(
+    const std::string&                     aDestination,
+    std::unique_ptr<EdgeClientInterface>&& aClient) {
   const std::lock_guard<std::mutex> myLock(theMutex);
   auto& myDesc = thePool[aDestination]; // may insert
   myDesc.theFree.emplace_back(std::move(aClient));

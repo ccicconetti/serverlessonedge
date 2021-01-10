@@ -88,7 +88,8 @@ class EdgeRouter final : public EdgeLambdaProcessor
                       const std::string&   aControllerEndpoint,
                       const support::Conf& aProcessorConf,
                       const support::Conf& aTableConf,
-                      const support::Conf& aLocalOptimizerConf);
+                      const support::Conf& aLocalOptimizerConf,
+                      const bool           quicEnabled);
 
   //! \return The forwarding tables: 0 is the overall, 1 is the final.
   std::vector<ForwardingTableInterface*> tables() override;

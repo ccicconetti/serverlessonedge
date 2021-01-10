@@ -41,15 +41,11 @@ namespace edge {
 PtimeEstimatorProbe::PtimeEstimatorProbe(const size_t       aMaxClients,
                                          const std::string& aOutput)
     : PtimeEstimator(Type::Probe)
-    , theClients(aMaxClients)
+    , theClients(false, aMaxClients)
     , theDestinations([](const std::string&, const std::string&) {
       return std::make_unique<Descriptor>();
     }) // with timestap, with per-line flushing, truncate
-    , theSaver(aOutput,
-               true,
-               true,
-               false)
-{
+    , theSaver(aOutput, true, true, false) {
   LOG_IF(INFO, not aOutput.empty())
       << "saving measurements to output file " << aOutput;
 }

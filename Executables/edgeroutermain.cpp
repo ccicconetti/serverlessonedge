@@ -81,20 +81,25 @@ int main(int argc, char* argv[]) {
                                myCli.forwardingEndpoint());
     }
 
+    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
+    const auto myServerType     = myServerImplConf("type");
+
     ec::EdgeRouter myEdgeRouter(myCli.serverEndpoint(),
                                 myCli.forwardingEndpoint(),
                                 myCli.controllerEndpoint(),
                                 uiiit::support::Conf(myCli.routerConf()),
                                 uiiit::support::Conf(myTableConf),
-                                uiiit::support::Conf(myOptimizerConf));
+                                uiiit::support::Conf(myOptimizerConf),
+                                myServerType == "quic");
 
     std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
-    if (myServerImplConf("type") == "grpc") {
+    if (myServerType == "grpc") {
+      // if (myServerImplConf("type") == "grpc") {
       myServerImpl.reset(new ec::EdgeServerGrpc(
           myEdgeRouter, myCli.serverEndpoint(), myCli.numThreads()));
-    } else if (myServerImplConf("type") == "quic") {
+    } else if (myServerType == "quic") {
+      //} else if (myServerImplConf("type") == "quic") {
       myServerImpl.reset(new ec::EdgeServerQuic(
           myEdgeRouter,
           ec::QuicParamsBuilder::buildServerHQParams(
