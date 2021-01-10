@@ -240,7 +240,8 @@ class QuicParamsBuilder
    * option from CLI. This configuration can be used to specify: \li type
    * (=grpc): the protocol to exchange lambdaRequest/lambdaResponse (can be
    * "grpc" or "quic"), \li persistence (=0.5): the p-persistence probability to
-   * probe another destination
+   * probe another destination, \li attempt-early-data (=false): flag to make
+   * the EdgeClientQuic trying to exploit the QUIC protocol 0-RTT feature
    *
    * \param aServerEndpoint server endpoint to which the client must
    * connect, specified through the --server-endpoint option from CLI (format:
@@ -257,8 +258,7 @@ class QuicParamsBuilder
    * option from CLI. For the server this configuration can be used to specify:
    * \li type(=grpc): the protocol to exchange lambdaRequest/lambdaResponse (can
    * be "grpc" or "quic"), \li h2port (=6667): the port on which the server can
-   * receive HTTP2 requests, \li attempt-early-data (=false): flag to make the
-   * EdgeClientQuic trying to exploit the QUIC protocol 0-RTT feature
+   * receive HTTP2 requests
    *
    * \param aServerEndpoint server endpoint specified through the
    * --server-endpoint option from CLI (format: "IPAddress:Port")
