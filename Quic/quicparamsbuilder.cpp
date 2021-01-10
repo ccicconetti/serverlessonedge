@@ -35,7 +35,7 @@ namespace edge {
 HQParams
 QuicParamsBuilder::buildClientHQParams(const support::Conf& aConf,
                                        const std::string&   aServerEndpoint) {
-  VLOG(10) << "HQParamsBuilder::buildClientHQParams";
+  VLOG(1) << "HQParamsBuilder::buildClientHQParams";
 
   HQParams myHQParamsConf;
 
@@ -56,13 +56,13 @@ QuicParamsBuilder::buildClientHQParams(const support::Conf& aConf,
   if (aConf.find(std::string("attempt-early-data")) != aConf.end()) {
     myHQParamsConf.transportSettings.attemptEarlyData =
         aConf.getBool("attempt-early-data");
-    VLOG(10) << "attempt-early-data in Conf = "
-             << myHQParamsConf.transportSettings.attemptEarlyData;
+    VLOG(1) << "attempt-early-data in Conf = "
+            << myHQParamsConf.transportSettings.attemptEarlyData;
     myHQParamsConf.earlyData = aConf.getBool("attempt-early-data");
   } else {
     myHQParamsConf.transportSettings.attemptEarlyData = false;
-    VLOG(10) << "attempt-early-data default = "
-             << myHQParamsConf.transportSettings.attemptEarlyData;
+    VLOG(1) << "attempt-early-data default = "
+            << myHQParamsConf.transportSettings.attemptEarlyData;
     myHQParamsConf.earlyData = false;
   }
 
@@ -73,7 +73,7 @@ HQParams
 QuicParamsBuilder::buildServerHQParams(const support::Conf& aConf,
                                        const std::string&   aServerEndpoint,
                                        const size_t         aNumThreads) {
-  VLOG(10) << "HQParamsBuilder::buildServerHQParams";
+  VLOG(1) << "HQParamsBuilder::buildServerHQParams";
   HQParams myHQParamsConf;
 
   // aServerEndpoint format is "IPaddress:port"
@@ -90,10 +90,10 @@ QuicParamsBuilder::buildServerHQParams(const support::Conf& aConf,
   // h2serverport (uint16_t)
   if (aConf.find(std::string("h2port")) != aConf.end()) {
     myHQParamsConf.h2port = aConf.getUint("h2port");
-    VLOG(10) << "h2port in Conf = " << myHQParamsConf.h2port;
+    VLOG(1) << "h2port in Conf = " << myHQParamsConf.h2port;
   } else {
     myHQParamsConf.h2port = 6667;
-    VLOG(10) << "h2port default = " << myHQParamsConf.h2port;
+    VLOG(1) << "h2port default = " << myHQParamsConf.h2port;
   }
 
   myHQParamsConf.localH2Address =

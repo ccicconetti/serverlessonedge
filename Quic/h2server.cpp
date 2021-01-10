@@ -143,16 +143,16 @@ H2Server::SampleHandlerFactory::~SampleHandlerFactory() {
 
 void H2Server::SampleHandlerFactory::onServerStart(
     folly::EventBase* /*evb*/) noexcept {
-  VLOG(10) << "H2Server::onServerStart\n";
+  VLOG(1) << "H2Server::onServerStart\n";
 }
 
 void H2Server::SampleHandlerFactory::onServerStop() noexcept {
-  VLOG(10) << "H2Server::onServerStop\n";
+  VLOG(1) << "H2Server::onServerStop\n";
 }
 
 proxygen::RequestHandler* H2Server::SampleHandlerFactory::onRequest(
     proxygen::RequestHandler*, proxygen::HTTPMessage* aMsg) noexcept {
-  VLOG(10) << "H2Server::onRequest\n";
+  VLOG(1) << "H2Server::onRequest\n";
   return new proxygen::HTTPTransactionHandlerAdaptor(
       theHttpTransactionHandlerProvider(aMsg, theQuicParamsConf));
 }
@@ -160,7 +160,7 @@ proxygen::RequestHandler* H2Server::SampleHandlerFactory::onRequest(
 H2Server::H2Server(
     const HQParams&                aQuicParamsConf,
     HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider) {
-  VLOG(10) << "H2Server::ctor";
+  VLOG(1) << "H2Server::ctor";
   auto myAcceptorConfig = createServerAcceptorConfig(aQuicParamsConf);
   auto myServerOptions  = H2Server::createServerOptions(
       aQuicParamsConf, std::move(aHttpTransactionHandlerProvider));
@@ -208,13 +208,13 @@ H2Server::createServerAcceptorConfig(const HQParams& aQuicParamsConf) {
 }
 
 std::thread H2Server::start() {
-  VLOG(10) << "H2Server::start()";
+  VLOG(1) << "H2Server::start()";
   std::thread t([&]() mutable { theHttpServer->start(); });
   return t;
 }
 
 void H2Server::stop() {
-  VLOG(10) << "H2Server::stop()";
+  VLOG(1) << "H2Server::stop()";
   theHttpServer->stop();
 }
 

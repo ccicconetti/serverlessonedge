@@ -159,12 +159,12 @@ class InsecureVerifierDangerousDoNotUseInProduction
 EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
     : EdgeClientInterface()
     , theQuicParamsConf(aQuicParamsConf) {
-  VLOG(10) << "EdgeClientQuic::ctor";
+  VLOG(1) << "EdgeClientQuic::ctor";
   initializeClient();
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
-  VLOG(10) << "EdgeClientQuic::dtor";
+  VLOG(1) << "EdgeClientQuic::dtor";
   if (!theHttpPaths.empty()) {
     theSession->drain();
     theSession->closeWhenIdle();
@@ -180,12 +180,12 @@ EdgeClientQuic::~EdgeClientQuic() {
  * connectError() one.
  */
 void EdgeClientQuic::startClient() {
-  VLOG(10) << "EdgeClientQuic::startClient";
+  VLOG(1) << "EdgeClientQuic::startClient";
 
   theSession->startNow();
   theQuicClient->start(theSession);
-  LOG(INFO) << "EdgeClientQuic connecting to "
-            << theQuicParamsConf.remoteAddress->describe();
+  VLOG(1) << "EdgeClientQuic connecting to "
+          << theQuicParamsConf.remoteAddress->describe();
 
   // This is to flush the CFIN out so the server will see the handshake as
   // complete.
@@ -193,7 +193,7 @@ void EdgeClientQuic::startClient() {
 }
 
 void EdgeClientQuic::connectSuccess() {
-  VLOG(10) << "EdgeClientQuic::connectSuccess";
+  VLOG(1) << "EdgeClientQuic::connectSuccess";
 
   theHttpPaths.insert(theHttpPaths.end(),
                       theQuicParamsConf.httpPaths.begin(),
@@ -201,20 +201,20 @@ void EdgeClientQuic::connectSuccess() {
 }
 
 void EdgeClientQuic::onReplaySafe() {
-  VLOG(10) << "EdgeClientQuic::onReplaySafe";
+  VLOG(1) << "EdgeClientQuic::onReplaySafe";
   theEvb.terminateLoopSoon();
 }
 
 void EdgeClientQuic::connectError(
     std::pair<quic::QuicErrorCode, std::string> aError) {
-  VLOG(10) << "EdgeClientQuic::connectError";
+  VLOG(1) << "EdgeClientQuic::connectError";
   LOG(ERROR) << "EdgeClientQuic failed to connect, Error="
              << toString(aError.first) << ", msg=" << aError.second;
   theEvb.terminateLoopSoon();
 }
 
 void EdgeClientQuic::initializeClient() {
-  VLOG(10) << "EdgeClientQuic::initializeClient";
+  VLOG(1) << "EdgeClientQuic::initializeClient";
 
   initializeQuicTransport();
 
@@ -232,7 +232,7 @@ void EdgeClientQuic::initializeClient() {
 }
 
 void EdgeClientQuic::initializeQuicTransport() {
-  VLOG(10) << "EdgeClientQuic::initializeQuicTransport";
+  VLOG(1) << "EdgeClientQuic::initializeQuicTransport";
 
   auto mySocket              = std::make_unique<folly::AsyncUDPSocket>(&theEvb);
   auto myQuicTransportClient = std::make_shared<quic::QuicClientTransport>(
@@ -274,7 +274,7 @@ static std::function<void()> onEOMTerminateLoop;
 
 LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
-  VLOG(10) << "EdgeClientQuic::RunLambda";
+  VLOG(1) << "EdgeClientQuic::RunLambda";
   std::unique_ptr<LambdaResponse> myLambdaRes;
   // the following check is needed in order to verify if the connectSuccess()
   // callback has been invoked. The call to the connectSuccess() callback
@@ -282,7 +282,7 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   // connect to the EdgeServerQuic or the previous call to startClient() has not
   // succeeded, so the the connectError callback has been called
   if (theHttpPaths.empty()) {
-    VLOG(10) << "EdgeClientQuic::RunLambda First Check";
+    VLOG(1) << "EdgeClientQuic::RunLambda First Check";
     startClient();
   }
   // if the connectError callback has been invoked
