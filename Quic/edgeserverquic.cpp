@@ -86,6 +86,7 @@ void EdgeServerQuic::run() {
       theQuicParamsConf.httpServerThreads); // blocking until server initialized
   theQuicServerThread = std::thread(
       [this]() mutable { theQuicTransportServer.theEvb.loopForever(); });
+  theEdgeServer.init();
 }
 
 void EdgeServerQuic::wait() {
