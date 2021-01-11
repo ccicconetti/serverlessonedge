@@ -130,9 +130,8 @@ int main(int argc, char* argv[]) {
       LOG(INFO) << "Announced to " << myCli.controllerEndpoint();
     }
 
-    myServerImpl->run();
-    // myServer.run(); // non-blocking
-    // myServer.wait(); // blocking
+    myServerImpl->run(); // non-blocking
+    // myServerImpl->wait(); // blocking
     mySignalHandler.wait(); // blocking
 
     // perform clean exit by removing this computer from the controller

@@ -96,8 +96,6 @@ EdgeClientPool::getClient(const std::string& aDestination) {
                                      support::Conf("type=grpc"));
 
     return EdgeClientFactory::make({aDestination}, support::Conf("type=quic"));
-
-    // return std::make_unique<EdgeClientGrpc>(aDestination);
   }
   assert(not myDesc.theFree.empty());
   std::unique_ptr<EdgeClientInterface> myNewClient;
