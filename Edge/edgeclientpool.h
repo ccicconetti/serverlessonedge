@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
+#include "Support/conf.h"
 #include "Support/macros.h"
 
 #include <condition_variable>
@@ -70,7 +71,8 @@ class EdgeClientPool
    * \param aMaxClients The maximum number of clients per destination. 0 means
    * ulimited.
    */
-  explicit EdgeClientPool(const bool quicEnabled, const size_t aMaxClients);
+  explicit EdgeClientPool(const support::Conf& aQuicServerConf,
+                          const size_t         aMaxClients);
 
   /**
    * Execute a lambda on a given edge computer identified by its end-point.
@@ -100,7 +102,7 @@ class EdgeClientPool
  private:
   const size_t                      theMaxClients;
   mutable std::mutex                theMutex;
-  const bool                        theQuicEnabled;
+  const support::Conf               theQuicServerConf;
   std::map<std::string, Descriptor> thePool;
 };
 

@@ -30,6 +30,7 @@ SOFTWARE.
 #include "ptimeestimatorprobe.h"
 
 #include "Edge/edgemessages.h"
+#include "Support/conf.h"
 
 #include <glog/logging.h>
 
@@ -41,7 +42,7 @@ namespace edge {
 PtimeEstimatorProbe::PtimeEstimatorProbe(const size_t       aMaxClients,
                                          const std::string& aOutput)
     : PtimeEstimator(Type::Probe)
-    , theClients(false, aMaxClients)
+    , theClients(support::Conf("type=grpc"), aMaxClients)
     , theDestinations([](const std::string&, const std::string&) {
       return std::make_unique<Descriptor>();
     }) // with timestap, with per-line flushing, truncate

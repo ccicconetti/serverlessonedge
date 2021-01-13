@@ -82,7 +82,7 @@ class EdgeLambdaProcessor : public EdgeServer
                                const std::string&   aCommandsEndpoint,
                                const std::string&   aControllerEndpoint,
                                const support::Conf& aRouterConf,
-                               const bool           quicEnabled);
+                               const support::Conf& aQuicServerConf);
 
   ~EdgeLambdaProcessor() override;
 

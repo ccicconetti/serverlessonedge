@@ -44,12 +44,12 @@ EdgeDispatcher::EdgeDispatcher(const std::string&   aLambdaEndpoint,
                                const std::string&   aControllerEndpoint,
                                const support::Conf& aProcessorConf,
                                const support::Conf& aPtimeEstimatorConf,
-                               const bool           aQuicEnabled)
+                               const support::Conf& aServerQuicConf)
     : EdgeLambdaProcessor(aLambdaEndpoint,
                           aCommandsEndpoint,
                           aControllerEndpoint,
                           aProcessorConf,
-                          aQuicEnabled)
+                          aServerQuicConf)
     , thePtimeEstimator(PtimeEstimatorFactory::make(aPtimeEstimatorConf)) {
 }
 

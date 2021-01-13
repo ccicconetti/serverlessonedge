@@ -81,7 +81,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
                             support::Conf(EdgeLambdaProcessor::defaultConf()),
                             support::Conf("type=random"),
                             support::Conf("type=trivial,period=10,stat=mean"),
-                            false) :
+                            support::Conf("type=grpc,persistence=0.05")) :
                         nullptr)
         , theDispatcher(
               aType == DISPATCHER ?
@@ -92,7 +92,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
                       support::Conf(EdgeLambdaProcessor::defaultConf()),
                       support::Conf(
                           PtimeEstimatorFactory::defaultConf(aSubtype)),
-                      false) :
+                      support::Conf("type=grpc,persistence=0.05")) :
                   nullptr)
         , theForwardingTableServer(nullptr)
         , theUtils() {

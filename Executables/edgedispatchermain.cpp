@@ -77,7 +77,6 @@ int main(int argc, char* argv[]) {
     }
 
     const auto myServerImplConf = uiiit::support::Conf(myServerConf);
-    const auto myServerType     = myServerImplConf("type");
 
     ec::EdgeDispatcher myEdgeDispatcher(
         myCli.serverEndpoint(),
@@ -85,14 +84,14 @@ int main(int argc, char* argv[]) {
         myCli.controllerEndpoint(),
         uiiit::support::Conf(myCli.routerConf()),
         uiiit::support::Conf(myPtimeEstimatorConf),
-        myServerType == "quic");
+        myServerImplConf);
 
     std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
 
-    if (myServerType == "grpc") {
+    if (myServerImplConf("type") == "grpc") {
       myServerImpl.reset(new ec::EdgeServerGrpc(
           myEdgeDispatcher, myCli.serverEndpoint(), myCli.numThreads()));
-    } else if (myServerType == "quic") {
+    } else if (myServerImplConf("type") == "quic") {
       myServerImpl.reset(new ec::EdgeServerQuic(
           myEdgeDispatcher,
           ec::QuicParamsBuilder::buildServerHQParams(

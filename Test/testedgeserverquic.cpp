@@ -51,7 +51,7 @@ struct TestEdgeServerQuic : public ::testing::Test {
       : theServerEndpoint("127.0.0.1:10001")
       , theFTServerEndpoint("127.0.0.1:6474")
       , theGrpcClientConf("type=grpc,persistence=0.5")
-      , theQuicClientConf("type=quic,persistence=0.5")
+      , theQuicClientConf("type=quic,attempt-early-data=true")
       , theQuicServerConf("type=quic, h2port=6667") {
   }
 
@@ -77,7 +77,7 @@ TEST_F(TestEdgeServerQuic, test_connection) {
                       support::Conf(EdgeLambdaProcessor::defaultConf()),
                       support::Conf("type=random"),
                       support::Conf("type=trivial,period=10,stat=mean"),
-                      true);
+                      theQuicClientConf);
 
   std::unique_ptr<EdgeServerImpl> myRouterEdgeServerImpl;
   myRouterEdgeServerImpl.reset(

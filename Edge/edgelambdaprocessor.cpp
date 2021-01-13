@@ -48,13 +48,13 @@ EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
                                          const std::string& aCommandsEndpoint,
                                          const std::string& aControllerEndpoint,
                                          const support::Conf& aRouterConf,
-                                         const bool           quicEnabled)
+                                         const support::Conf& aQuicServerConf)
     : EdgeServer(aLambdaEndpoint)
     , theCommandsEndpoint(aCommandsEndpoint)
     , theControllerEndpoint(aControllerEndpoint)
     , theFakeProcessor(aRouterConf.count("fake") > 0 and
                        aRouterConf.getBool("fake"))
-    , theClientPool(quicEnabled, aRouterConf.getUint("max-pending-clients"))
+    , theClientPool(aQuicServerConf, aRouterConf.getUint("max-pending-clients"))
     , theControllerClient(aControllerEndpoint.empty() ?
                               nullptr :
                               new EdgeControllerClient(aControllerEndpoint))
