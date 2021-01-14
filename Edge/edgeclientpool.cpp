@@ -41,11 +41,11 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeClientPool::EdgeClientPool(const support::Conf& aQuicServerConf,
+EdgeClientPool::EdgeClientPool(const support::Conf& aServerConf,
                                const size_t         aMaxClients)
     : theMaxClients(aMaxClients)
     , theMutex()
-    , theQuicServerConf(aQuicServerConf)
+    , theServerConf(aServerConf)
     , thePool() {
 }
 
@@ -90,10 +90,7 @@ EdgeClientPool::getClient(const std::string& aDestination) {
     assert(theMaxClients == 0 or myDesc.theBusy < theMaxClients);
     myDesc.theBusy++;
 
-    // vedere eventualmente come passare attempt-early-data
-    if (theQuicServerConf("type") == "quic")
-      return EdgeClientFactory::make({aDestination}, theQuicServerConf);
-    return EdgeClientFactory::make({aDestination}, theQuicServerConf);
+    return EdgeClientFactory::make({aDestination}, theServerConf);
   }
   assert(not myDesc.theFree.empty());
   std::unique_ptr<EdgeClientInterface> myNewClient;

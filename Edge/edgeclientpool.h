@@ -102,7 +102,7 @@ class EdgeClientPool
  private:
   const size_t                      theMaxClients;
   mutable std::mutex                theMutex;
-  const support::Conf               theQuicServerConf;
+  const support::Conf               theServerConf;
   std::map<std::string, Descriptor> thePool;
 };
 
