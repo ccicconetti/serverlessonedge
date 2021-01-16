@@ -29,30 +29,25 @@ SOFTWARE.
 
 #pragma once
 
-#include <proxygen/httpclient/samples/curl/CurlClient.h>
+#include <folly/io/async/EventBase.h>
+#include <folly/io/async/SSLContext.h>
+#include <fstream>
+#include <proxygen/lib/http/HTTPConnector.h>
+#include <proxygen/lib/http/session/HTTPTransaction.h>
+#include <proxygen/lib/utils/URL.h>
 
 namespace uiiit {
 namespace edge {
 
-/**
- * This class is needed because the CurlClient sample in Proxygen library
- * has not a protected member useful to store the HTTPResponse body returned by
- * the LambdaRequestHandler (the getResponse method returns a
- * proxygen::HTTPMessage that is defined as the message without its body).
- * We need to extend it to provide a member variable in which we can save the
- * body of the response and the related getter method (getResponseBody)
- * The latter returns a folly::IOBUF for the purpose of generality for
- * eventual future extensions not related to LambdaRequest/Response
- */
-class CurlClient final : public CurlService::CurlClient
+// : public CurlService::CurlClient
+class CurlClient final : public proxygen::HTTPConnector::Callback,
+                         public proxygen::HTTPTransactionHandler
 {
  public:
   explicit CurlClient(folly::EventBase*            aEvb,
                       proxygen::HTTPMethod         aHttpMethod,
                       const proxygen::URL&         aUrl,
-                      const proxygen::URL*         aProxy,
                       const proxygen::HTTPHeaders& aHeaders,
-                      const std::string&           aInputFilename,
                       bool                         aH2c               = false,
                       unsigned short               aHttpMajor         = 1,
                       unsigned short               aHttpMinor         = 1,
@@ -60,11 +55,62 @@ class CurlClient final : public CurlService::CurlClient
 
   virtual ~CurlClient() = default;
 
-  void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override;
+  static proxygen::HTTPHeaders parseHeaders(const std::string& headersString);
+
+  // HTTPConnector methods
+  void connectSuccess(proxygen::HTTPUpstreamSession* session) override;
+  void connectError(const folly::AsyncSocketException& ex) override;
+
+  // HTTPTransactionHandler methods
+  void setTransaction(proxygen::HTTPTransaction* txn) noexcept override;
+  void detachTransaction() noexcept override;
+
+  void onHeadersComplete(
+      std::unique_ptr<proxygen::HTTPMessage> msg) noexcept override;
+  void onBody(std::unique_ptr<folly::IOBuf> chain) noexcept override;
+  void
+       onTrailers(std::unique_ptr<proxygen::HTTPHeaders> trailers) noexcept override;
+  void onEOM() noexcept override;
+  void onUpgrade(proxygen::UpgradeProtocol protocol) noexcept override;
+  void onError(const proxygen::HTTPException& error) noexcept override;
+  void onEgressPaused() noexcept override;
+  void onEgressResumed() noexcept override;
+  // void onPushedTransaction(
+  //     proxygen::HTTPTransaction* /* pushedTxn */) noexcept override;
+
+  // void sendRequest(proxygen::HTTPTransaction* txn);
+
+  // Getters
   std::unique_ptr<folly::IOBuf> getResponseBody();
+  // const std::string&            getServerName() const;
+
+  const proxygen::HTTPMessage* getResponse() const {
+    return theResponseHeader.get();
+  }
+  void setEOMFunc(std::function<void()> aEOMFun) {
+    theEOMFun = aEOMFun;
+  }
 
  protected:
-  std::unique_ptr<folly::IOBuf> theResponseBody;
+  // void setupHeaders();
+
+  proxygen::HTTPTransaction* theTxn{nullptr};
+  folly::EventBase*          theEvb{nullptr};
+  bool                       theEgressPaused{false};
+  proxygen::HTTPMethod       theHttpMethod;
+  proxygen::URL              theUrl;
+  proxygen::HTTPMessage      theRequest;
+  int32_t                    theRecvWindow{65536};
+
+  bool           theH2c{false};
+  unsigned short theHttpMajor;
+  unsigned short theHttpMinor;
+  bool           thePartiallyReliable{false};
+
+  std::unique_ptr<proxygen::HTTPMessage> theResponseHeader;
+  std::unique_ptr<folly::IOBuf>          theResponseBody;
+
+  folly::Optional<std::function<void()>> theEOMFun;
 };
 
 } // namespace edge
