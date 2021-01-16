@@ -51,7 +51,6 @@ class LambdaRequestHandler : public BaseHandler
   void onHeadersComplete(
       std::unique_ptr<proxygen::HTTPMessage> aMsg) noexcept override {
     VLOG(1) << "LambdaRequestHandler::onHeadersComplete";
-    VLOG(1) << "Setting http-version to " << getHttpVersion();
 
     theResponse.setVersionString(getHttpVersion());
     theResponse.setWantsKeepalive(true);
@@ -66,20 +65,29 @@ class LambdaRequestHandler : public BaseHandler
     myProtobufLambdaReq.ParseFromArray(aChain->data(), aChain->length());
 
     // useful for debugging
-    if (VLOG_IS_ON(2)) {
-      LambdaRequest myLambdaReq(myProtobufLambdaReq);
-      LOG(INFO) << "LambdaRequest Received = \n" << myLambdaReq.toString();
-    }
+    // if (VLOG_IS_ON(2)) {
+    // LambdaRequest myLambdaReq(myProtobufLambdaReq);
+    // LOG(INFO) << "LambdaRequest Received = " << myLambdaReq.toString();
+    //}
+
+    theRequestBody = std::make_unique<rpc::LambdaRequest>(myProtobufLambdaReq);
+  }
+
+  void onEOM() noexcept override {
+    VLOG(1) << "LambdaRequestHandler::onEOM";
 
     // actual LambdaRequest processing
+    // rpc::LambdaResponse myProtobufLambdaResp =
+    //     theEdgeServer.process(myProtobufLambdaReq);
     rpc::LambdaResponse myProtobufLambdaResp =
-        theEdgeServer.process(myProtobufLambdaReq);
+        theEdgeServer.process(*theRequestBody);
 
     // building of the LambdaResponse in order to check for theRetCode and
     // set the HTTPMessage theStatusCode and theStatusMessage according to
     // it
     LambdaResponse myLambdaResp(myProtobufLambdaResp);
-    VLOG(2) << "LambdaResponse Produced = \n" << myLambdaResp.toString();
+    // VLOG(2) << "LambdaResponse Produced = " << myLambdaResp.toString();
+    // LOG(INFO) << "LambdaResponse Produced = " << myLambdaResp.toString();
 
     if (myLambdaResp.theRetCode == std::string("OK")) {
       theResponse.setStatusCode(200);
@@ -91,7 +99,6 @@ class LambdaRequestHandler : public BaseHandler
     theTransaction->sendHeaders(theResponse);
 
     if (myLambdaResp.theResponder.empty()) {
-      VLOG(1) << "theResponder = " << myLambdaResp.theResponder;
       myProtobufLambdaResp.set_responder(theResponder);
     }
 
@@ -101,11 +108,10 @@ class LambdaRequestHandler : public BaseHandler
     myProtobufLambdaResp.SerializeToArray(buffer, size);
     auto buf = folly::IOBuf::copyBuffer(buffer, size);
     theTransaction->sendBody(std::move(buf));
-  }
+    LOG(INFO) << "LRH::BodySent";
 
-  void onEOM() noexcept override {
-    VLOG(1) << "LambdaRequestHandler::onEOM";
     theTransaction->sendEOM();
+    LOG(INFO) << "LRH::EOMSent";
   }
 
   // when is this callback called? does it need to send an HTTPResponse with
@@ -115,9 +121,10 @@ class LambdaRequestHandler : public BaseHandler
   }
 
  private:
-  EdgeServerQuic&       theEdgeServer;
-  proxygen::HTTPMessage theResponse;
-  const std::string     theResponder;
+  EdgeServerQuic&                     theEdgeServer;
+  proxygen::HTTPMessage               theResponse;
+  const std::string                   theResponder;
+  std::unique_ptr<rpc::LambdaRequest> theRequestBody;
 };
 
 } // namespace edge

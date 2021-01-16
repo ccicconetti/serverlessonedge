@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
+#include "Quic/curlclient.h"
 #include "Quic/quicparamsbuilder.h"
 
 #include <proxygen/httpclient/samples/curl/CurlClient.h>
@@ -81,11 +82,11 @@ class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
   FizzClientContextPtr createFizzClientContext(const HQParams& aQuicParamsConf);
 
   const HQParams                             theQuicParamsConf;
-  std::thread                                theQuicClientEvbThread;
   std::shared_ptr<quic::QuicClientTransport> theQuicClient;
   folly::EventBase                           theEvb;
   proxygen::HQUpstreamSession*               theSession;
   std::deque<folly::StringPiece>             theHttpPaths;
+  std::unique_ptr<CurlClient>                theCurlClient;
 
 }; // end class EdgeClientQuic
 

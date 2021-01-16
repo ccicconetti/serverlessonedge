@@ -29,8 +29,6 @@ SOFTWARE.
 
 #include "edgeclientquic.h"
 
-#include "Quic/curlclient.h"
-
 #include <fizz/protocol/CertificateVerifier.h>
 #include <fizz/server/AeadTicketCipher.h>
 #include <fizz/server/CertManager.h>
@@ -160,7 +158,6 @@ EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
     : EdgeClientInterface()
     , theQuicParamsConf(aQuicParamsConf) {
   VLOG(1) << "EdgeClientQuic::ctor";
-  initializeClient();
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
@@ -210,6 +207,14 @@ void EdgeClientQuic::connectError(
   VLOG(1) << "EdgeClientQuic::connectError";
   LOG(ERROR) << "EdgeClientQuic failed to connect, Error="
              << toString(aError.first) << ", msg=" << aError.second;
+
+  // clean EdgeClientQuic in order to retry to connect
+  if (!theHttpPaths.empty())
+    theHttpPaths.erase(theHttpPaths.end());
+  if (theCurlClient) {
+    theCurlClient.reset(nullptr);
+  }
+
   theEvb.terminateLoopSoon();
 }
 
@@ -283,6 +288,7 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   // succeeded, so the the connectError callback has been called
   if (theHttpPaths.empty()) {
     VLOG(1) << "EdgeClientQuic::RunLambda First Check";
+    initializeClient();
     startClient();
   }
   // if the connectError callback has been invoked
@@ -299,26 +305,32 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     initializeClient();
 
   } else { // if the connectSuccess callback has been invoked
+    if (!theCurlClient) {
+      theCurlClient = std::make_unique<CurlClient>(
+          &theEvb,
+          proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
+          proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
+          // nullptr,
+          theQuicParamsConf.httpHeaders,
+          //"", theQuicParamsConf.httpBody,
+          false,
+          theQuicParamsConf.httpVersion.major,
+          theQuicParamsConf.httpVersion.minor);
 
-    std::unique_ptr<CurlClient> myClient = std::make_unique<CurlClient>(
-        &theEvb,
-        proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
-        proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
-        nullptr,
-        theQuicParamsConf.httpHeaders,
-        "", // theQuicParamsConf.httpBody,
-        false,
-        theQuicParamsConf.httpVersion.major,
-        theQuicParamsConf.httpVersion.minor);
+      // set the onEOM() callback function
+      onEOMTerminateLoop = [&]() {
+        LOG(INFO) << "CurlClient::onEOM";
+        theEvb.terminateLoopSoon();
+      };
+      theCurlClient->setEOMFunc(onEOMTerminateLoop);
+    }
 
-    // set the onEOM() callback function
-    onEOMTerminateLoop = [&]() { theEvb.terminateLoopSoon(); };
-    myClient->setEOMFunc(onEOMTerminateLoop);
-    myClient->setLogging(false);
+    auto myTransaction = theSession->newTransaction(theCurlClient.get());
 
-    auto myTransaction = theSession->newTransaction(myClient.get());
     if (!myTransaction) {
       std::runtime_error("Failed to create an HTTPTRansaction\n");
+      // instead of this produce and erroneous LambdaResponse and clean the
+      // edgeClient in order to retry to connect
     }
 
     // build manually the HTTP Request message
@@ -333,18 +345,21 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     // put the serialized LambdaRequest in the body
     auto myProtobufLambdaReq = aReq.toProtobuf();
     myProtobufLambdaReq.set_dry(aDry);
+
     size_t mySize   = myProtobufLambdaReq.ByteSizeLong();
     void*  myBuffer = malloc(mySize);
     myProtobufLambdaReq.SerializeToArray(myBuffer, mySize);
     auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
+
     myTransaction->sendBody(std::move(myIOBuf));
     myTransaction->sendEOM();
 
     // blocking, will exit when the Response will be received
+    // only after onEom will process the lambda response
     theEvb.loopForever();
 
     // new method which extends the proxygen::CurlClient sample
-    auto myResponseBody = myClient->getResponseBody();
+    auto myResponseBody = theCurlClient->getResponseBody();
 
     // LambdaResponse building after deserialization of the body of the
     // response
@@ -352,6 +367,11 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     myProtobufLambdaRes.ParseFromArray(myResponseBody->data(),
                                        myResponseBody->length());
     myLambdaRes.reset(new LambdaResponse(myProtobufLambdaRes));
+
+    if (myLambdaRes->theRetCode != "OK") {
+      theCurlClient.reset(nullptr);
+      theHttpPaths.erase(theHttpPaths.end());
+    }
   }
   return *myLambdaRes;
 }
