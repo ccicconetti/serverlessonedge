@@ -302,57 +302,24 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
 
     // when the connectError callback is called, theSession is lost so we need
     // to recreate it otherwise the next startclient will produce a seg fault
-    initializeClient();
+    // initializeClient();
 
   } else { // if the connectSuccess callback has been invoked
-    if (!theCurlClient) {
-      theCurlClient = std::make_unique<CurlClient>(
-          &theEvb,
-          proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
-          proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
-          // nullptr,
-          theQuicParamsConf.httpHeaders,
-          //"", theQuicParamsConf.httpBody,
-          false,
-          theQuicParamsConf.httpVersion.major,
-          theQuicParamsConf.httpVersion.minor);
-
-      // set the onEOM() callback function
-      onEOMTerminateLoop = [&]() {
-        LOG(INFO) << "CurlClient::onEOM";
-        theEvb.terminateLoopSoon();
-      };
-      theCurlClient->setEOMFunc(onEOMTerminateLoop);
-    }
-
-    auto myTransaction = theSession->newTransaction(theCurlClient.get());
-
-    if (!myTransaction) {
-      std::runtime_error("Failed to create an HTTPTRansaction\n");
-      // instead of this produce and erroneous LambdaResponse and clean the
-      // edgeClient in order to retry to connect
-    }
-
-    // build manually the HTTP Request message
-    proxygen::HTTPMessage myHttpRequestMessage;
-    myHttpRequestMessage.setMethod("POST");
-    myHttpRequestMessage.setURL(theHttpPaths.front().str());
-    myHttpRequestMessage.setVersionString(
-        theQuicParamsConf.httpVersion.canonical);
-    myHttpRequestMessage.setIsChunked(true);
-    myTransaction->sendHeaders(myHttpRequestMessage);
-
-    // put the serialized LambdaRequest in the body
     auto myProtobufLambdaReq = aReq.toProtobuf();
     myProtobufLambdaReq.set_dry(aDry);
 
-    size_t mySize   = myProtobufLambdaReq.ByteSizeLong();
-    void*  myBuffer = malloc(mySize);
-    myProtobufLambdaReq.SerializeToArray(myBuffer, mySize);
-    auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
+    theCurlClient = std::make_unique<CurlClient>(
+        &theEvb,
+        proxygen::HTTPMethod::POST, // theQuicParamsConf.httpMethod
+        proxygen::URL(theQuicParamsConf.httpPaths.front().str()),
+        theQuicParamsConf.httpHeaders,
+        myProtobufLambdaReq, // theQuicParamsConf.httpBody,
+        false,
+        theQuicParamsConf.httpVersion.major,
+        theQuicParamsConf.httpVersion.minor);
 
-    myTransaction->sendBody(std::move(myIOBuf));
-    myTransaction->sendEOM();
+    auto myTransaction = theSession->newTransaction(theCurlClient.get());
+    theCurlClient->sendRequest(myTransaction);
 
     // blocking, will exit when the Response will be received
     // only after onEom will process the lambda response

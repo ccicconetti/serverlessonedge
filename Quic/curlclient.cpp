@@ -38,68 +38,68 @@ CurlClient::CurlClient(folly::EventBase*            aEvb,
                        proxygen::HTTPMethod         aHttpMethod,
                        const proxygen::URL&         aUrl,
                        const proxygen::HTTPHeaders& aHeaders,
+                       const rpc::LambdaRequest     aLambdaRequest,
                        bool                         aH2c,
                        unsigned short               aHttpMajor,
-                       unsigned short               aHttpMinor,
-                       bool                         aPartiallyReliable) {
+                       unsigned short               aHttpMinor)
+    : theEvb(aEvb)
+    , theHttpMethod(aHttpMethod)
+    , theUrl(aUrl)
+    , theLambdaRequest(aLambdaRequest)
+    , theH2c(aH2c)
+    , theHttpMajor(aHttpMajor)
+    , theHttpMinor(aHttpMinor) {
   VLOG(1) << "CurlClient::ctor";
 }
 
-// proxygen::HTTPHeaders
-// CurlClient::parseHeaders(const std::string& headersString) {
-//   std::vector<folly::StringPiece> headersList;
-//   proxygen::HTTPHeaders           headers;
-//   folly::split(",", headersString, headersList);
-//   for (const auto& headerPair : headersList) {
-//     std::vector<folly::StringPiece> nv;
-//     folly::split('=', headerPair, nv);
-//     if (nv.size() > 0) {
-//       if (nv[0].empty()) {
-//         continue;
-//       }
-//       std::string value("");
-//       for (size_t i = 1; i < nv.size(); i++) {
-//         value += folly::to<std::string>(nv[i], '=');
-//       }
-//       if (nv.size() > 1) {
-//         value.pop_back();
-//       } // trim anything else
-//       headers.add(nv[0], value);
-//     }
-//   }
-//   return headers;
-// }
-
-void CurlClient::connectSuccess(proxygen::HTTPUpstreamSession* session) {
+void CurlClient::connectSuccess(proxygen::HTTPUpstreamSession* aSession) {
   LOG(INFO) << "CurlClient::ConnectSuccess";
-  session->setFlowControl(theRecvWindow, theRecvWindow, theRecvWindow);
-  // sendRequest(session->newTransaction(this));
-  // session->closeWhenIdle();
+
+  aSession->setFlowControl(theRecvWindow, theRecvWindow, theRecvWindow);
+  // sendRequest(aSession->newTransaction(this));
+  // aSession->closeWhenIdle();
 }
 
-/*
-void CurlClient::sendRequest(HTTPTransaction* txn) {
-  txn_ = txn;
-  setupHeaders();
-  txn_->sendHeaders(request_);
+void CurlClient::setupHeaders() {
+  theRequestHTTPMessage.setMethod(theHttpMethod);
+  theRequestHTTPMessage.setHTTPVersion(1, 1);
 
-  if (httpMethod_ == HTTPMethod::POST) {
-    inputFile_ =
-        std::make_unique<ifstream>(inputFilename_, ios::in | ios::binary);
-    while (inputFile_->good() && !egressPaused_) {
-    unique_ptr<IOBuf> buf = IOBuf::createCombined(kReadSize);
-    inputFile_->read((char*)buf->writableData(), kReadSize);
-    buf->append(inputFile_->gcount());
-    txn_->sendBody(move(buf));
-    }
-    if (!egressPaused_) {
-      txn_->sendEOM();
-    }
-  } else {
-    txn_->sendEOM();
+  theRequestHTTPMessage.setURL(theUrl.makeRelativeURL());
+  theRequestHTTPMessage.setSecure(theUrl.isSecure());
+
+  if (!theRequestHTTPMessage.getHeaders().getNumberOfValues(
+          proxygen::HTTP_HEADER_USER_AGENT)) {
+    theRequestHTTPMessage.getHeaders().add(proxygen::HTTP_HEADER_USER_AGENT,
+                                           "proxygen_curl");
+  }
+  if (!theRequestHTTPMessage.getHeaders().getNumberOfValues(
+          proxygen::HTTP_HEADER_HOST)) {
+    theRequestHTTPMessage.getHeaders().add(proxygen::HTTP_HEADER_HOST,
+                                           theUrl.getHostAndPort());
+  }
+  if (!theRequestHTTPMessage.getHeaders().getNumberOfValues(
+          proxygen::HTTP_HEADER_ACCEPT)) {
+    theRequestHTTPMessage.getHeaders().add("Accept", "*/*");
   }
 }
-*/
+
+void CurlClient::sendRequest(proxygen::HTTPTransaction* aTxn) {
+  LOG(INFO) << "CurlClient::sendRequest";
+  theTxn = aTxn;
+  setupHeaders();
+  theRequestHTTPMessage.setIsChunked(true);
+  theTxn->sendHeaders(theRequestHTTPMessage);
+
+  size_t mySize   = theLambdaRequest.ByteSizeLong();
+  void*  myBuffer = malloc(mySize);
+  theLambdaRequest.SerializeToArray(myBuffer, mySize);
+  auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
+  theTxn->sendBody(std::move(myIOBuf));
+
+  if (!theEgressPaused) {
+    theTxn->sendEOM();
+  }
+} // namespace edge
 
 void CurlClient::connectError(const folly::AsyncSocketException& aEx) {
   LOG(ERROR) << "Coudln't connect to " << theUrl.getHostAndPort() << ":"
@@ -130,9 +130,7 @@ void CurlClient::onTrailers(std::unique_ptr<proxygen::HTTPHeaders>) noexcept {
 
 void CurlClient::onEOM() noexcept {
   LOG(INFO) << "CurlClient::onEOM";
-  if (theEOMFun) {
-    theEOMFun.value()();
-  }
+  theEvb->terminateLoopSoon();
 }
 
 void CurlClient::onUpgrade(proxygen::UpgradeProtocol) noexcept {

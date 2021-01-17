@@ -29,6 +29,8 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/edgemessages.h"
+
 #include <folly/io/async/EventBase.h>
 #include <folly/io/async/SSLContext.h>
 #include <fstream>
@@ -48,10 +50,10 @@ class CurlClient final : public proxygen::HTTPConnector::Callback,
                       proxygen::HTTPMethod         aHttpMethod,
                       const proxygen::URL&         aUrl,
                       const proxygen::HTTPHeaders& aHeaders,
-                      bool                         aH2c               = false,
-                      unsigned short               aHttpMajor         = 1,
-                      unsigned short               aHttpMinor         = 1,
-                      bool                         aPartiallyReliable = false);
+                      const rpc::LambdaRequest     aLambdaRequest,
+                      bool                         aH2c       = false,
+                      unsigned short               aHttpMajor = 1,
+                      unsigned short               aHttpMinor = 1);
 
   virtual ~CurlClient() = default;
 
@@ -78,7 +80,7 @@ class CurlClient final : public proxygen::HTTPConnector::Callback,
   // void onPushedTransaction(
   //     proxygen::HTTPTransaction* /* pushedTxn */) noexcept override;
 
-  // void sendRequest(proxygen::HTTPTransaction* txn);
+  void sendRequest(proxygen::HTTPTransaction* txn);
 
   // Getters
   std::unique_ptr<folly::IOBuf> getResponseBody();
@@ -92,14 +94,15 @@ class CurlClient final : public proxygen::HTTPConnector::Callback,
   }
 
  protected:
-  // void setupHeaders();
+  void setupHeaders();
 
   proxygen::HTTPTransaction* theTxn{nullptr};
   folly::EventBase*          theEvb{nullptr};
   bool                       theEgressPaused{false};
   proxygen::HTTPMethod       theHttpMethod;
   proxygen::URL              theUrl;
-  proxygen::HTTPMessage      theRequest;
+  proxygen::HTTPMessage      theRequestHTTPMessage;
+  const rpc::LambdaRequest   theLambdaRequest;
   int32_t                    theRecvWindow{65536};
 
   bool           theH2c{false};
