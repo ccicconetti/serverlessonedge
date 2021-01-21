@@ -123,5 +123,9 @@ FizzServerContextPtr createFizzServerContext(const HQParams& aQuicParamsConf) {
   return myServerCtx;
 }
 
+void HQServer::run() {
+  theEvb.loopForever();
+}
+
 } // namespace edge
 } // namespace uiiit

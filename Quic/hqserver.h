@@ -176,14 +176,15 @@ class HQServer
   //! starts the Quic transport in background thread
   void start(size_t aNumberOfThreads);
 
+  void run();
+
   //! stops the Quic transport server in background thread
   void stop();
-
-  folly::EventBase theEvb;
 
  private:
   const HQParams&                   theQuicParamsConf;
   std::shared_ptr<quic::QuicServer> theQuicServer;
+  folly::EventBase                  theEvb;
   folly::Baton<>                    theCv;
 };
 
