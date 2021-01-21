@@ -270,11 +270,10 @@ EdgeClientQuic::createFizzClientContext(const HQParams& aQuicParamsConf) {
   return ctx;
 }
 
-static std::function<void()> onEOMTerminateLoop;
-
 LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
   VLOG(1) << "EdgeClientQuic::RunLambda";
+
   std::unique_ptr<LambdaResponse> myLambdaRes;
   // the following check is needed in order to verify if the connectSuccess()
   // callback has been invoked. The call to the connectSuccess() callback
@@ -312,7 +311,9 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
         theQuicParamsConf.httpVersion.minor);
 
     // set the onEOM() callback function
-    onEOMTerminateLoop = [&]() { theEvb.terminateLoopSoon(); };
+    std::function<void()> onEOMTerminateLoop = [&]() {
+      theEvb.terminateLoopSoon();
+    };
     myClient->setEOMFunc(onEOMTerminateLoop);
     myClient->setLogging(false);
 
@@ -336,8 +337,19 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     size_t mySize   = myProtobufLambdaReq.ByteSizeLong();
     void*  myBuffer = malloc(mySize);
     myProtobufLambdaReq.SerializeToArray(myBuffer, mySize);
+
+    // auto buf = folly::IOBuf::createCombined(mySize);
+    // memcpy(buf->writableData(), myBuffer, mySize);
+    // buf->append(mySize);
+    // myTransaction->sendBody(std::move(buf));
+
     auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
+
+    LambdaRequest myReq = LambdaRequest(myProtobufLambdaReq);
+    LOG(INFO) << "sending LambdaRequest: " << myReq.toString();
+
     myTransaction->sendBody(std::move(myIOBuf));
+
     myTransaction->sendEOM();
 
     // blocking, will exit when the Response will be received
