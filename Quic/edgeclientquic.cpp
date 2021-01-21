@@ -160,7 +160,6 @@ EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
     : EdgeClientInterface()
     , theQuicParamsConf(aQuicParamsConf) {
   VLOG(1) << "EdgeClientQuic::ctor";
-  initializeClient();
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
@@ -282,6 +281,7 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   // succeeded, so the the connectError callback has been called
   if (theHttpPaths.empty()) {
     VLOG(1) << "EdgeClientQuic::RunLambda First Check";
+    initializeClient();
     startClient();
   }
   // if the connectError callback has been invoked
@@ -311,10 +311,11 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
         theQuicParamsConf.httpVersion.minor);
 
     // set the onEOM() callback function
-    std::function<void()> onEOMTerminateLoop = [&]() {
-      theEvb.terminateLoopSoon();
-    };
-    myClient->setEOMFunc(onEOMTerminateLoop);
+    // std::function<void()> onEOMTerminateLoop = [&]() {
+    //   theEvb.terminateLoopSoon();
+    // };
+    // myClient->setEOMFunc(onEOMTerminateLoop);
+
     myClient->setLogging(false);
 
     auto myTransaction = theSession->newTransaction(myClient.get());
@@ -352,7 +353,7 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
 
     myTransaction->sendEOM();
 
-    // blocking, will exit when the Response will be received
+    // blocking, will exit when the entire response will be received
     theEvb.loopForever();
 
     // new method which extends the proxygen::CurlClient sample
@@ -361,8 +362,11 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     // LambdaResponse building after deserialization of the body of the
     // response
     rpc::LambdaResponse myProtobufLambdaRes;
-    myProtobufLambdaRes.ParseFromArray(myResponseBody->data(),
-                                       myResponseBody->length());
+    // myProtobufLambdaRes.ParseFromArray(myResponseBody->data(),
+    //                                    myResponseBody->length());
+    myProtobufLambdaRes.ParseFromArray(myResponseBody.data(),
+                                       myResponseBody.size());
+
     myLambdaRes.reset(new LambdaResponse(myProtobufLambdaRes));
   }
   return *myLambdaRes;

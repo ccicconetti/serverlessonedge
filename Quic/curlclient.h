@@ -61,10 +61,14 @@ class CurlClient final : public CurlService::CurlClient
   virtual ~CurlClient() = default;
 
   void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override;
-  std::unique_ptr<folly::IOBuf> getResponseBody();
+  // std::unique_ptr<folly::IOBuf> getResponseBody();
+  folly::ByteRange getResponseBody();
+
+  void onEOM() noexcept override;
 
  protected:
-  std::unique_ptr<folly::IOBuf> theResponseBody;
+  std::unique_ptr<folly::IOBuf> theResponseBodyChain;
+  folly::ByteRange              theResponseBody;
 };
 
 } // namespace edge

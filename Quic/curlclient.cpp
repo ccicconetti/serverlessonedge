@@ -56,13 +56,24 @@ CurlClient::CurlClient(folly::EventBase*            aEvb,
 }
 
 void CurlClient::onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept {
-  VLOG(1) << "CurlClient::onBody()";
-  theResponseBody = std::move(aChain);
+  VLOG(1) << "CurlClient::onBody";
+  if (theResponseBodyChain) {
+    theResponseBodyChain->prependChain(std::move(aChain));
+  } else {
+    theResponseBodyChain = std::move(aChain);
+  }
 }
 
-std::unique_ptr<folly::IOBuf> CurlClient::getResponseBody() {
-  VLOG(1) << "CurlClient::getResponseBody()";
+// std::unique_ptr<folly::IOBuf> CurlClient::getResponseBody() {
+folly::ByteRange CurlClient::getResponseBody() {
+  VLOG(1) << "CurlClient::getResponseBody";
   return std::move(theResponseBody);
+}
+
+void CurlClient::onEOM() noexcept {
+  VLOG(1) << "CurlClient::onEOM";
+  theResponseBody = theResponseBodyChain->coalesce();
+  evb_->terminateLoopSoon();
 }
 
 } // namespace edge
