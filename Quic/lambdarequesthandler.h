@@ -61,15 +61,38 @@ class LambdaRequestHandler : public BaseHandler
   void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override {
     VLOG(1) << "LambdaRequestHandler::onBody";
 
-    // converting the folly::IOBuf in a rpc::LambdaRequest
+    if (theRequestBody) {
+      theRequestBody->prependChain(std::move(aChain));
+    } else {
+      theRequestBody = std::move(aChain);
+    }
+  }
+
+  void onEOM() noexcept override {
+    VLOG(1) << "LambdaRequestHandler::onEOM";
+
+    // void* myBuf = malloc(theRequestBody->computeChainDataLength());
+    // memcpy(myBuf,
+    //        theRequestBody->data(),
+    //        theRequestBody->computeChainDataLength());
+    // myProtobufLambdaReq.ParseFromArray(
+    //     myBuf, theRequestBody->computeChainDataLength());
+    // rpc::LambdaRequest myProtobufLambdaReq;
+    // myProtobufLambdaReq.ParseFromArray(theRequestBody->data(),
+    //                                    theRequestBody->length());
+
+    // converting the folly::IOBuf Chain in a rpc::LambdaRequest
+    auto coalescedIOBuf = theRequestBody->coalesce();
+
     rpc::LambdaRequest myProtobufLambdaReq;
-    myProtobufLambdaReq.ParseFromArray(aChain->data(), aChain->length());
+    myProtobufLambdaReq.ParseFromArray(coalescedIOBuf.data(),
+                                       coalescedIOBuf.size());
 
     // useful for debugging
-    if (VLOG_IS_ON(2)) {
-      LambdaRequest myLambdaReq(myProtobufLambdaReq);
-      LOG(INFO) << "LambdaRequest Received = \n" << myLambdaReq.toString();
-    }
+    // if (VLOG_IS_ON(2)) {
+    LambdaRequest myLambdaReq(myProtobufLambdaReq);
+    LOG(INFO) << "LambdaRequest Received = " << myLambdaReq.toString();
+    //}
 
     // actual LambdaRequest processing
     rpc::LambdaResponse myProtobufLambdaResp =
@@ -79,7 +102,7 @@ class LambdaRequestHandler : public BaseHandler
     // set the HTTPMessage theStatusCode and theStatusMessage according to
     // it
     LambdaResponse myLambdaResp(myProtobufLambdaResp);
-    VLOG(2) << "LambdaResponse Produced = \n" << myLambdaResp.toString();
+    LOG(INFO) << "LambdaResponse Produced = " << myLambdaResp.toString();
 
     if (myLambdaResp.theRetCode == std::string("OK")) {
       theResponse.setStatusCode(200);
@@ -101,11 +124,10 @@ class LambdaRequestHandler : public BaseHandler
     myProtobufLambdaResp.SerializeToArray(buffer, size);
     auto buf = folly::IOBuf::copyBuffer(buffer, size);
     theTransaction->sendBody(std::move(buf));
-  }
+    LOG(INFO) << "LRH Body sent";
 
-  void onEOM() noexcept override {
-    VLOG(1) << "LambdaRequestHandler::onEOM";
     theTransaction->sendEOM();
+    LOG(INFO) << "LRH EOM sent";
   }
 
   // when is this callback called? does it need to send an HTTPResponse with
@@ -115,9 +137,10 @@ class LambdaRequestHandler : public BaseHandler
   }
 
  private:
-  EdgeServerQuic&       theEdgeServer;
-  proxygen::HTTPMessage theResponse;
-  const std::string     theResponder;
+  EdgeServerQuic&               theEdgeServer;
+  proxygen::HTTPMessage         theResponse;
+  const std::string             theResponder;
+  std::unique_ptr<folly::IOBuf> theRequestBody;
 };
 
 } // namespace edge
