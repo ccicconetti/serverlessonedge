@@ -27,8 +27,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "Edge/composer.h"
+#include "Edge/edgecomputer.h"
+#include "Edge/edgecomputerserver.h"
 #include "Edge/edgelambdaprocessoroptions.h"
-#include "Edge/edgerouter.h"
 #include "Edge/edgeserverimpl.h"
 #include "Quic/edgeclientquic.h"
 #include "Quic/edgeserverquic.h"
@@ -48,15 +50,18 @@ namespace edge {
 struct TestEdgeServerQuic : public ::testing::Test {
 
   TestEdgeServerQuic()
-      : theServerEndpoint("127.0.0.1:10001")
-      , theFTServerEndpoint("127.0.0.1:6474")
+      : theServerEndpoint("127.0.0.1:10000")
+      , theUtilEndpoint("127.0.0.1:20000")
+      , theComposerConf("type=raspberry,num-cpu-containers=1,num-cpu-workers=4,"
+                        "num-gpu-containers=1,num-gpu-workers=2")
       , theGrpcClientConf("type=grpc,persistence=0.5")
       , theQuicClientConf("type=quic,attempt-early-data=true")
       , theQuicServerConf("type=quic, h2port=6667") {
   }
 
   const std::string   theServerEndpoint;
-  const std::string   theFTServerEndpoint;
+  const std::string   theUtilEndpoint;
+  const support::Conf theComposerConf;
   const support::Conf theGrpcClientConf;
   const support::Conf theQuicClientConf;
   const support::Conf theQuicServerConf;
@@ -71,26 +76,31 @@ TEST_F(TestEdgeServerQuic, test_buildparam) {
 
 TEST_F(TestEdgeServerQuic, test_connection) {
 
-  EdgeRouter myRouter(theServerEndpoint,
-                      theFTServerEndpoint,
-                      "",
-                      support::Conf(EdgeLambdaProcessor::defaultConf()),
-                      support::Conf("type=random"),
-                      support::Conf("type=trivial,period=10,stat=mean"),
-                      theQuicClientConf);
+  Computer::UtilCallback              myUtilCallback;
+  std::unique_ptr<EdgeComputerServer> myUtilServer;
 
-  std::unique_ptr<EdgeServerImpl> myRouterEdgeServerImpl;
-  myRouterEdgeServerImpl.reset(
-      new EdgeServerQuic(myRouter,
+  myUtilServer.reset(new EdgeComputerServer(theUtilEndpoint));
+  myUtilCallback = [&myUtilServer](const std::map<std::string, double>& aUtil) {
+    myUtilServer->add(aUtil);
+  };
+  myUtilServer->run(false); // non-blocking
+
+  EdgeComputer myComputer(theServerEndpoint, myUtilCallback);
+  Composer()(theComposerConf, myComputer.computer());
+
+  std::unique_ptr<EdgeServerImpl> myComputerServerImpl;
+  myComputerServerImpl.reset(
+      new EdgeServerQuic(myComputer,
                          QuicParamsBuilder::buildServerHQParams(
-                             theQuicServerConf, theServerEndpoint, 1)));
-
-  myRouterEdgeServerImpl->run();
+                             theQuicServerConf, theServerEndpoint, 5)));
+  myComputerServerImpl->run();
 
   EdgeClientQuic myClient(QuicParamsBuilder::buildClientHQParams(
       theQuicClientConf, theServerEndpoint));
 
-  LambdaRequest  myReq("clambda0", std::string(50, 'A'));
+  LambdaRequest myReq(
+      "clambda0",
+      std::string(10000, 'A')); //<<<< change sizes of LambdaRequest input
   LambdaResponse myResp = myClient.RunLambda(myReq, false);
 
   LOG(INFO) << myResp.toString();
