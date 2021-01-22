@@ -71,16 +71,6 @@ class LambdaRequestHandler : public BaseHandler
   void onEOM() noexcept override {
     VLOG(1) << "LambdaRequestHandler::onEOM";
 
-    // void* myBuf = malloc(theRequestBody->computeChainDataLength());
-    // memcpy(myBuf,
-    //        theRequestBody->data(),
-    //        theRequestBody->computeChainDataLength());
-    // myProtobufLambdaReq.ParseFromArray(
-    //     myBuf, theRequestBody->computeChainDataLength());
-    // rpc::LambdaRequest myProtobufLambdaReq;
-    // myProtobufLambdaReq.ParseFromArray(theRequestBody->data(),
-    //                                    theRequestBody->length());
-
     // converting the folly::IOBuf Chain in a rpc::LambdaRequest
     auto coalescedIOBuf = theRequestBody->coalesce();
 
@@ -89,18 +79,16 @@ class LambdaRequestHandler : public BaseHandler
                                        coalescedIOBuf.size());
 
     // useful for debugging
-    // if (VLOG_IS_ON(2)) {
-    LambdaRequest myLambdaReq(myProtobufLambdaReq);
-    LOG(INFO) << "LambdaRequest Received = " << myLambdaReq.toString();
-    //}
+    if (VLOG_IS_ON(2)) {
+      LambdaRequest myLambdaReq(myProtobufLambdaReq);
+      LOG(INFO) << "LambdaRequest Received = " << myLambdaReq.toString();
+    }
 
     // actual LambdaRequest processing
     rpc::LambdaResponse myProtobufLambdaResp =
         theEdgeServer.process(myProtobufLambdaReq);
 
-    // building of the LambdaResponse in order to check for theRetCode and
-    // set the HTTPMessage theStatusCode and theStatusMessage according to
-    // it
+    // building of the LambdaResponse
     LambdaResponse myLambdaResp(myProtobufLambdaResp);
     LOG(INFO) << "LambdaResponse Produced = " << myLambdaResp.toString();
 
@@ -126,21 +114,33 @@ class LambdaRequestHandler : public BaseHandler
     theTransaction->sendBody(std::move(buf));
     LOG(INFO) << "LRH Body sent";
 
+    // if (theEgressPausedFlag) {
     theTransaction->sendEOM();
+    //}
     LOG(INFO) << "LRH EOM sent";
   }
 
-  // when is this callback called? does it need to send an HTTPResponse with
-  // error status?
   void onError(const proxygen::HTTPException& /*error*/) noexcept override {
+    LOG(ERROR) << "LambdaRequestHandler::onError";
     theTransaction->sendAbort();
   }
+
+  // void onEgressPaused() noexcept override {
+  //   LOG(INFO) << "CurlClient::onEgressPaused";
+  //   theEgressPausedFlag = true;
+  // }
+
+  // void onEgressResumed() noexcept override {
+  //   LOG(INFO) << "CurlClient::onEgressResumed";
+  //   theEgressPausedFlag = false;
+  // }
 
  private:
   EdgeServerQuic&               theEdgeServer;
   proxygen::HTTPMessage         theResponse;
   const std::string             theResponder;
   std::unique_ptr<folly::IOBuf> theRequestBody;
+  // bool                          theEgressPausedFlag{false};
 };
 
 } // namespace edge

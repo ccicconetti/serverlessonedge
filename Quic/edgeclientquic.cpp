@@ -310,12 +310,6 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
         theQuicParamsConf.httpVersion.major,
         theQuicParamsConf.httpVersion.minor);
 
-    // set the onEOM() callback function
-    // std::function<void()> onEOMTerminateLoop = [&]() {
-    //   theEvb.terminateLoopSoon();
-    // };
-    // myClient->setEOMFunc(onEOMTerminateLoop);
-
     myClient->setLogging(false);
 
     auto myTransaction = theSession->newTransaction(myClient.get());
@@ -339,31 +333,25 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     void*  myBuffer = malloc(mySize);
     myProtobufLambdaReq.SerializeToArray(myBuffer, mySize);
 
-    // auto buf = folly::IOBuf::createCombined(mySize);
-    // memcpy(buf->writableData(), myBuffer, mySize);
-    // buf->append(mySize);
-    // myTransaction->sendBody(std::move(buf));
-
     auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
 
-    LambdaRequest myReq = LambdaRequest(myProtobufLambdaReq);
-    LOG(INFO) << "sending LambdaRequest: " << myReq.toString();
+    if (VLOG_IS_ON(2)) {
+      LambdaRequest myReq(myProtobufLambdaReq);
+      LOG(INFO) << "sending LambdaRequest : " << myReq.toString();
+    }
 
     myTransaction->sendBody(std::move(myIOBuf));
-
     myTransaction->sendEOM();
 
-    // blocking, will exit when the entire response will be received
-    theEvb.loopForever();
+    LOG(INFO) << "EdgeClientQuic -> loopForever";
 
-    // new method which extends the proxygen::CurlClient sample
+    // blocking, will exit when the entire response will be received (onEOM)
+    theEvb.loopForever();
+    LOG(INFO) << "EdgeClientQuic -> FINE loopForever";
+
     auto myResponseBody = myClient->getResponseBody();
 
-    // LambdaResponse building after deserialization of the body of the
-    // response
     rpc::LambdaResponse myProtobufLambdaRes;
-    // myProtobufLambdaRes.ParseFromArray(myResponseBody->data(),
-    //                                    myResponseBody->length());
     myProtobufLambdaRes.ParseFromArray(myResponseBody.data(),
                                        myResponseBody.size());
 

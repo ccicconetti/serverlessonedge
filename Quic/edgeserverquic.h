@@ -96,12 +96,9 @@ class EdgeServerQuic final : public EdgeServerImpl
 
  private:
   const HQParams theQuicParamsConf;
-  // std::thread    theH2ServerThread;
-  std::thread theQuicServerThread;
-  HQServer    theQuicTransportServer;
-  // H2Server       theHttpServer;
-
-}; // end class EdgeServer
+  std::thread    theQuicServerThread;
+  HQServer       theQuicTransportServer;
+};
 
 } // namespace edge
 } // end namespace uiiit

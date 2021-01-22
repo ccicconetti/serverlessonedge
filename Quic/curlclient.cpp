@@ -64,7 +64,6 @@ void CurlClient::onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept {
   }
 }
 
-// std::unique_ptr<folly::IOBuf> CurlClient::getResponseBody() {
 folly::ByteRange CurlClient::getResponseBody() {
   VLOG(1) << "CurlClient::getResponseBody";
   return std::move(theResponseBody);
