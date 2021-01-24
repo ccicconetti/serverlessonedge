@@ -115,17 +115,11 @@ struct HQParams {
   std::string                                  ccpConfig;
 
   // HTTP section
-  uint16_t                              h2port;
-  folly::Optional<folly::SocketAddress> localH2Address;
-  HTTPVersion                           httpVersion;
-  proxygen::HTTPHeaders                 httpHeaders;
-  std::vector<folly::StringPiece>       httpPaths;
-  size_t                                httpServerThreads;
-  std::chrono::milliseconds             httpServerIdleTimeout;
-  std::vector<int>                      httpServerShutdownOn;
-  bool                                  httpServerEnableContentCompression;
-  bool                                  h2cEnabled;
-  std::chrono::milliseconds             txnTimeout;
+  HTTPVersion                     httpVersion;
+  proxygen::HTTPHeaders           httpHeaders;
+  std::vector<folly::StringPiece> httpPaths;
+  size_t                          httpServerThreads;
+  std::chrono::milliseconds       txnTimeout;
 
   // Fizz options
   std::shared_ptr<quic::QuicPskCache> pskCache;
@@ -209,13 +203,8 @@ struct HQParams {
     transportSettings.tokenlessPacer                  = true;
 
     // *** HTTP Settings ***
-    httpServerIdleTimeout              = std::chrono::milliseconds(60000);
-    httpServerShutdownOn               = {};
-    httpServerEnableContentCompression = false;
-    h2cEnabled                         = false;
+    txnTimeout = std::chrono::milliseconds(120000);
     httpVersion.parse("1.1");
-    txnTimeout           = std::chrono::milliseconds(120000);
-    httpServerShutdownOn = {};
     folly::split(',', "/lambda", httpPaths);
     // parse HTTP headers
     httpHeaders = CurlService::CurlClient::parseHeaders("");
@@ -257,14 +246,12 @@ class QuicParamsBuilder
    * \param aServerConf server configuration specified through the --server-conf
    * option from CLI. For the server this configuration can be used to specify:
    * \li type(=grpc): the protocol to exchange lambdaRequest/lambdaResponse (can
-   * be "grpc" or "quic"), \li h2port (=6667): the port on which the server can
-   * receive HTTP2 requests
+   * be "grpc" or "quic")
    *
    * \param aServerEndpoint server endpoint specified through the
    * --server-endpoint option from CLI (format: "IPAddress:Port")
    *
-   * \param aNumThreads number of threads to be spawned in both the H2server and
-   * the HQServer
+   * \param aNumThreads number of threads to be spawned in the HQServer
    *
    * \returns the HQParams configuration (both QUIC and HTTP parameters) to
    * build an EdgeServerQuic starting from the given CLI options

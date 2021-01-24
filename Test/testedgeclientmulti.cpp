@@ -52,9 +52,9 @@ struct TestEdgeClientMulti : public ::testing::Test {
       , theEndpoint3("localhost:10002")
       , theGrpcClientConf("type=grpc,persistence=0.5")
       , theQuicClientConf("type=quic,persistence=0.5")
-      , theQuicServerConf1("type=quic,h2port=6667")
-      , theQuicServerConf2("type=quic,h2port=6668")
-      , theQuicServerConf3("type=quic,h2port=6669") {
+      , theQuicServerConf1("type=quic")
+      , theQuicServerConf2("type=quic")
+      , theQuicServerConf3("type=quic") {
   }
 
   static std::unique_ptr<EdgeComputer>

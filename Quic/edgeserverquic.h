@@ -30,7 +30,6 @@ SOFTWARE.
 #pragma once
 
 #include "Edge/edgeserverimpl.h"
-#include "Quic/h2server.h"
 #include "Quic/hqserver.h"
 #include "Quic/hqservertransportfactory.h"
 #include "Quic/hqsessioncontroller.h"
@@ -74,7 +73,7 @@ class EdgeServerQuic final : public EdgeServerImpl
   //! Start the server. No more configuration allowed after this call.
   void run() override;
 
-  //! Wait until H2Server and HQServer terminations.
+  //! Wait until HQServer termination.
   void wait() override;
 
   //! Perform actual processing of a lambda request.

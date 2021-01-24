@@ -1,7 +1,6 @@
 add_library(uiiitedgequic SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientquic.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/h2server.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/hqserver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/curlclient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/hqsessioncontroller.cpp

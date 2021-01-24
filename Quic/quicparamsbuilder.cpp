@@ -87,18 +87,6 @@ QuicParamsBuilder::buildServerHQParams(const support::Conf& aConf,
   myHQParamsConf.localAddress =
       folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.port, true);
 
-  // h2serverport (uint16_t)
-  if (aConf.find(std::string("h2port")) != aConf.end()) {
-    myHQParamsConf.h2port = aConf.getUint("h2port");
-    VLOG(1) << "h2port in Conf = " << myHQParamsConf.h2port;
-  } else {
-    myHQParamsConf.h2port = 6667;
-    VLOG(1) << "h2port default = " << myHQParamsConf.h2port;
-  }
-
-  myHQParamsConf.localH2Address =
-      folly::SocketAddress(myHQParamsConf.host, myHQParamsConf.h2port, true);
-
   // (Server Only) httpServerThreads (size_t)
   myHQParamsConf.httpServerThreads = aNumThreads;
 
