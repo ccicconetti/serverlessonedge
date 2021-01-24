@@ -32,6 +32,8 @@ SOFTWARE.
 #include "Edge/edgecomputerserver.h"
 #include "Edge/edgelambdaprocessoroptions.h"
 #include "Edge/edgeserverimpl.h"
+#include "Edge/lambda.h"
+#include "Edge/processortype.h"
 #include "Quic/edgeclientquic.h"
 #include "Quic/edgeserverquic.h"
 #include "Quic/quicparamsbuilder.h"
@@ -56,7 +58,7 @@ struct TestEdgeServerQuic : public ::testing::Test {
                         "num-gpu-containers=1,num-gpu-workers=2")
       , theGrpcClientConf("type=grpc,persistence=0.5")
       , theQuicClientConf("type=quic,attempt-early-data=true")
-      , theQuicServerConf("type=quic, h2port=6667") {
+      , theQuicServerConf("type=quic") {
   }
 
   const std::string   theServerEndpoint;
@@ -78,6 +80,7 @@ TEST_F(TestEdgeServerQuic, test_connection) {
 
   Computer::UtilCallback              myUtilCallback;
   std::unique_ptr<EdgeComputerServer> myUtilServer;
+  static const auto                   GB = uint64_t(1) << uint64_t(30);
 
   myUtilServer.reset(new EdgeComputerServer(theUtilEndpoint));
   myUtilCallback = [&myUtilServer](const std::map<std::string, double>& aUtil) {
@@ -86,7 +89,43 @@ TEST_F(TestEdgeServerQuic, test_connection) {
   myUtilServer->run(false); // non-blocking
 
   EdgeComputer myComputer(theServerEndpoint, myUtilCallback);
-  Composer()(theComposerConf, myComputer.computer());
+
+  // Composer()(theComposerConf, myComputer.computer());
+
+  // the following snippet is equivalent to the previous LoC
+
+  // add processors
+  myComputer.computer().addProcessor(
+      "arm", ProcessorType::GenericCpu, 1e11, 4, GB / 2); // 100x default speed
+  myComputer.computer().addProcessor("bm2837",
+                                     ProcessorType::GenericGpu,
+                                     1e11, // 100x default speed
+                                     1,
+                                     GB / 2);
+
+  // add containers, depending on the configuration
+  auto myNumCpuContainers = theComposerConf.getUint("num-cpu-containers");
+  while (myNumCpuContainers-- > 0) {
+    const auto myNumCpuWorkers = theComposerConf.getUint("num-cpu-workers");
+    const auto myId            = std::to_string(myNumCpuContainers);
+    myComputer.computer().addContainer(
+        "ccontainer" + myId,
+        "arm",
+        Lambda("clambda" + myId,
+               ProportionalRequirements(1e6, 4 * 1e6, 100, 0)),
+        myNumCpuWorkers);
+  }
+
+  auto myNumGpuContainers = theComposerConf.getUint("num-gpu-containers");
+  while (myNumGpuContainers-- > 0) {
+    const auto myNumGpuWorkers = theComposerConf.getUint("num-gpu-workers");
+    const auto myId            = std::to_string(myNumGpuContainers);
+    myComputer.computer().addContainer(
+        "gcontainer" + myId,
+        "bm2837",
+        Lambda("glambda" + myId, ProportionalRequirements(1e6, 1e6, 100, 0)),
+        myNumGpuWorkers);
+  }
 
   std::unique_ptr<EdgeServerImpl> myComputerServerImpl;
   myComputerServerImpl.reset(
