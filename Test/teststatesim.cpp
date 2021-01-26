@@ -52,11 +52,11 @@ namespace statesim {
 struct TestStateSim : public ::testing::Test {
   TestStateSim()
       : theExampleNodes({
-            Node("A", 0, 1e9, 1ull << 30, Affinity::Gpu),
-            Node("B", 1, 1e9, 1ull << 30, Affinity::Gpu),
-            Node("C", 2, 1e9, 1ull << 30, Affinity::Gpu),
-            Node("D", 3, 20 * 1e9, 1ull << 36, Affinity::Cpu),
-            Node("E", 4, 20 * 1e9, 1ull << 36, Affinity::Cpu),
+            Node("A", 0, 1e9, 1ull << 30, Affinity::Gpu, true),
+            Node("B", 1, 1e9, 1ull << 30, Affinity::Gpu, true),
+            Node("C", 2, 1e9, 1ull << 30, Affinity::Gpu, true),
+            Node("D", 3, 20 * 1e9, 1ull << 36, Affinity::Cpu, false),
+            Node("E", 4, 20 * 1e9, 1ull << 36, Affinity::Cpu, false),
             Node("sw1", 5),
             Node("sw2", 6),
         })
@@ -338,7 +338,7 @@ TEST_F(TestStateSim, test_network_from_files) {
     }
   }
 
-  ASSERT_EQ(113, myNetwork.clients().size());
+  ASSERT_EQ(108, myNetwork.clients().size());
   for (const auto& myClient : myNetwork.clients()) {
     ASSERT_TRUE(myClient != nullptr);
     ASSERT_EQ(std::string::npos, myClient->name().find("server"));

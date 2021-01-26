@@ -69,13 +69,16 @@ class Node : public Element
    *
    * \param aCapacity The link capacity, in Mb/s.
    *
+   * \param aClient Can be a client.
+   *
    * \throw std::runtime_error if empty name or non-positive speed/memory.
    */
   explicit Node(const std::string& aName,
                 const size_t       aId,
                 const float        aSpeed,
                 const size_t       aMemory,
-                const Affinity     aAffinity);
+                const Affinity     aAffinity,
+                const bool         aClient);
 
   //! \return a Node from a string.
   static Node make(const std::string& aString, Counter<int>& aCounter);
@@ -87,6 +90,7 @@ class Node : public Element
   float       speed()    const noexcept { return theSpeed;    }
   size_t      memory()   const noexcept { return theMemory;   }
   Affinity    affinity() const noexcept { return theAffinity; }
+  bool        client()   const noexcept { return theClient;   }
   // clang-format on
 
  private:
@@ -96,6 +100,7 @@ class Node : public Element
   const float    theSpeed;
   const size_t   theMemory;
   const Affinity theAffinity;
+  const bool     theClient;
 };
 
 } // namespace statesim

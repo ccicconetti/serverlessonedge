@@ -112,10 +112,9 @@ Network::Network(const std::string& aNodesPath,
     theLinks.emplace(myLink.name(), myLink);
   }
 
-  // identify clients as those nodes without "server" in their name
-  // and save the processing nodes in a dedicated container
+  // save pointers to processing nodes and clients into dedicated containers
   for (auto& elem : theNodes) {
-    if (elem.first.find("server") == std::string::npos) {
+    if (elem.second.client()) {
       theClients.emplace_back(&elem.second);
     }
     theProcessing.emplace_back(&elem.second);

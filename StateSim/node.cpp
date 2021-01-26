@@ -43,7 +43,8 @@ Node::Node(const std::string& aName, const size_t aId)
     , theType(Type::Networking)
     , theSpeed(0)
     , theMemory(0)
-    , theAffinity(Affinity::NotAvailable) {
+    , theAffinity(Affinity::NotAvailable)
+    , theClient(false) {
   // noop
 }
 
@@ -51,12 +52,14 @@ Node::Node(const std::string& aName,
            const size_t       aId,
            const float        aSpeed,
            const size_t       aMemory,
-           const Affinity     aAffinity)
+           const Affinity     aAffinity,
+           const bool         aClient)
     : Element(aName, aId, Device::Node)
     , theType(Type::Processing)
     , theSpeed(aSpeed)
     , theMemory(aMemory)
-    , theAffinity(aAffinity) {
+    , theAffinity(aAffinity)
+    , theClient(aClient) {
   if (aSpeed <= 0) {
     throw std::runtime_error("Invalid speed (" + std::to_string(aSpeed) +
                              ") for Node name: " + aName);
@@ -64,25 +67,27 @@ Node::Node(const std::string& aName,
 }
 
 Node Node::make(const std::string& aString, Counter<int>& aCounter) {
-  static const std::map<std::string, Affinity> myAffinities({
-      {"server", Affinity::Cpu},
-      {"rpi3b+", Affinity::Cpu},
-      {"nuci5", Affinity::Cpu},
-      {"nvidia_jetson_tx2", Affinity::Gpu},
-  });
+  static const std::map<std::string, std::pair<Affinity, bool>>
+             myAffinitiesClients({
+          {"server", {Affinity::Cpu, false}},
+          {"rpi3b+", {Affinity::Cpu, true}},
+          {"nuci5", {Affinity::Cpu, false}},
+          {"nvidia_jetson_tx2", {Affinity::Gpu, true}},
+      });
   const auto myTokens = support::split<std::vector<std::string>>(aString, ";");
   if (myTokens.size() != 7) {
     throw std::runtime_error("Invalid node: " + aString);
   }
-  const auto myAffinity = myAffinities.find(myTokens[6]);
-  if (myAffinity == myAffinities.end()) {
-    throw std::runtime_error("Invalid affinity in node: " + aString);
+  const auto myElem = myAffinitiesClients.find(myTokens[6]);
+  if (myElem == myAffinitiesClients.end()) {
+    throw std::runtime_error("Invalid node type: " + aString);
   }
   return Node(myTokens[1],
               aCounter(),
               std::stof(myTokens[2]),
               std::stoull(myTokens[3]) * 1000000,
-              myAffinity->second);
+              myElem->second.first,
+              myElem->second.second);
 }
 
 std::string Node::toString() const {
@@ -91,7 +96,8 @@ std::string Node::toString() const {
       << theName;
   if (theType == Type::Processing) {
     ret << " speed " << theSpeed / 1e9 << " GFLOPS, memory " << theMemory / 1e9
-        << " GB, affinity " << ::uiiit::statesim::toString(theAffinity);
+        << " GB, affinity " << ::uiiit::statesim::toString(theAffinity) << ", "
+        << (theClient ? "client" : "server");
   }
   return ret.str();
 }
