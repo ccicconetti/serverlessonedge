@@ -67,7 +67,8 @@ Link Link::make(const std::string& aString, Counter<int>& aCounter) {
   if (myType == myTypes.end()) {
     throw std::runtime_error("Invalid type in Link: " + aString);
   }
-  return Link(myType->second, myTokens[2], aCounter(), std::stof(myTokens[1]));
+  return Link(
+      myType->second, myTokens[2], aCounter(), 1e6 * std::stof(myTokens[1]));
 }
 
 std::string Link::toString() const {
@@ -83,7 +84,7 @@ std::string Link::toString() const {
 
   std::stringstream ret;
   ret << myType->second << ' ' << theId << ' ' << theName << ", capacity "
-      << theCapacity << " Mb/s";
+      << theCapacity / 1e6 << " Mb/s";
   return ret.str();
 }
 
