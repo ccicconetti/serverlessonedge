@@ -157,7 +157,8 @@ Network::Network(const std::string& aNodesPath,
       myEdges.emplace_back(Edge(mySourceId, myTargetId));
       myWeights.emplace_back(myWeight);
 
-      VLOG(2) << mySourceId << ' ' << myTargetId << ' ' << myWeight;
+      VLOG(2) << "src " << mySourceId << " dst " << myTargetId << " weight "
+              << myWeight;
     }
   }
 
@@ -279,6 +280,11 @@ void Network::initElementsGraph(const std::vector<Edge>&  aEdges,
           << theLinks.size() << " links";
   assert(theElements.size() == boost::num_vertices(theGraph));
   theCache.resize(theElements.size(), {false, PredVec()});
+
+  // print nodes and links, if verbose
+  for (const auto myElement : theElements) {
+    VLOG(2) << myElement->toString();
+  }
 }
 
 std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
