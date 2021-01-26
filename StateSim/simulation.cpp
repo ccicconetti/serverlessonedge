@@ -235,11 +235,22 @@ void Simulation::save(const std::string& aOutfile) {
 void Simulation::saveDir(const boost::filesystem::path& aDir) {
   boost::filesystem::create_directories(aDir);
   for (const auto& myDesc : theDesc) {
-    std::ofstream myOutstream((aDir / ("out-" + myDesc.toString())).string());
-    const auto&   myPerf = myDesc.thePerformanceData;
-    for (size_t i = 0; i < myPerf.size(); i++) {
-      myOutstream << myPerf.theProcDelays[i] << ' ' << myPerf.theNetDelays[i]
-                  << ' ' << myPerf.theDataTransfer[i] << '\n';
+    const auto& myPerf = myDesc.thePerformanceData;
+
+    {
+      std::ofstream myOutstream((aDir / ("job-" + myDesc.toString())).string());
+      for (size_t i = 0; i < myPerf.numJobs(); i++) {
+        myOutstream << myPerf.theProcDelays[i] << ' ' << myPerf.theNetDelays[i]
+                    << ' ' << myPerf.theDataTransfer[i] << '\n';
+      }
+    }
+
+    {
+      std::ofstream myOutstream(
+          (aDir / ("node-" + myDesc.toString())).string());
+      for (size_t i = 0; i < myPerf.numNodes(); i++) {
+        myOutstream << myPerf.theLoad[i] << '\n';
+      }
     }
   }
 }

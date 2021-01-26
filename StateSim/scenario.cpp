@@ -40,23 +40,32 @@ namespace statesim {
 bool PerformanceData::operator==(const PerformanceData& aOther) const {
   return theProcDelays == aOther.theProcDelays and
          theNetDelays == aOther.theNetDelays and
-         theDataTransfer == aOther.theDataTransfer;
+         theDataTransfer == aOther.theDataTransfer and
+         theLoad == aOther.theLoad;
 }
 
 void PerformanceData::save(std::ofstream& aOutput) const {
   // save version number
   aOutput.write(reinterpret_cast<const char*>(&theVersion), sizeof(theVersion));
 
-  // save number of elements
-  const size_t N = theProcDelays.size();
+  // save number of jobs
+  const size_t J = numJobs();
+  aOutput.write(reinterpret_cast<const char*>(&J), sizeof(J));
+
+  // save per-job samples
+  aOutput.write(reinterpret_cast<const char*>(theProcDelays.data()),
+                sizeof(double) * J);
+  aOutput.write(reinterpret_cast<const char*>(theNetDelays.data()),
+                sizeof(double) * J);
+  aOutput.write(reinterpret_cast<const char*>(theDataTransfer.data()),
+                sizeof(size_t) * J);
+
+  // save number of nodes
+  const size_t N = numNodes();
   aOutput.write(reinterpret_cast<const char*>(&N), sizeof(N));
 
-  // save samples
-  aOutput.write(reinterpret_cast<const char*>(theProcDelays.data()),
-                sizeof(double) * N);
-  aOutput.write(reinterpret_cast<const char*>(theNetDelays.data()),
-                sizeof(double) * N);
-  aOutput.write(reinterpret_cast<const char*>(theDataTransfer.data()),
+  // save per-node samples
+  aOutput.write(reinterpret_cast<const char*>(theLoad.data()),
                 sizeof(size_t) * N);
 }
 
@@ -71,11 +80,11 @@ PerformanceData PerformanceData::load(std::ifstream& aInput) {
                              std::to_string(myVersion));
   }
 
-  // read number of elements
+  // read number of jobs
   size_t myNumJobs;
   aInput.read(reinterpret_cast<char*>(&myNumJobs), sizeof(myNumJobs));
 
-  // read samples
+  // read per-job samples
   ret.theProcDelays.resize(myNumJobs);
   aInput.read(reinterpret_cast<char*>(ret.theProcDelays.data()),
               sizeof(double) * myNumJobs);
@@ -87,6 +96,15 @@ PerformanceData PerformanceData::load(std::ifstream& aInput) {
   ret.theDataTransfer.resize(myNumJobs);
   aInput.read(reinterpret_cast<char*>(ret.theDataTransfer.data()),
               sizeof(size_t) * myNumJobs);
+
+  // read number of nodes
+  size_t myNumNodes;
+  aInput.read(reinterpret_cast<char*>(&myNumNodes), sizeof(myNumNodes));
+
+  // read per-node samples
+  ret.theLoad.resize(myNumNodes);
+  aInput.read(reinterpret_cast<char*>(ret.theLoad.data()),
+              sizeof(size_t) * myNumNodes);
 
   return ret;
 }
@@ -200,17 +218,19 @@ void Scenario::allocateTasks(const Policy aPolicy) {
 PerformanceData Scenario::performance(const Policy aPolicy) const {
   LOG(INFO) << "measuring performance using policy " << toString(aPolicy);
 
-  PerformanceData ret;
-  ret.theProcDelays.reserve(theJobs.size());
-  ret.theNetDelays.reserve(theJobs.size());
-  ret.theDataTransfer.reserve(theJobs.size());
-
   if (theLoad.empty()) {
     throw std::runtime_error(
         "Cannot measure performance without an allocation");
   }
 
+  PerformanceData ret;
+
+  //
   // measure performance for each job
+  //
+  ret.theProcDelays.reserve(theJobs.size());
+  ret.theNetDelays.reserve(theJobs.size());
+  ret.theDataTransfer.reserve(theJobs.size());
   for (const auto& myJob : theJobs) {
     // retrieve the client of this job
     assert(myJob.id() < theClients.size());
@@ -245,6 +265,15 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
     ret.theProcDelays.emplace_back(myProcDelay);
     ret.theNetDelays.emplace_back(myNetDelay);
     ret.theDataTransfer.emplace_back(myDataTransferred);
+  }
+
+  //
+  // record the load for each processing node
+  //
+  ret.theLoad.reserve(theNetwork->processing().size());
+  for (const auto myNodePtr : theNetwork->processing()) {
+    assert(myNodePtr->id() < theLoad.size());
+    ret.theLoad.emplace_back(theLoad[myNodePtr->id()]);
   }
 
   return ret;

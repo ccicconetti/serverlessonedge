@@ -51,9 +51,17 @@ struct PerformanceData {
   std::vector<double> theNetDelays;
   //! For each job, the amount of data transferred, in bytes.
   std::vector<size_t> theDataTransfer;
+  //! For each processing node, the number of tasks assigned.
+  std::vector<size_t> theLoad;
 
-  size_t size() const noexcept {
+  //! \return the number of jobs.
+  size_t numJobs() const noexcept {
     return theProcDelays.size();
+  }
+
+  //! \return the number of (processing) nodes.
+  size_t numNodes() const noexcept {
+    return theLoad.size();
   }
 
   bool operator==(const PerformanceData& aOther) const;

@@ -187,12 +187,15 @@ struct TestStateSim : public ::testing::Test {
         aData.theProcDelays.size(),
         std::min(aData.theNetDelays.size(), aData.theDataTransfer.size()));
     for (size_t i = 0; i < N; i++) {
-      VLOG(1) << '#' << i << ' ' << aData.theProcDelays[i] << ' '
+      VLOG(1) << "J#" << i << ' ' << aData.theProcDelays[i] << ' '
               << aData.theNetDelays[i] << ' ' << aData.theDataTransfer[i];
     }
-    return aData.size() == aData.theProcDelays.size() and
-           aData.size() == aData.theNetDelays.size() and
-           aData.size() == aData.theDataTransfer.size();
+    for (size_t i = 0; i < aData.numNodes(); i++) {
+      VLOG(1) << "N#" << i << ' ' << aData.theLoad[i];
+    }
+    return aData.numJobs() == aData.theProcDelays.size() and
+           aData.numJobs() == aData.theNetDelays.size() and
+           aData.numJobs() == aData.theDataTransfer.size();
   }
 
   /*
@@ -545,7 +548,10 @@ TEST_F(TestStateSim, test_simulation) {
   for (size_t i = 10; i < 30; i++) {
     ASSERT_TRUE(boost::filesystem::exists(
         theTestDir / "data" /
-        ("out-alloc=PureFaaS.exec=PureFaaS.seed=" + std::to_string(i))));
+        ("job-alloc=PureFaaS.exec=PureFaaS.seed=" + std::to_string(i))));
+    ASSERT_TRUE(boost::filesystem::exists(
+        theTestDir / "data" /
+        ("node-alloc=PureFaaS.exec=PureFaaS.seed=" + std::to_string(i))));
   }
   ASSERT_TRUE(boost::filesystem::is_regular(theTestDir / "output.bin"));
 }
