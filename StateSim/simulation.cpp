@@ -54,7 +54,8 @@ std::string Simulation::Conf::toString() const {
   std::stringstream ret;
   ret << "nodes " << theNodesPath << ", links " << theLinksPath << ", edges "
       << theEdgesPath << ", tasks " << theTasksPath << ", " << theNumFunctions
-      << " lambda functions, " << theNumJobs << " jobs";
+      << " lambda functions, " << theNumJobs << " jobs, ops factor "
+      << theOpsFactor << ", mem factor " << theMemFactor;
   return ret.str();
 }
 
@@ -156,8 +157,13 @@ void Simulation::run(const Conf&  aConf,
     }
   }
 
-  // load all jobs from file
-  auto myJobs = loadJobs(aConf.theTasksPath, 1000, 100, myFuncWeights, 0, true);
+  // load all jobs from file (with seed = 0)
+  auto myJobs = loadJobs(aConf.theTasksPath,
+                         aConf.theOpsFactor,
+                         aConf.theMemFactor,
+                         myFuncWeights,
+                         0,
+                         true);
 
   LOG_IF(WARNING, myJobs.size() < aConf.theNumJobs)
       << "job pool size (" << myJobs.size()
@@ -166,18 +172,19 @@ void Simulation::run(const Conf&  aConf,
 
   // create the scenarios
   theDesc.resize(aNumReplications * allPolicies().size());
-  size_t myCounter = 0;
+  size_t myDescCounter = 0;
   for (const auto myPolicy : allPolicies()) {
-    for (size_t mySeed = 0; mySeed < aNumReplications; mySeed++) {
-      assert(myCounter < theDesc.size());
-      auto& myDesc = theDesc[myCounter++];
+    for (size_t myRun = 0; myRun < aNumReplications; myRun++) {
+      assert(myDescCounter < theDesc.size());
+      auto&      myDesc = theDesc[myDescCounter++];
+      const auto mySeed = myRun + aStartingSeed;
 
       std::default_random_engine myRng(mySeed);
       myDesc.theScenario = std::make_unique<Scenario>(
           myAffinities,
           myNetwork,
           selectJobs(myJobs, aConf.theNumJobs, myRng),
-          mySeed + aStartingSeed);
+          mySeed);
       myDesc.theAllocationPolicy = myPolicy;
       myDesc.theExecutionPolicy  = myPolicy;
     }
@@ -189,9 +196,9 @@ void Simulation::run(const Conf&  aConf,
   }
 
   // wait for all the simulations to terminate
-  while (myCounter > 0) {
+  while (myDescCounter > 0) {
     theQueueOut.pop();
-    myCounter--;
+    myDescCounter--;
   }
   if (not aConf.theOutfile.empty()) {
     save(aConf.theOutfile);

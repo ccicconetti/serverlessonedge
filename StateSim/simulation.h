@@ -84,6 +84,10 @@ class Simulation final
     const size_t theNumFunctions;
     //! Number of jobs per replication
     const size_t theNumJobs;
+    //! The multiplier factor for the number of operations (tasks).
+    const float theOpsFactor;
+    //! The multiplier factor for the memory/state size (tasks).
+    const float theMemFactor;
 
     std::string toString() const;
   };

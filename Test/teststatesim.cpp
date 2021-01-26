@@ -323,7 +323,7 @@ TEST_F(TestStateSim, test_network_from_files) {
   ASSERT_EQ(123, myNetwork.processing().size());
 
   const auto myDesc = myNetwork.nextHop("rpi3_0", "rpi3_53");
-  ASSERT_FLOAT_EQ(0.216f, myDesc.first);
+  ASSERT_FLOAT_EQ(2.16e-7f, myDesc.first);
   ASSERT_EQ("link_rpi3_0", myDesc.second);
 
   for (const auto& mySrc : myNetwork.nodes()) {
@@ -535,7 +535,9 @@ TEST_F(TestStateSim, test_simulation) {
              (theTestDir / "output.bin").string(),
              (theTestDir / "data").string(),
              3,
-             5},
+             5,
+             1000,
+             100},
             10,
             20);
 
