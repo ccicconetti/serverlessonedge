@@ -13,3 +13,14 @@ add_library(uiiitstatesim SHARED
 target_link_libraries(uiiitstatesim
   uiiitsupport
 )
+
+add_executable(statesim
+  ${CMAKE_CURRENT_SOURCE_DIR}/statesimmain.cpp
+)
+
+target_link_libraries(statesim
+  uiiitstatesim
+
+  ${GLOG}
+  ${Boost_LIBRARIES}
+)
