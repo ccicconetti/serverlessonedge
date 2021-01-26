@@ -226,6 +226,7 @@ void Simulation::save(const std::string& aOutfile) {
 }
 
 void Simulation::saveDir(const boost::filesystem::path& aDir) {
+  boost::filesystem::create_directories(aDir);
   for (const auto& myDesc : theDesc) {
     std::ofstream myOutstream((aDir / ("out-" + myDesc.toString())).string());
     const auto&   myPerf = myDesc.thePerformanceData;
