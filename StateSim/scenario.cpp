@@ -231,6 +231,8 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
       std::tie(myInSize, myOutSize) = sizes(myJob, myTask);
 
       // retrieve execution time
+      VLOG(2) << "job " << myJob.id() << " task " << myTask.id() << " client "
+              << myClient->name() << " allocated to " << myNode->name();
       const auto myExecPair =
           execTime(myTask.ops(), myInSize, myOutSize, *myClient, *myNode);
       myProcDelay += myExecPair.first;
@@ -271,6 +273,15 @@ std::pair<double, double> Scenario::execTime(const size_t aOps,
   const auto myProcTime = aOps / (aNode.speed() / theLoad[aNode.id()]);
   const auto myTxTime   = theNetwork->txTime(aClient, aNode, aInSize) +
                         theNetwork->txTime(aNode, aClient, aOutSize);
+
+  VLOG(2) << "\tops " << aOps << " speed " << aNode.speed() << " load "
+          << theLoad[aNode.id()];
+  VLOG(2) << "\tfrom " << aClient.name() << " to " << aNode.name() << " takes "
+          << theNetwork->txTime(aClient, aNode, aInSize) << " to transfer "
+          << aInSize << " bytes";
+  VLOG(2) << "\tfrom " << aNode.name() << " to " << aClient.name() << " takes "
+          << theNetwork->txTime(aNode, aClient, aOutSize) << " to transfer "
+          << aOutSize << " bytes";
 
   return {myProcTime, myTxTime};
 }
