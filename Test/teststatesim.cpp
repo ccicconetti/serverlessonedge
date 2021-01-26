@@ -532,8 +532,8 @@ TEST_F(TestStateSim, test_simulation) {
              (theTestDir / "links").string(),
              (theTestDir / "edges").string(),
              (theTestDir / "tasks").string(),
+             (theTestDir / "output.bin").string(),
              (theTestDir / "data").string(),
-             theTestDir.string(),
              3,
              5},
             10,
@@ -542,9 +542,10 @@ TEST_F(TestStateSim, test_simulation) {
   ASSERT_TRUE(boost::filesystem::exists(theTestDir / "data"));
   for (size_t i = 10; i < 30; i++) {
     ASSERT_TRUE(boost::filesystem::exists(
-        theTestDir /
+        theTestDir / "data" /
         ("out-alloc=PureFaaS.exec=PureFaaS.seed=" + std::to_string(i))));
   }
+  ASSERT_TRUE(boost::filesystem::is_regular(theTestDir / "output.bin"));
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {
