@@ -68,6 +68,9 @@ class Element
   Device      device()   const noexcept { return theDevice;   }
   // clang-format on
 
+  //! \return a human-readable string.
+  virtual std::string toString() const = 0;
+
   //! \return the transmission time to traverse this element, in s
   virtual double txTime(const size_t aBytes) const {
     return 0;

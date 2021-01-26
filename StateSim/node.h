@@ -80,7 +80,7 @@ class Node : public Element
   //! \return a Node from a string.
   static Node make(const std::string& aString, Counter<int>& aCounter);
   //! \return a human-readable string.
-  std::string toString() const;
+  std::string toString() const override;
 
   // clang-format off
   Type        type()     const noexcept { return theType;     }
