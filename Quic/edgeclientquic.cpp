@@ -179,11 +179,11 @@ EdgeClientQuic::~EdgeClientQuic() {
  * connectError() one.
  */
 void EdgeClientQuic::startClient() {
-  VLOG(1) << "EdgeClientQuic::startClient";
+  VLOG(4) << "EdgeClientQuic::startClient";
 
   theSession->startNow();
   theQuicClient->start(theSession);
-  VLOG(1) << "EdgeClientQuic connecting to "
+  VLOG(4) << "EdgeClientQuic connecting to "
           << theQuicParamsConf.remoteAddress->describe();
 
   // This is to flush the CFIN out so the server will see the handshake as
@@ -192,7 +192,7 @@ void EdgeClientQuic::startClient() {
 }
 
 void EdgeClientQuic::connectSuccess() {
-  VLOG(1) << "EdgeClientQuic::connectSuccess";
+  VLOG(4) << "EdgeClientQuic::connectSuccess";
 
   theHttpPaths.insert(theHttpPaths.end(),
                       theQuicParamsConf.httpPaths.begin(),
@@ -200,20 +200,20 @@ void EdgeClientQuic::connectSuccess() {
 }
 
 void EdgeClientQuic::onReplaySafe() {
-  VLOG(1) << "EdgeClientQuic::onReplaySafe";
+  VLOG(4) << "EdgeClientQuic::onReplaySafe";
   theEvb.terminateLoopSoon();
 }
 
 void EdgeClientQuic::connectError(
     std::pair<quic::QuicErrorCode, std::string> aError) {
-  VLOG(1) << "EdgeClientQuic::connectError";
+  VLOG(4) << "EdgeClientQuic::connectError";
   LOG(ERROR) << "EdgeClientQuic failed to connect, Error="
              << toString(aError.first) << ", msg=" << aError.second;
   theEvb.terminateLoopSoon();
 }
 
 void EdgeClientQuic::initializeClient() {
-  VLOG(1) << "EdgeClientQuic::initializeClient";
+  VLOG(4) << "EdgeClientQuic::initializeClient";
 
   initializeQuicTransport();
 
@@ -231,7 +231,7 @@ void EdgeClientQuic::initializeClient() {
 }
 
 void EdgeClientQuic::initializeQuicTransport() {
-  VLOG(1) << "EdgeClientQuic::initializeQuicTransport";
+  VLOG(4) << "EdgeClientQuic::initializeQuicTransport";
 
   auto mySocket              = std::make_unique<folly::AsyncUDPSocket>(&theEvb);
   auto myQuicTransportClient = std::make_shared<quic::QuicClientTransport>(
@@ -271,7 +271,7 @@ EdgeClientQuic::createFizzClientContext(const HQParams& aQuicParamsConf) {
 
 LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
-  VLOG(1) << "EdgeClientQuic::RunLambda";
+  VLOG(4) << "EdgeClientQuic::RunLambda";
 
   std::unique_ptr<LambdaResponse> myLambdaRes;
   // the following check is needed in order to verify if the connectSuccess()
@@ -280,7 +280,6 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
   // connect to the EdgeServerQuic or the previous call to startClient() has not
   // succeeded, so the the connectError callback has been called
   if (theHttpPaths.empty()) {
-    VLOG(1) << "EdgeClientQuic::RunLambda First Check";
     initializeClient();
     startClient();
   }
@@ -296,7 +295,6 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
     // when the connectError callback is called, theSession is lost so we need
     // to recreate it otherwise the next startclient will produce a seg fault
     initializeClient();
-
   } else { // if the connectSuccess callback has been invoked
 
     std::unique_ptr<CurlClient> myClient = std::make_unique<CurlClient>(
@@ -335,19 +333,16 @@ LambdaResponse EdgeClientQuic::RunLambda(const LambdaRequest& aReq,
 
     auto myIOBuf = folly::IOBuf::copyBuffer(myBuffer, mySize);
 
-    if (VLOG_IS_ON(2)) {
-      LambdaRequest myReq(myProtobufLambdaReq);
-      LOG(INFO) << "sending LambdaRequest : " << myReq.toString();
-    }
+    // if (VLOG_IS_ON(4)) {
+    //   LambdaRequest myReq(myProtobufLambdaReq);
+    //   LOG(INFO) << "sending LambdaRequest : " << myReq.toString();
+    // }
 
     myTransaction->sendBody(std::move(myIOBuf));
     myTransaction->sendEOM();
 
-    LOG(INFO) << "EdgeClientQuic -> loopForever";
-
     // blocking, will exit when the entire response will be received (onEOM)
     theEvb.loopForever();
-    LOG(INFO) << "EdgeClientQuic -> FINE loopForever";
 
     auto myResponseBody = myClient->getResponseBody();
 

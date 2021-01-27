@@ -63,12 +63,12 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&     aEdgeServer,
             }
             return new EchoHandler(aParams);
           }) {
-  VLOG(1) << "EdgeServerQuic::ctor";
+  VLOG(4) << "EdgeServerQuic::ctor";
   theEdgeServer.init();
 } // namespace edge
 
 void EdgeServerQuic::run() {
-  VLOG(1) << "EdgeServerQuic::run";
+  VLOG(4) << "EdgeServerQuic::run";
   theQuicTransportServer.start(
       theQuicParamsConf.httpServerThreads); // blocking until server initialized
   theQuicServerThread =
@@ -76,7 +76,7 @@ void EdgeServerQuic::run() {
 }
 
 void EdgeServerQuic::wait() {
-  VLOG(1) << "EdgeServerQuic::wait()\n";
+  VLOG(4) << "EdgeServerQuic::wait()\n";
   theQuicServerThread.join();
 }
 
@@ -89,12 +89,12 @@ EdgeServerQuic::~EdgeServerQuic() {
 }
 
 rpc::LambdaResponse EdgeServerQuic::process(const rpc::LambdaRequest& aReq) {
-  VLOG(1) << "EdgeServerQuic::process\n";
+  VLOG(4) << "EdgeServerQuic::process\n";
   return theEdgeServer.process(aReq);
 }
 
 std::set<std::thread::id> EdgeServerQuic::threadIds() const {
-  VLOG(1) << "EdgeServerQuic::threadIds";
+  VLOG(4) << "EdgeServerQuic::threadIds";
   std::set<std::thread::id> ret;
   ret.insert(theQuicServerThread.get_id());
   return ret;

@@ -43,15 +43,15 @@ class LambdaRequestHandler : public BaseHandler
       : BaseHandler(aQuicParamsConf)
       , theEdgeServer(aEdgeServer)
       , theResponder(aServerEndpoint) {
-    VLOG(1) << "LambdaRequestHandler::ctor\n";
+    VLOG(4) << "LambdaRequestHandler::ctor\n";
   }
 
   LambdaRequestHandler() = delete;
 
   void onHeadersComplete(
       std::unique_ptr<proxygen::HTTPMessage> aMsg) noexcept override {
-    VLOG(1) << "LambdaRequestHandler::onHeadersComplete";
-    VLOG(1) << "Setting http-version to " << getHttpVersion();
+    VLOG(4) << "LambdaRequestHandler::onHeadersComplete";
+    VLOG(4) << "Setting http-version to " << getHttpVersion();
 
     theResponse.setVersionString(getHttpVersion());
     theResponse.setWantsKeepalive(true);
@@ -59,7 +59,7 @@ class LambdaRequestHandler : public BaseHandler
   }
 
   void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override {
-    VLOG(1) << "LambdaRequestHandler::onBody";
+    VLOG(4) << "LambdaRequestHandler::onBody";
 
     if (theRequestBody) {
       theRequestBody->prependChain(std::move(aChain));
@@ -69,7 +69,7 @@ class LambdaRequestHandler : public BaseHandler
   }
 
   void onEOM() noexcept override {
-    VLOG(1) << "LambdaRequestHandler::onEOM";
+    VLOG(4) << "LambdaRequestHandler::onEOM";
 
     // converting the folly::IOBuf Chain in a rpc::LambdaRequest
     auto coalescedIOBuf = theRequestBody->coalesce();
@@ -79,10 +79,10 @@ class LambdaRequestHandler : public BaseHandler
                                        coalescedIOBuf.size());
 
     // useful for debugging
-    if (VLOG_IS_ON(2)) {
-      LambdaRequest myLambdaReq(myProtobufLambdaReq);
-      LOG(INFO) << "LambdaRequest Received = " << myLambdaReq.toString();
-    }
+    // if (VLOG_IS_ON(4)) {
+    //   LambdaRequest myLambdaReq(myProtobufLambdaReq);
+    //   LOG(INFO) << "LambdaRequest Received = " << myLambdaReq.toString();
+    // }
 
     // actual LambdaRequest processing
     rpc::LambdaResponse myProtobufLambdaResp =
@@ -90,7 +90,7 @@ class LambdaRequestHandler : public BaseHandler
 
     // building of the LambdaResponse
     LambdaResponse myLambdaResp(myProtobufLambdaResp);
-    LOG(INFO) << "LambdaResponse Produced = " << myLambdaResp.toString();
+    // LOG(INFO) << "LambdaResponse Produced = " << myLambdaResp.toString();
 
     if (myLambdaResp.theRetCode == std::string("OK")) {
       theResponse.setStatusCode(200);
@@ -102,7 +102,7 @@ class LambdaRequestHandler : public BaseHandler
     theTransaction->sendHeaders(theResponse);
 
     if (myLambdaResp.theResponder.empty()) {
-      VLOG(1) << "theResponder = " << myLambdaResp.theResponder;
+      VLOG(4) << "theResponder = " << myLambdaResp.theResponder;
       myProtobufLambdaResp.set_responder(theResponder);
     }
 
@@ -112,12 +112,8 @@ class LambdaRequestHandler : public BaseHandler
     myProtobufLambdaResp.SerializeToArray(buffer, size);
     auto buf = folly::IOBuf::copyBuffer(buffer, size);
     theTransaction->sendBody(std::move(buf));
-    LOG(INFO) << "LRH Body sent";
 
-    // if (theEgressPausedFlag) {
     theTransaction->sendEOM();
-    //}
-    LOG(INFO) << "LRH EOM sent";
   }
 
   void onError(const proxygen::HTTPException& /*error*/) noexcept override {
@@ -125,22 +121,11 @@ class LambdaRequestHandler : public BaseHandler
     theTransaction->sendAbort();
   }
 
-  // void onEgressPaused() noexcept override {
-  //   LOG(INFO) << "CurlClient::onEgressPaused";
-  //   theEgressPausedFlag = true;
-  // }
-
-  // void onEgressResumed() noexcept override {
-  //   LOG(INFO) << "CurlClient::onEgressResumed";
-  //   theEgressPausedFlag = false;
-  // }
-
  private:
   EdgeServerQuic&               theEdgeServer;
   proxygen::HTTPMessage         theResponse;
   const std::string             theResponder;
   std::unique_ptr<folly::IOBuf> theRequestBody;
-  // bool                          theEgressPausedFlag{false};
 };
 
 } // namespace edge

@@ -52,11 +52,11 @@ CurlClient::CurlClient(folly::EventBase*            aEvb,
                               aHttpMajor,
                               aHttpMinor,
                               aPartiallyReliable) {
-  VLOG(1) << "CurlClient::ctor";
+  VLOG(4) << "CurlClient::ctor";
 }
 
 void CurlClient::onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept {
-  VLOG(1) << "CurlClient::onBody";
+  VLOG(4) << "CurlClient::onBody";
   if (theResponseBodyChain) {
     theResponseBodyChain->prependChain(std::move(aChain));
   } else {
@@ -65,12 +65,12 @@ void CurlClient::onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept {
 }
 
 folly::ByteRange CurlClient::getResponseBody() {
-  VLOG(1) << "CurlClient::getResponseBody";
+  VLOG(4) << "CurlClient::getResponseBody";
   return std::move(theResponseBody);
 }
 
 void CurlClient::onEOM() noexcept {
-  VLOG(1) << "CurlClient::onEOM";
+  VLOG(4) << "CurlClient::onEOM";
   theResponseBody = theResponseBodyChain->coalesce();
   evb_->terminateLoopSoon();
 }

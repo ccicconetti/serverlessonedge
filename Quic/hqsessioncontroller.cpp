@@ -52,22 +52,22 @@ void HQSessionController::startSession(std::shared_ptr<quic::QuicSocket> sock) {
   CHECK(theSession);
   theSession->setSocket(std::move(sock));
   theSession->startNow();
-  VLOG(1) << "HQSessionController::startSession\n";
+  VLOG(4) << "HQSessionController::startSession\n";
 }
 
 void HQSessionController::onTransportReady(
     proxygen::HTTPSessionBase* /*session*/) {
-  VLOG(1) << "HQSessionController::onTransportReady\n";
+  VLOG(4) << "HQSessionController::onTransportReady\n";
 }
 
 void HQSessionController::onDestroy(const proxygen::HTTPSessionBase&) {
-  VLOG(1) << "HQSessionController::onDestroy\n";
+  VLOG(4) << "HQSessionController::onDestroy\n";
 }
 
 proxygen::HTTPTransactionHandler*
 HQSessionController::getRequestHandler(proxygen::HTTPTransaction& /*txn*/,
                                        proxygen::HTTPMessage* msg) {
-  VLOG(1) << "HQSessionController::getRequestHandler\n";
+  VLOG(4) << "HQSessionController::getRequestHandler\n";
   return theHttpTransactionHandlerProvider(msg, theQuicParamsConf);
 }
 
@@ -76,7 +76,7 @@ HQSessionController::getParseErrorHandler(
     proxygen::HTTPTransaction* /*txn*/,
     const proxygen::HTTPException& /*error*/,
     const folly::SocketAddress& /*localAddress*/) {
-  VLOG(1) << "HQSessionController::getParseErrorHandler\n";
+  VLOG(4) << "HQSessionController::getParseErrorHandler\n";
   return nullptr;
 }
 
@@ -84,18 +84,18 @@ proxygen::HTTPTransactionHandler* FOLLY_NULLABLE
 HQSessionController::getTransactionTimeoutHandler(
     proxygen::HTTPTransaction* /*txn*/,
     const folly::SocketAddress& /*localAddress*/) {
-  VLOG(1) << "HQSessionController::getTransactionTimeoutHandler\n";
+  VLOG(4) << "HQSessionController::getTransactionTimeoutHandler\n";
   return nullptr;
 }
 
 void HQSessionController::attachSession(
     proxygen::HTTPSessionBase* /*session*/) {
-  VLOG(1) << "HQSessionController::attachSession\n";
+  VLOG(4) << "HQSessionController::attachSession\n";
 }
 
 void HQSessionController::detachSession(
     const proxygen::HTTPSessionBase* /*session*/) {
-  VLOG(1) << "HQSessionController::detachSession\n";
+  VLOG(4) << "HQSessionController::detachSession\n";
   delete this;
 }
 

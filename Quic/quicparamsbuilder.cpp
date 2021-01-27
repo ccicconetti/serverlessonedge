@@ -35,7 +35,7 @@ namespace edge {
 HQParams
 QuicParamsBuilder::buildClientHQParams(const support::Conf& aConf,
                                        const std::string&   aServerEndpoint) {
-  VLOG(1) << "HQParamsBuilder::buildClientHQParams";
+  VLOG(4) << "HQParamsBuilder::buildClientHQParams";
 
   HQParams myHQParamsConf;
 
@@ -56,12 +56,12 @@ QuicParamsBuilder::buildClientHQParams(const support::Conf& aConf,
   if (aConf.find(std::string("attempt-early-data")) != aConf.end()) {
     myHQParamsConf.transportSettings.attemptEarlyData =
         aConf.getBool("attempt-early-data");
-    VLOG(1) << "attempt-early-data in Conf = "
+    VLOG(4) << "attempt-early-data in Conf = "
             << myHQParamsConf.transportSettings.attemptEarlyData;
     myHQParamsConf.earlyData = aConf.getBool("attempt-early-data");
   } else {
     myHQParamsConf.transportSettings.attemptEarlyData = false;
-    VLOG(1) << "attempt-early-data default = "
+    VLOG(4) << "attempt-early-data default = "
             << myHQParamsConf.transportSettings.attemptEarlyData;
     myHQParamsConf.earlyData = false;
   }
@@ -73,7 +73,7 @@ HQParams
 QuicParamsBuilder::buildServerHQParams(const support::Conf& aConf,
                                        const std::string&   aServerEndpoint,
                                        const size_t         aNumThreads) {
-  VLOG(1) << "HQParamsBuilder::buildServerHQParams";
+  VLOG(4) << "HQParamsBuilder::buildServerHQParams";
   HQParams myHQParamsConf;
 
   // aServerEndpoint format is "IPaddress:port"

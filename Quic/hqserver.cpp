@@ -46,7 +46,7 @@ HQServer::HQServer(
     HTTPTransactionHandlerProvider aHttpTransactionHandlerProvider)
     : theQuicParamsConf(aQuicParamsConf)
     , theQuicServer(quic::QuicServer::createQuicServer()) {
-  VLOG(1) << "HQServer::ctor";
+  VLOG(4) << "HQServer::ctor";
   theQuicServer->setBindV6Only(false);
   theQuicServer->setCongestionControllerFactory(
       std::make_shared<quic::ServerCongestionControllerFactory>());
@@ -68,7 +68,7 @@ HQServer::HQServer(
 }
 
 void HQServer::start(size_t aNumberOfThreads) {
-  VLOG(1) << "HQServer::start\n";
+  VLOG(4) << "HQServer::start\n";
   theQuicServer->start(theQuicParamsConf.localAddress.value(),
                        aNumberOfThreads);
   theQuicServer->waitUntilInitialized(); // blocking, no race conditions
@@ -77,7 +77,7 @@ void HQServer::start(size_t aNumberOfThreads) {
 } // namespace edge
 
 void HQServer::stop() {
-  VLOG(1) << "HQServer::stop";
+  VLOG(4) << "HQServer::stop";
   theQuicServer->shutdown();
   theEvb.terminateLoopSoon();
 }
