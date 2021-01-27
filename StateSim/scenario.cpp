@@ -182,7 +182,7 @@ void Scenario::allocateTasks(const Policy aPolicy) {
       std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask);
 
       // select the processing node with shortest execution time
-      double myMinExecTime;
+      auto myMinExecTime = 0.0;
       Node*  myMinNode = nullptr;
       for (const auto& myNode : theNetwork->processing()) {
         if (myNode->affinity() != myAffinity) {

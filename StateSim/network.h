@@ -41,6 +41,7 @@ SOFTWARE.
 #include <map>
 #include <string>
 #include <thread>
+#include <mutex>
 #include <utility>
 #include <vector>
 

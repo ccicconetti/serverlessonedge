@@ -32,12 +32,13 @@ SOFTWARE.
 #include "Support/split.h"
 #include "Support/tostring.h"
 
+#include <glog/logging.h>
+
 #include <fstream>
 #include <random>
 #include <sstream>
+#include <set>
 #include <stdexcept>
-
-#include <glog/logging.h>
 
 namespace uiiit {
 namespace statesim {

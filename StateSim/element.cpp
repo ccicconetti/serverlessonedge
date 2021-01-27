@@ -29,6 +29,8 @@ SOFTWARE.
 
 #include "StateSim/element.h"
 
+#include <stdexcept>
+
 namespace uiiit {
 namespace statesim {
 

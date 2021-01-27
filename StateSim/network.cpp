@@ -266,7 +266,7 @@ void Network::initElementsGraph(const std::vector<Edge>&  aEdges,
     assert(myLink.second.id() < theElements.size());
     theElements[myLink.second.id()] = &myLink.second;
   }
-  for (const auto& elem : theElements) {
+  for ([[maybe_unused]] const auto& elem : theElements) {
     assert(elem != nullptr);
   }
 
