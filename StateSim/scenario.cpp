@@ -236,6 +236,9 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
     assert(myJob.id() < theClients.size());
     const auto myClient = theClients[myJob.id()];
 
+    // last known location of the state, only used with StateLocal policy
+    std::vector<Node*> myStateLocation(myJob.stateSizes().size(), myClient);
+
     ExecStat myExecStat;
     Node*    myPrevNode = nullptr;
     for (const auto& myTask : myJob.tasks()) {
@@ -270,7 +273,33 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
         }
       } else {
         assert(aPolicy == Policy::StateLocal);
-        // XXX
+        // execution time + transfer of the argument from previous node
+        // to the current one
+        merge(myExecStat,
+              execStatsOneWay(myTask.ops(),
+                              myTask.size(),
+                              myPrevNode == nullptr ? *myClient : *myPrevNode,
+                              *myNode));
+
+        // transfer of state from its last known location
+        for (const auto myStateId : myTask.deps()) {
+          assert(myStateId < myJob.stateSizes().size());
+          assert(myStateId < myStateLocation.size());
+          merge(myExecStat,
+                execStatsOneWay(0,
+                                myJob.stateSizes()[myStateId],
+                                *myStateLocation[myStateId],
+                                *myNode));
+
+          // update location of this state to the current node
+          myStateLocation[myStateId] = myNode;
+        }
+
+        // last return value to client
+        if (myLastTask) {
+          merge(myExecStat,
+                execStatsOneWay(0, myJob.retSize(), *myNode, *myClient));
+        }
       }
 
       myPrevNode = myNode;
