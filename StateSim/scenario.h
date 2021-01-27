@@ -73,7 +73,9 @@ struct PerformanceData {
 };
 
 enum class Policy : int {
-  PureFaaS = 0,
+  PureFaaS       = 0,
+  StatePropagate = 1,
+  StateLocal     = 2,
 };
 
 class Scenario
@@ -81,6 +83,7 @@ class Scenario
   NONCOPYABLE_NONMOVABLE(Scenario);
 
   using Allocation = std::vector<std::vector<Node*>>;
+  using ExecStat   = std::tuple<double, double, size_t>;
 
  public:
   struct Conf {
@@ -156,7 +159,9 @@ class Scenario
 
   /**
    * Return the execution time (processing vs. network) of a given task
-   * allocated to a candidate node.
+   * allocated to a candidate node when transferring the given amount
+   * of data from the origin (in) and then back to the origin (out), and
+   * the total amount of the data transferred in the network.
    *
    * \param aOps The number of operations of the task
    *
@@ -164,17 +169,39 @@ class Scenario
    *
    * \param aOutSize The total output size (argument + state, if any)
    *
-   * \param aClient The client node
+   * \param aOrigin The origin node
    *
-   * \param aNode The node to which this task is allocated
+   * \param aTarget The node to which this task is allocated
    *
-   * \return execution time (network transfer, processing), in s
+   * \return execution time (network transfer, processing), in s, and data
+   * transferred, in bytes
    */
-  std::pair<double, double> execTime(const size_t aOps,
-                                     const size_t aInSize,
-                                     const size_t aOutSize,
-                                     const Node&  aClient,
-                                     const Node&  aNode) const;
+  ExecStat execStatsTwoWay(const size_t aOps,
+                           const size_t aInSize,
+                           const size_t aOutSize,
+                           const Node&  aOrigin,
+                           const Node&  aTarget) const;
+  /**
+   * Return the execution time (processing vs. network) of a given task
+   * allocated to a candidate node when transferring the given amount
+   * of data from the origin (in), and
+   * the total amount of the data transferred in the network.
+   *
+   * \param aOps The number of operations of the task (can be zero)
+   *
+   * \param aSize The transfer size (if any)
+   *
+   * \param aOrigin The origin node
+   *
+   * \param aTarget The node to which this task is allocated
+   *
+   * \return execution time (network transfer, processing), in s, and data
+   * transferred, in bytes
+   */
+  std::tuple<double, double, size_t> execStatsOneWay(const size_t aOps,
+                                                     const size_t aSize,
+                                                     const Node&  aOrigin,
+                                                     const Node& aTarget) const;
 
   //! \return a random order of the job identifiers
   std::vector<size_t> shuffleJobIds();
@@ -184,8 +211,11 @@ class Scenario
                                           const Network&              aNetwork,
                                           std::default_random_engine& aRng);
 
-  //! \return the input/output transfer sizes of a task.
-  static std::pair<size_t, size_t> sizes(const Job& aJob, const Task& aTask);
+  //! \return the sum of all the job states and the input vs. output of a task.
+  static std::pair<size_t, size_t> allStatesArgSizes(const Job&  aJob,
+                                                     const Task& aTask);
+
+  static void merge(ExecStat& aTarget, const ExecStat& aOrigin);
 
  private:
   std::default_random_engine            theRng;

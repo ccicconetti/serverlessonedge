@@ -179,7 +179,7 @@ void Scenario::allocateTasks(const Policy aPolicy) {
       // retrieve argument and return value sizes (+ states, if any)
       size_t myInSize;
       size_t myOutSize;
-      std::tie(myInSize, myOutSize) = sizes(myJob, myTask);
+      std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask);
 
       // select the processing node with shortest execution time
       double myMinExecTime;
@@ -236,35 +236,48 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
     assert(myJob.id() < theClients.size());
     const auto myClient = theClients[myJob.id()];
 
-    double myProcDelay       = 0;
-    double myNetDelay        = 0;
-    size_t myDataTransferred = 0;
+    ExecStat myExecStat;
+    Node*    myPrevNode = nullptr;
     for (const auto& myTask : myJob.tasks()) {
       // retrieve the node to which this task has been allocated
       assert(myJob.id() < theAllocation.size());
       assert(myTask.id() < theAllocation[myJob.id()].size());
-      const auto myNode = theAllocation[myJob.id()][myTask.id()];
+      const auto myNode     = theAllocation[myJob.id()][myTask.id()];
+      const auto myLastTask = myJob.tasks().back().id() == myTask.id();
 
       // retrieve argument and return value sizes (+ states, if any)
       size_t myInSize;
       size_t myOutSize;
-      std::tie(myInSize, myOutSize) = sizes(myJob, myTask);
+      std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask);
 
-      // retrieve execution time
+      // retrieve execution statistics
       VLOG(2) << "job " << myJob.id() << " task " << myTask.id() << " client "
-              << myClient->name() << " allocated to " << myNode->name();
-      const auto myExecPair =
-          execTime(myTask.ops(), myInSize, myOutSize, *myClient, *myNode);
-      myProcDelay += myExecPair.first;
-      myNetDelay += myExecPair.second;
+              << myClient->name() << " allocated to " << myNode->name()
+              << ", policy " << toString(aPolicy);
 
-      // compute the amount of data transferred based on the number of hops
-      myDataTransferred +=
-          theNetwork->hops(*myClient, *myNode) * (myInSize + myOutSize);
+      if (aPolicy == Policy::PureFaaS) {
+        merge(myExecStat,
+              execStatsTwoWay(
+                  myTask.ops(), myInSize, myOutSize, *myClient, *myNode));
+      } else if (aPolicy == Policy::StatePropagate) {
+        merge(myExecStat,
+              execStatsOneWay(myTask.ops(),
+                              myInSize,
+                              myPrevNode == nullptr ? *myClient : *myPrevNode,
+                              *myNode));
+        if (myLastTask) {
+          merge(myExecStat, execStatsOneWay(0, myOutSize, *myNode, *myClient));
+        }
+      } else {
+        assert(aPolicy == Policy::StateLocal);
+        // XXX
+      }
+
+      myPrevNode = myNode;
     }
-    ret.theProcDelays.emplace_back(myProcDelay);
-    ret.theNetDelays.emplace_back(myNetDelay);
-    ret.theDataTransfer.emplace_back(myDataTransferred);
+    ret.theProcDelays.emplace_back(std::get<0>(myExecStat));
+    ret.theNetDelays.emplace_back(std::get<1>(myExecStat));
+    ret.theDataTransfer.emplace_back(std::get<2>(myExecStat));
   }
 
   //
@@ -292,27 +305,38 @@ std::pair<double, double> Scenario::execTimeNew(const size_t aOps,
   return {myProcTime, myTxTime};
 }
 
-std::pair<double, double> Scenario::execTime(const size_t aOps,
-                                             const size_t aInSize,
-                                             const size_t aOutSize,
-                                             const Node&  aClient,
-                                             const Node&  aNode) const {
+std::tuple<double, double, size_t>
+Scenario::execStatsTwoWay(const size_t aOps,
+                          const size_t aInSize,
+                          const size_t aOutSize,
+                          const Node&  aTarget,
+                          const Node&  aNode) const {
   assert(aNode.id() < theLoad.size());
   assert(theLoad[aNode.id()] > 0);
+
   const auto myProcTime = aOps / (aNode.speed() / theLoad[aNode.id()]);
-  const auto myTxTime   = theNetwork->txTime(aClient, aNode, aInSize) +
-                        theNetwork->txTime(aNode, aClient, aOutSize);
+  const auto myTxTime   = theNetwork->txTime(aTarget, aNode, aInSize) +
+                        theNetwork->txTime(aNode, aTarget, aOutSize);
+  const auto myDataTransferred = theNetwork->hops(aTarget, aNode) * aInSize +
+                                 theNetwork->hops(aNode, aTarget) * aOutSize;
 
-  VLOG(2) << "\tops " << aOps << " speed " << aNode.speed() << " load "
-          << theLoad[aNode.id()];
-  VLOG(2) << "\tfrom " << aClient.name() << " to " << aNode.name() << " takes "
-          << theNetwork->txTime(aClient, aNode, aInSize) << " to transfer "
-          << aInSize << " bytes";
-  VLOG(2) << "\tfrom " << aNode.name() << " to " << aClient.name() << " takes "
-          << theNetwork->txTime(aNode, aClient, aOutSize) << " to transfer "
-          << aOutSize << " bytes";
+  return {myProcTime, myTxTime, myDataTransferred};
+}
 
-  return {myProcTime, myTxTime};
+std::tuple<double, double, size_t>
+Scenario::execStatsOneWay(const size_t aOps,
+                          const size_t aSize,
+                          const Node&  aOrigin,
+                          const Node&  aTarget) const {
+  assert(aOps == 0 or aTarget.id() < theLoad.size());
+  assert(aOps == 0 or theLoad[aTarget.id()] > 0);
+
+  const auto myProcTime =
+      aOps == 0 ? 0 : (aOps / (aTarget.speed() / theLoad[aTarget.id()]));
+  const auto myTxTime          = theNetwork->txTime(aOrigin, aTarget, aSize);
+  const auto myDataTransferred = theNetwork->hops(aOrigin, aTarget) * aSize;
+
+  return {myProcTime, myTxTime, myDataTransferred};
 }
 
 std::vector<size_t> Scenario::shuffleJobIds() {
@@ -349,7 +373,8 @@ std::vector<Node*> Scenario::randomClients(const size_t                aNumJobs,
   return ret;
 }
 
-std::pair<size_t, size_t> Scenario::sizes(const Job& aJob, const Task& aTask) {
+std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
+                                                      const Task& aTask) {
   // size of the states (if any)
   size_t myStateSize = 0;
   for (const auto myStateId : aTask.deps()) {
@@ -367,26 +392,40 @@ std::pair<size_t, size_t> Scenario::sizes(const Job& aJob, const Task& aTask) {
   return {myInSize, myOutSize};
 }
 
-std::string toString(const Policy aPolicy) {
-  switch (aPolicy) {
-    case Policy::PureFaaS:
-      return "PureFaaS";
-  }
+void Scenario::merge(ExecStat& aTarget, const ExecStat& aOrigin) {
+  std::get<0>(aTarget) += std::get<0>(aOrigin);
+  std::get<1>(aTarget) += std::get<1>(aOrigin);
+  std::get<2>(aTarget) += std::get<2>(aOrigin);
+}
 
-  assert(false);
+std::string toString(const Policy aPolicy) {
+  // clang-format off
+  switch (aPolicy) {
+    case Policy::PureFaaS:       return "PureFaaS";
+    case Policy::StatePropagate: return "StatePropagate";
+    case Policy::StateLocal:     return "StateLocal";
+    default:                     assert(false);
+  }
+  // clang-format on
+
   return std::string();
 }
 
 Policy policyFromString(const std::string& aValue) {
-  if (aValue == "PureFaaS") {
-    return Policy::PureFaaS;
+  // clang-format off
+         if (aValue == "PureFaaS") {       return Policy::PureFaaS;
+  } else if (aValue == "StatePropagate") { return Policy::StatePropagate;
+  } else if (aValue == "StateLocal") {     return Policy::StateLocal;
   }
+  // clang-format on
   throw std::runtime_error("Invalid scenario policy: " + aValue);
 }
 
 const std::set<Policy>& allPolicies() {
   static const std::set<Policy> myAllPolicies({
       Policy::PureFaaS,
+      Policy::StatePropagate,
+      Policy::StateLocal,
   });
   return myAllPolicies;
 }
