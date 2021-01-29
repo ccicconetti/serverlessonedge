@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "Edge/edgeclient.h"
+#include "Edge/edgeclientgrpc.h"
 #include "Edge/etsiedgeclient.h"
 #include "EtsiMec/appcontextmanager.h"
 #include "EtsiMec/etsimecoptions.h"
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
 
     } else {
       // establish direct connection with the edge computer/router
-      myEdgeClient.reset(new ec::EdgeClient(myServerEndpoint));
+      myEdgeClient.reset(new ec::EdgeClientGrpc(myServerEndpoint));
     }
 
     if (((myCli.varMap().count("camera") > 0) +

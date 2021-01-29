@@ -1,0 +1,162 @@
+add_library(uiiitedgequic SHARED
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientquic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/hqserver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/curlclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/hqsessioncontroller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/hqservertransportfactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/quicparamsbuilder.cpp
+)
+
+target_compile_options(uiiitedgequic PRIVATE "-DNDEBUG")
+
+if(APPLE)
+target_link_libraries(uiiitedgequic
+    uiiitrpc
+
+    #boost_iostreams
+    #boost_regex
+    #event
+    fizz
+    fmt
+    folly
+    mvfst_buf_accessor
+    mvfst_bufutil
+    mvfst_cc_algo
+    mvfst_client
+    mvfst_codec
+    mvfst_codec_decode
+    mvfst_codec_packet_number_cipher
+    mvfst_codec_pktbuilder
+    mvfst_codec_pktrebuilder
+    mvfst_codec_types
+    mvfst_constants
+    mvfst_d6d_state_functions
+    mvfst_d6d_types
+    mvfst_exception
+    mvfst_fizz_client
+    mvfst_fizz_handshake
+    mvfst_flowcontrol
+    mvfst_handshake
+    mvfst_happyeyeballs
+    mvfst_looper
+    mvfst_loss
+    mvfst_qlogger
+    mvfst_server
+    mvfst_socketutil
+    mvfst_state_ack_handler
+    mvfst_state_functions
+    mvfst_state_machine
+    mvfst_state_pacing_functions
+    mvfst_state_qpr_functions
+    mvfst_state_simple_frame_functions
+    mvfst_state_stream
+    mvfst_state_stream_functions
+    mvfst_transport
+    proxygen
+    proxygencurl
+    proxygenhttpserver
+    wangle
+    #zstd
+
+    #boost_atomic
+    #boost_chrono
+    #boost_context
+    #boost_date_time
+    #boost_filesystem
+    #boost_program_options
+    #boost_regex
+    #boost_system
+    #boost_thread
+    bz2
+    #crypto
+    dl
+    #double-conversion
+    gflags
+    #glog
+    #iberty.a
+    #lz4
+    lzma
+    pthread
+    #rt
+    #snappy
+    #sodium
+    #ssl
+    z
+    #zstd
+)
+else()
+target_link_libraries(uiiitedgequic
+    uiiitrpc
+
+    fizz
+    fmt
+    folly
+    mvfst_buf_accessor
+    mvfst_bufutil
+    mvfst_cc_algo
+    mvfst_client
+    mvfst_codec
+    mvfst_codec_decode
+    mvfst_codec_packet_number_cipher
+    mvfst_codec_pktbuilder
+    mvfst_codec_pktrebuilder
+    mvfst_codec_types
+    mvfst_constants
+    mvfst_d6d_state_functions
+    mvfst_d6d_types
+    mvfst_exception
+    mvfst_fizz_client
+    mvfst_fizz_handshake
+    mvfst_flowcontrol
+    mvfst_handshake
+    mvfst_happyeyeballs
+    mvfst_looper
+    mvfst_loss
+    mvfst_qlogger
+    mvfst_server
+    mvfst_socketutil
+    mvfst_state_ack_handler
+    mvfst_state_functions
+    mvfst_state_machine
+    mvfst_state_pacing_functions
+    mvfst_state_qpr_functions
+    mvfst_state_simple_frame_functions
+    mvfst_state_stream
+    mvfst_state_stream_functions
+    mvfst_transport
+    mvfst_transport_knobs
+    proxygen
+    proxygencurl
+    proxygenhttpserver
+    wangle
+
+    boost_atomic
+    boost_chrono
+    boost_context
+    boost_date_time
+    boost_filesystem
+    boost_iostreams
+    boost_program_options
+    boost_regex
+    boost_system
+    boost_thread
+    bz2
+    crypto
+    dl
+    double-conversion
+    event
+    gflags
+    glog
+    iberty.a
+    lz4
+    lzma
+    pthread
+    rt
+    snappy
+    sodium
+    ssl
+    z
+    zstd
+)
+endif()

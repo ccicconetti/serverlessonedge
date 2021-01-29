@@ -29,16 +29,17 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/edgeclientinterface.h"
+#include "Edge/edgemessages.h"
+#include "Support/conf.h"
 #include "Support/macros.h"
-#include "edgeclient.h"
-#include "edgemessages.h"
 
+#include <condition_variable>
 #include <list>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <condition_variable>
 #include <utility>
 
 namespace uiiit {
@@ -56,9 +57,9 @@ class EdgeClientPool
         , theAvailableCond() {
     }
 
-    std::list<std::unique_ptr<EdgeClient>> theFree;
-    size_t                                 theBusy;
-    std::condition_variable                theAvailableCond;
+    std::list<std::unique_ptr<EdgeClientInterface>> theFree;
+    size_t                                          theBusy;
+    std::condition_variable                         theAvailableCond;
   };
 
  public:
@@ -70,7 +71,8 @@ class EdgeClientPool
    * \param aMaxClients The maximum number of clients per destination. 0 means
    * ulimited.
    */
-  explicit EdgeClientPool(const size_t aMaxClients);
+  explicit EdgeClientPool(const support::Conf& aQuicServerConf,
+                          const size_t         aMaxClients);
 
   /**
    * Execute a lambda on a given edge computer identified by its end-point.
@@ -89,17 +91,18 @@ class EdgeClientPool
                                                const bool           aDry);
 
  private:
-  std::unique_ptr<EdgeClient> getClient(const std::string& aDestination);
+  std::unique_ptr<EdgeClientInterface>
+  getClient(const std::string& aDestination);
 
-  void releaseClient(const std::string&            aDestination,
-                     std::unique_ptr<EdgeClient>&& aClient);
+  void releaseClient(const std::string&                     aDestination,
+                     std::unique_ptr<EdgeClientInterface>&& aClient);
 
   void debugPrintPool();
 
  private:
-  const size_t theMaxClients;
-
+  const size_t                      theMaxClients;
   mutable std::mutex                theMutex;
+  const support::Conf               theServerConf;
   std::map<std::string, Descriptor> thePool;
 };
 

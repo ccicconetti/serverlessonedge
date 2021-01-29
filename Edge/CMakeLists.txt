@@ -1,7 +1,3 @@
-set(PROXYGENLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/lib/libproxygen.a")
-set(PROXYGENCURLLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpclient/samples/curl/libproxygencurl.a")
-set(PROXYGENHTTPSERVERLIB "${PROXYGEN_ROOT}/proxygen/_build/proxygen/httpserver/libproxygenhttpserver.a")
-
 add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/Detail/printtable.cpp
 
@@ -10,11 +6,10 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryroundrobin.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryrandom.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryproportionalfairness.cpp
-
   ${CMAKE_CURRENT_SOURCE_DIR}/composer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/container.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientgrpc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientfactory.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientmulti.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientpool.cpp
@@ -68,6 +63,7 @@ add_library(uiiitedge SHARED
 )
 
 target_link_libraries(uiiitedge
+  uiiitedgequic
   uiiitetsimec
   uiiitopenwhisk
   uiiitrpc

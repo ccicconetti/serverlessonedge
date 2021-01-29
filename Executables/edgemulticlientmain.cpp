@@ -29,6 +29,7 @@ SOFTWARE.
 
 #include "Edge/edgeclientpool.h"
 #include "Support/chrono.h"
+#include "Support/conf.h"
 #include "Support/glograii.h"
 #include "Support/queue.h"
 #include "Support/saver.h"
@@ -137,6 +138,7 @@ int main(int argc, char* argv[]) {
 
   std::string myInputFile;
   std::string myOutputFile;
+  std::string myQuicServerStringConf;
   size_t      myNumThreads;
 
   po::options_description myDesc("Allowed options");
@@ -152,6 +154,9 @@ int main(int argc, char* argv[]) {
     ("output-file",
      po::value<std::string>(&myOutputFile)->default_value(""),
      "Output file name. Do not save latencies if empty.")
+     ("client-conf", 
+     po::value<std::string>(&myQuicServerStringConf)->default_value("type=grpc,persistence=0.05"),
+     "Client configuration, type can be quic or grpc, in quic case set attempt-early-data to true or false")
     ;
   // clang-format on
 
@@ -178,7 +183,10 @@ int main(int argc, char* argv[]) {
     uiiit::support::Chrono      myChrono(true);
     const uiiit::support::Saver mySaver(myOutputFile, true, false, false);
     uiiit::support::SummaryStat myStat;
-    ec::EdgeClientPool          myClientPool(0); // unlimited clients
+    // by now EdgeClientMulti supports only GRPC
+    ec::EdgeClientPool myClientPool(
+        uiiit::support::Conf(myQuicServerStringConf),
+        0); // unlimited clients
 
     std::list<Consumer>    myConsumers;
     std::list<std::thread> myThreads;

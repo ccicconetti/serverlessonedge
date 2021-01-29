@@ -37,3 +37,7 @@
 # build artifacts
 build
 .vscode
+rbuild
+workspace.code-workspace
+thirdparty/include
+thirdparty/libs

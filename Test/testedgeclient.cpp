@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "Edge/edgeclient.h"
+#include "Edge/edgeclientgrpc.h"
 
 #include "gtest/gtest.h"
 
@@ -42,12 +42,12 @@ struct TestEdgeClient : public ::testing::Test {
 };
 
 TEST_F(TestEdgeClient, test_ctor) {
-  ASSERT_NO_THROW(EdgeClient{theEndpoint});
+  ASSERT_NO_THROW(EdgeClientGrpc{theEndpoint});
 }
 
 TEST_F(TestEdgeClient, test_no_server) {
-  EdgeClient    myClient(theEndpoint);
-  LambdaRequest myReq("lambda1", "");
+  EdgeClientGrpc myClient(theEndpoint);
+  LambdaRequest  myReq("lambda1", "");
   ASSERT_THROW(myClient.RunLambda(myReq, true), std::runtime_error);
   ASSERT_THROW(myClient.RunLambda(myReq, false), std::runtime_error);
 }

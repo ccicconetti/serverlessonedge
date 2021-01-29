@@ -27,38 +27,70 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeserverquic.h"
+#pragma once
 
-#include <glog/logging.h>
+#include "Quic/quicparamsbuilder.h"
 
-#include <proxygen/httpserver/samples/hq/HQParams.h>
-#include <proxygen/httpserver/samples/hq/HQServer.h>
+#include <folly/Format.h>
+#include <proxygen/lib/http/session/HTTPTransaction.h>
 
 namespace uiiit {
 namespace edge {
 
-// EdgeServerQuic::EdgeServerQuic(){
-//     LOG(INFO) << "EdgeServerQuic CTOR" <<'\n';
-// }
+class BaseHandler : public proxygen::HTTPTransactionHandler
+{
+ public:
+  BaseHandler() = delete;
 
-// void EdgeServerQuic::run() {
-//   // XXX
+  explicit BaseHandler(const HQParams& aQuicParamsConf)
+      : theQuicParamsConf(aQuicParamsConf) {
+  }
 
-//   init();
-// }
+  void
+  setTransaction(proxygen::HTTPTransaction* aTransaction) noexcept override {
+    theTransaction = aTransaction;
+  }
 
-// void EdgeServerQuic::wait() {
-//   // XXX
-// }
+  void detachTransaction() noexcept override {
+    delete this;
+  }
 
-// EdgeServerQuic::~EdgeServerQuic() {
-// }
+  void onChunkHeader(size_t /*length*/) noexcept override {
+  }
 
-// std::set<std::thread::id> EdgeServerQuic::threadIds() const {
-//   return std::set<std::thread::id>();
-// }
+  void onChunkComplete() noexcept override {
+  }
 
-// void process(const std::string& aReq){}; // std::string
+  void onTrailers(
+      std::unique_ptr<proxygen::HTTPHeaders> /*trailers*/) noexcept override {
+  }
+
+  void onUpgrade(proxygen::UpgradeProtocol /*protocol*/) noexcept override {
+  }
+
+  void onEgressPaused() noexcept override {
+  }
+
+  void onEgressResumed() noexcept override {
+  }
+
+  void maybeAddAltSvcHeader(proxygen::HTTPMessage& aMsg) const {
+    if (theQuicParamsConf.port == 0) {
+      return;
+    }
+    aMsg.getHeaders().add(
+        proxygen::HTTP_HEADER_ALT_SVC,
+        folly::format("{}=\":{}\"; ma=3600", "", theQuicParamsConf.port).str());
+  }
+
+ protected:
+  const std::string& getHttpVersion() const {
+    return theQuicParamsConf.httpVersion.canonical;
+  }
+
+  proxygen::HTTPTransaction* theTransaction{nullptr};
+  const HQParams&            theQuicParamsConf;
+};
 
 } // namespace edge
 } // namespace uiiit

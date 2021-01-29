@@ -26,41 +26,53 @@ LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+#pragma once
 
-#include "edgeclientfactory.h"
-
-#include "Edge/edgeclientgrpc.h"
-#include "Edge/edgeclientinterface.h"
-#include "Edge/edgeclientmulti.h"
-#include "Quic/edgeclientquic.h"
-#include "Quic/quicparamsbuilder.h"
-#include "Support/conf.h"
-
-#include <stdexcept>
+#include "Quic/basehandler.h"
 
 namespace uiiit {
 namespace edge {
 
-std::unique_ptr<EdgeClientInterface>
-EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
-                        const support::Conf&         aConf) {
-  if (aEndpoints.empty()) {
-    throw std::runtime_error(
-        "Cannot create an edge client with an empty set of destinations");
+class EchoHandler : public BaseHandler
+{
+ public:
+  explicit EchoHandler(const HQParams& aQuicParamsConf)
+      : BaseHandler(aQuicParamsConf) {
   }
 
-  const auto myType = aConf("type");
-  if (aEndpoints.size() == 1) {
-    if (myType == std::string("grpc")) {
-      return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
-    } else { // type = quic
-      return std::make_unique<EdgeClientQuic>(
-          QuicParamsBuilder::buildClientHQParams(aConf, *aEndpoints.begin()));
-    }
+  EchoHandler() = delete;
+
+  void onHeadersComplete(
+      std::unique_ptr<proxygen::HTTPMessage> aMsg) noexcept override {
+    VLOG(10) << "EchoHandler::onHeadersComplete";
+    proxygen::HTTPMessage myResp;
+    VLOG(10) << "Setting http-version to " << getHttpVersion();
+    myResp.setVersionString(getHttpVersion());
+    myResp.setStatusCode(200);
+    myResp.setStatusMessage("Ok");
+    aMsg->getHeaders().forEach([&](const std::string& header,
+                                   const std::string& value) {
+      myResp.getHeaders().add(folly::to<std::string>("x-echo-", header), value);
+    });
+    myResp.setWantsKeepalive(true);
+    maybeAddAltSvcHeader(myResp);
+    theTransaction->sendHeaders(myResp);
   }
 
-  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
-}
+  void onBody(std::unique_ptr<folly::IOBuf> aChain) noexcept override {
+    VLOG(10) << "EchoHandler::onBody";
+    theTransaction->sendBody(std::move(aChain));
+  }
 
-} // end namespace edge
-} // end namespace uiiit
+  void onEOM() noexcept override {
+    VLOG(10) << "EchoHandler::onEOM";
+    theTransaction->sendEOM();
+  }
+
+  void onError(const proxygen::HTTPException& /*error*/) noexcept override {
+    theTransaction->sendAbort();
+  }
+};
+
+} // namespace edge
+} // namespace uiiit

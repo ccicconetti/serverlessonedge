@@ -1,0 +1,88 @@
+--- build.sh	2020-12-09 10:18:04.284761326 +0100
++++ build-shared.sh	2020-12-15 17:30:37.929816019 +0100
+@@ -139,6 +139,7 @@
+     -DCMAKE_PREFIX_PATH="$DEPS_DIR"               \
+     -DCMAKE_INSTALL_PREFIX="$DEPS_DIR"            \
+     -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
++    -DBUILD_SHARED_LIBS=ON                        \
+     "$MAYBE_OVERRIDE_CXX_FLAGS"                   \
+     -DFMT_DOC=OFF                                 \
+     -DFMT_TEST=OFF                                \
+@@ -166,6 +167,7 @@
+ 
+   cmake                                           \
+     -DCMAKE_PREFIX_PATH="$DEPS_DIR"               \
++    -DBUILD_SHARED_LIBS=ON                        \
+     -DCMAKE_INSTALL_PREFIX="$DEPS_DIR"            \
+     -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
+     ..
+@@ -204,7 +206,7 @@
+ 
+   MAYBE_USE_STATIC_DEPS=""
+   MAYBE_USE_STATIC_BOOST=""
+-  MAYBE_BUILD_SHARED_LIBS=""
++  MAYBE_BUILD_SHARED_LIBS="-DBUILD_SHARED_LIBS=ON"
+   if [ "$BUILD_FOR_FUZZING" == true ] ; then
+     MAYBE_USE_STATIC_DEPS="-DUSE_STATIC_DEPS_ON_UNIX=ON"
+     MAYBE_USE_STATIC_BOOST="-DBOOST_LINK_STATIC=ON"
+@@ -242,7 +244,7 @@
+ 
+   MAYBE_USE_STATIC_DEPS=""
+   MAYBE_USE_SODIUM_STATIC_LIBS=""
+-  MAYBE_BUILD_SHARED_LIBS=""
++  MAYBE_BUILD_SHARED_LIBS="-DBUILD_SHARED_LIBS=ON"
+   if [ "$BUILD_FOR_FUZZING" == true ] ; then
+     MAYBE_USE_STATIC_DEPS="-DUSE_STATIC_DEPS_ON_UNIX=ON"
+     MAYBE_USE_SODIUM_STATIC_LIBS="-Dsodium_USE_STATIC_LIBS=ON"
+@@ -277,7 +279,7 @@
+   cd "$WANGLE_BUILD_DIR" || exit
+ 
+   MAYBE_USE_STATIC_DEPS=""
+-  MAYBE_BUILD_SHARED_LIBS=""
++  MAYBE_BUILD_SHARED_LIBS="-DBUILD_SHARED_LIBS=ON"
+   if [ "$BUILD_FOR_FUZZING" == true ] ; then
+     MAYBE_USE_STATIC_DEPS="-DUSE_STATIC_DEPS_ON_UNIX=ON"
+     MAYBE_BUILD_SHARED_LIBS="-DBUILD_SHARED_LIBS=OFF"
+@@ -310,13 +312,16 @@
+   cd "$MVFST_BUILD_DIR" || exit
+ 
+   MAYBE_USE_STATIC_DEPS=""
+-  MAYBE_BUILD_SHARED_LIBS=""
++  MAYBE_BUILD_SHARED_LIBS="-DBUILD_SHARED_LIBS=ON"
+   if [ "$BUILD_FOR_FUZZING" == true ] ; then
+     MAYBE_USE_STATIC_DEPS="-DUSE_STATIC_DEPS_ON_UNIX=ON"
+     MAYBE_BUILD_SHARED_LIBS="-DBUILD_SHARED_LIBS=OFF"
+   fi
+ 
+-
++  to_patch=$(find ../ -name CMakeLists.txt | xargs grep STATIC | cut -f 1 -d : | sort -u)
++  if [ "$to_patch" != "" ] ; then
++    sed -i -e "s/STATIC//" $to_patch
++  fi
+   cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo       \
+     -DCMAKE_PREFIX_PATH="$DEPS_DIR"             \
+     -DCMAKE_INSTALL_PREFIX="$DEPS_DIR"          \
+@@ -383,7 +388,7 @@
+   MAYBE_OVERRIDE_CXX_FLAGS="-DCMAKE_CXX_FLAGS=$COMPILER_FLAGS"
+ fi
+ 
+-BUILD_DIR=_build
++BUILD_DIR=_build_shared
+ mkdir -p $BUILD_DIR
+ 
+ set -e nounset
+@@ -410,7 +415,7 @@
+ MAYBE_BUILD_FUZZERS=""
+ MAYBE_USE_STATIC_DEPS=""
+ MAYBE_LIB_FUZZING_ENGINE=""
+-MAYBE_BUILD_SHARED_LIBS=""
++MAYBE_BUILD_SHARED_LIBS="-DBUILD_SHARED_LIBS=ON"
+ MAYBE_BUILD_TESTS="-DBUILD_TESTS=ON"
+ if [ "$NO_BUILD_TESTS" == true ] ; then
+   MAYBE_BUILD_TESTS="-DBUILD_TESTS=OFF"
+@@ -443,4 +448,4 @@
+ 
+ make -j "$JOBS"
+ echo -e "${COLOR_GREEN}Proxygen build is complete. To run unit test: \
+-  cd _build/ && make test ${COLOR_OFF}"
++  cd _build_shared/ && make test ${COLOR_OFF}"

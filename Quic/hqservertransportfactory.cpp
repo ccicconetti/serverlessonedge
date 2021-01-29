@@ -27,40 +27,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeclientfactory.h"
-
-#include "Edge/edgeclientgrpc.h"
-#include "Edge/edgeclientinterface.h"
-#include "Edge/edgeclientmulti.h"
-#include "Quic/edgeclientquic.h"
-#include "Quic/quicparamsbuilder.h"
-#include "Support/conf.h"
-
-#include <stdexcept>
+#include "Quic/hqservertransportfactory.h"
+#include "Quic/hqsessioncontroller.h"
 
 namespace uiiit {
 namespace edge {
 
-std::unique_ptr<EdgeClientInterface>
-EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
-                        const support::Conf&         aConf) {
-  if (aEndpoints.empty()) {
-    throw std::runtime_error(
-        "Cannot create an edge client with an empty set of destinations");
-  }
-
-  const auto myType = aConf("type");
-  if (aEndpoints.size() == 1) {
-    if (myType == std::string("grpc")) {
-      return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
-    } else { // type = quic
-      return std::make_unique<EdgeClientQuic>(
-          QuicParamsBuilder::buildClientHQParams(aConf, *aEndpoints.begin()));
-    }
-  }
-
-  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
+HQServerTransportFactory::HQServerTransportFactory(
+    const HQParams&                       aQuicParamsConf,
+    const HTTPTransactionHandlerProvider& aHttpTransactionHandlerProvider)
+    : theQuicParamsConf(aQuicParamsConf)
+    , theHttpTransactionHandlerProvider(aHttpTransactionHandlerProvider) {
 }
 
-} // end namespace edge
-} // end namespace uiiit
+quic::QuicServerTransport::Ptr HQServerTransportFactory::make(
+    folly::EventBase*                      aEvb,
+    std::unique_ptr<folly::AsyncUDPSocket> aSocket,
+    const folly::SocketAddress& /* peerAddr */,
+    std::shared_ptr<const fizz::server::FizzServerContext> aCtx) noexcept {
+  // Session controller is self owning
+  auto mySessionController = new HQSessionController(
+      theQuicParamsConf, theHttpTransactionHandlerProvider);
+  auto mySession = mySessionController->createSession();
+  CHECK_EQ(aEvb, aSocket->getEventBase());
+  auto myServerTransport = quic::QuicServerTransport::make(
+      aEvb, std::move(aSocket), *mySession, aCtx);
+  mySessionController->startSession(myServerTransport);
+  return myServerTransport;
+}
+
+} // namespace edge
+} // namespace uiiit

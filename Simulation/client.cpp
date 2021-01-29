@@ -29,9 +29,9 @@ SOFTWARE.
 
 #include "client.h"
 
-#include "Edge/edgeclientfactory.h"
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
+#include "Edge/edgeclientfactory.h"
 #include "Support/saver.h"
 #include "Support/stat.h"
 

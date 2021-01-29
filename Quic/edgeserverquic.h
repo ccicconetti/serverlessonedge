@@ -29,11 +29,20 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/edgeserverimpl.h"
+#include "Quic/hqserver.h"
+#include "Quic/hqservertransportfactory.h"
+#include "Quic/hqsessioncontroller.h"
+#include "Quic/quicparamsbuilder.h"
 #include "Support/macros.h"
 
-#include "edgeserver.grpc.pb.h"
-
+#include <cassert>
+#include <condition_variable>
+#include <list>
+#include <map>
+#include <memory>
 #include <set>
+#include <string>
 #include <thread>
 
 namespace uiiit {
@@ -41,41 +50,54 @@ namespace edge {
 
 struct LambdaResponse;
 
+using HTTPTransactionHandlerProvider =
+    std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
+                                                    const HQParams&)>;
+
 /**
- * Generic edge server base class for the
+ * Generic edge server providing a multi-threaded QUIC server interface for the
  * processing of lambda functions.
  */
-class EdgeServer
+class EdgeServerQuic final : public EdgeServerImpl
 {
 
  public:
-  NONCOPYABLE_NONMOVABLE(EdgeServer);
+  NONCOPYABLE_NONMOVABLE(EdgeServerQuic);
 
-  //! Create an edge server with just a mutex and an endpoint
-  explicit EdgeServer(const std::string& aServerEndpoint);
+  //! Create an edge server with a given number of threads.
+  explicit EdgeServerQuic(EdgeServer&     aEdgeServer,
+                          const HQParams& aQuicParamsConf);
 
-  virtual ~EdgeServer(){};
+  virtual ~EdgeServerQuic();
+
+  //! Start the server. No more configuration allowed after this call.
+  void run() override;
+
+  //! Wait until HQServer termination.
+  void wait() override;
 
   //! Perform actual processing of a lambda request.
-  virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
+  rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
 
+ protected:
   /**
-   * This method is invoked by the implementation class immediately after the
-   * communication interface has been set up. It can be overriden by
-   * specialized classes, if needed.
-   *
-   * \param aThreads The threads spawned.
+   * \return the set of the identifiers of the threads that have been
+   * spawned during the call to run(). If
+   * run() has not (yet) been called, then an empty set is returned.
    */
-  virtual void init([
-      [maybe_unused]] const std::set<std::thread::id>& aThreadIds) {
-    // noop
-  }
+  std::set<std::thread::id> threadIds() const;
 
+ private:
  protected:
   mutable std::mutex theMutex;
   const std::string  theServerEndpoint;
+  const size_t       theNumThreads;
 
-}; // end class EdgeServer
+ private:
+  const HQParams theQuicParamsConf;
+  std::thread    theQuicServerThread;
+  HQServer       theQuicTransportServer;
+};
 
-} // end namespace edge
+} // namespace edge
 } // end namespace uiiit

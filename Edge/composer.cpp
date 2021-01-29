@@ -53,8 +53,9 @@ void Composer::operator()(const support::Conf& aConf,
   const auto        myType = aConf("type");
   if (myType == "raspberry") {
     // add processors
-    aComputer.addProcessor("arm", ProcessorType::GenericCpu, 1e9, 4, GB / 2);
-    aComputer.addProcessor("bm2837", ProcessorType::GenericGpu, 1e9, 1, GB / 2);
+    aComputer.addProcessor("arm", ProcessorType::GenericCpu, 1e11, 4, GB / 2);
+    aComputer.addProcessor(
+        "bm2837", ProcessorType::GenericGpu, 1e11, 1, GB / 2);
 
     // add containers, depending on the configuration
     auto myNumCpuContainers = aConf.getUint("num-cpu-containers");

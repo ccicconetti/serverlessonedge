@@ -31,25 +31,63 @@ SOFTWARE.
 
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
-#include "RpcSupport/simpleclient.h"
+#include "Quic/quicparamsbuilder.h"
 
+#include <proxygen/httpclient/samples/curl/CurlClient.h>
+#include <proxygen/lib/http/session/HQUpstreamSession.h>
+#include <quic/client/QuicClientTransport.h>
+#include <quic/common/Timers.h>
+#include <quic/congestion_control/CongestionControllerFactory.h>
+#include <quic/fizz/client/handshake/FizzClientQuicHandshakeContext.h>
+
+#include <glog/logging.h>
 #include <string>
 
 namespace uiiit {
 namespace edge {
 
-class EdgeClient final : public EdgeClientInterface,
-                         public rpc::SimpleClient<rpc::EdgeServer>
+using FizzClientContextPtr = std::shared_ptr<fizz::client::FizzClientContext>;
+
+class EdgeClientQuic final : private proxygen::HQSession::ConnectCallback,
+                             public EdgeClientInterface
 {
  public:
   /**
-   * \param aServerEndpoint the edge server
+   * \param aQuicParamsConf the EdgeClientQuic parameters configuration
    */
-  explicit EdgeClient(const std::string& aServerEndpoint);
-  ~EdgeClient() override;
+  explicit EdgeClientQuic(const HQParams& aQuicParamsConf);
 
+  ~EdgeClientQuic() override;
+
+  // these 3 functions override the pure virtual ones in ConnectCallback
+  void connectSuccess() override;
+
+  void onReplaySafe() override;
+
+  void
+  connectError(std::pair<quic::QuicErrorCode, std::string> aError) override;
+
+  // this function sends a LambdaRequest to the QuicServer to which the quic
+  // client is connected
   LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry) override;
-}; // end class EdgeClient
+
+ private:
+  void startClient();
+
+  void initializeQuicTransport();
+
+  void initializeClient();
+
+  FizzClientContextPtr createFizzClientContext(const HQParams& aQuicParamsConf);
+
+  const HQParams                             theQuicParamsConf;
+  std::thread                                theQuicClientEvbThread;
+  std::shared_ptr<quic::QuicClientTransport> theQuicClient;
+  folly::EventBase                           theEvb;
+  proxygen::HQUpstreamSession*               theSession;
+  std::deque<folly::StringPiece>             theHttpPaths;
+
+}; // end class EdgeClientQuic
 
 } // end namespace edge
 } // end namespace uiiit

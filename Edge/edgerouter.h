@@ -69,6 +69,7 @@ class EdgeRouter final : public EdgeLambdaProcessor
 {
  public:
   /**
+   * \param aLambdaEndpoint the end-point to receive Lambda request
    *
    * \param aCommandsEndpoint the end-point to receive commands from the
    * controller.
@@ -87,7 +88,8 @@ class EdgeRouter final : public EdgeLambdaProcessor
                       const std::string&   aControllerEndpoint,
                       const support::Conf& aProcessorConf,
                       const support::Conf& aTableConf,
-                      const support::Conf& aLocalOptimizerConf);
+                      const support::Conf& aLocalOptimizerConf,
+                      const support::Conf& aQuicServerConf);
 
   //! \return The forwarding tables: 0 is the overall, 1 is the final.
   std::vector<ForwardingTableInterface*> tables() override;

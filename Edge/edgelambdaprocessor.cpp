@@ -47,13 +47,14 @@ namespace edge {
 EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
                                          const std::string& aCommandsEndpoint,
                                          const std::string& aControllerEndpoint,
-                                         const support::Conf& aRouterConf)
+                                         const support::Conf& aRouterConf,
+                                         const support::Conf& aQuicServerConf)
     : EdgeServer(aLambdaEndpoint)
     , theCommandsEndpoint(aCommandsEndpoint)
     , theControllerEndpoint(aControllerEndpoint)
     , theFakeProcessor(aRouterConf.count("fake") > 0 and
                        aRouterConf.getBool("fake"))
-    , theClientPool(aRouterConf.getUint("max-pending-clients"))
+    , theClientPool(aQuicServerConf, aRouterConf.getUint("max-pending-clients"))
     , theControllerClient(aControllerEndpoint.empty() ?
                               nullptr :
                               new EdgeControllerClient(aControllerEndpoint))
@@ -70,7 +71,8 @@ EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
   LOG_IF(INFO, theFakeProcessor) << "FAKE edge lambda processor configuration";
 }
 
-void EdgeLambdaProcessor::init() {
+void EdgeLambdaProcessor::init([
+    [maybe_unused]] const std::set<std::thread::id>& aThreads) {
   if (theControllerClient) {
     LOG(INFO) << "Announcing to " << theControllerEndpoint;
     controllerCommand([this](EdgeControllerClient& aClient) {

@@ -29,7 +29,7 @@ SOFTWARE.
 
 #include "etsiedgeclient.h"
 
-#include "Edge/edgeclient.h"
+#include "Edge/edgeclientgrpc.h"
 #include "EtsiMec/appcontextmanager.h"
 #include "EtsiMec/applistclient.h"
 
@@ -40,19 +40,19 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EtsiEdgeClient::Desc::Desc(const std::string&            aUeAppId,
-                           const std::string&            aReferenceUri,
-                           std::unique_ptr<EdgeClient>&& aClient)
+EtsiEdgeClient::Desc::Desc(const std::string&                aUeAppId,
+                           const std::string&                aReferenceUri,
+                           std::unique_ptr<EdgeClientGrpc>&& aClient)
     : theUeAppId(aUeAppId)
     , theReferenceUri(aReferenceUri)
-    , theClient(std::forward<std::unique_ptr<EdgeClient>>(aClient)) {
+    , theClient(std::forward<std::unique_ptr<EdgeClientGrpc>>(aClient)) {
 }
 
 EtsiEdgeClient::Desc::Desc(Desc&& aOther)
     : theUeAppId(aOther.theUeAppId)
     , theReferenceUri(std::move(aOther.theReferenceUri))
     , theClient(std::move(aOther.theClient)) {
-} 
+}
 
 EtsiEdgeClient::Desc::~Desc() {
 }
@@ -90,7 +90,7 @@ std::string EtsiEdgeClient::ueAppId(const std::string& aLambdaName) {
   return it->second.theUeAppId;
 }
 
-EdgeClient& EtsiEdgeClient::find(const std::string& aLambda) {
+EdgeClientGrpc& EtsiEdgeClient::find(const std::string& aLambda) {
   auto it = theClients.find(aLambda);
 
   // create a context if it does not exist already
@@ -120,7 +120,7 @@ EdgeClient& EtsiEdgeClient::find(const std::string& aLambda) {
         aLambda,
         Desc(myContext.first,
              myContext.second,
-             std::make_unique<EdgeClient>(myContext.second)));
+             std::make_unique<EdgeClientGrpc>(myContext.second)));
     assert(myEmplaceRet.second);
     it = myEmplaceRet.first; // overrides outer iterator
   }
@@ -136,7 +136,7 @@ EdgeClient& EtsiEdgeClient::find(const std::string& aLambda) {
     LOG(INFO) << "Reference URI for " << aLambda << " updated from "
               << it->second.theReferenceUri << " to " << myNewReferenceUri;
     it->second.theReferenceUri = myNewReferenceUri;
-    it->second.theClient.reset(new EdgeClient(myNewReferenceUri));
+    it->second.theClient.reset(new EdgeClientGrpc(myNewReferenceUri));
   }
 
   assert(it->second.theClient.get() != nullptr);
@@ -144,5 +144,5 @@ EdgeClient& EtsiEdgeClient::find(const std::string& aLambda) {
   return *it->second.theClient;
 }
 
-} // namespace uiiit
+} // namespace edge
 } // namespace uiiit

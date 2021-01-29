@@ -29,7 +29,9 @@ SOFTWARE.
 
 #include "edgeclientpool.h"
 
+#include "Edge/edgeclientfactory.h"
 #include "Support/chrono.h"
+#include "Support/conf.h"
 
 #include <glog/logging.h>
 
@@ -39,30 +41,32 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeClientPool::EdgeClientPool(const size_t aMaxClients)
+EdgeClientPool::EdgeClientPool(const support::Conf& aServerConf,
+                               const size_t         aMaxClients)
     : theMaxClients(aMaxClients)
     , theMutex()
+    , theServerConf(aServerConf)
     , thePool() {
 }
 
-std::pair<LambdaResponse, double> EdgeClientPool::
-                                  operator()(const std::string&   aDestination,
-           const LambdaRequest& aReq,
-           const bool           aDry) {
+std::pair<LambdaResponse, double>
+EdgeClientPool::operator()(const std::string&   aDestination,
+                           const LambdaRequest& aReq,
+                           const bool           aDry) {
   debugPrintPool();
 
   support::Chrono myChrono(true);
 
   // obtain a client from the pool
-  std::unique_ptr<EdgeClient> myClient = getClient(aDestination);
+  std::unique_ptr<EdgeClientInterface> myClient = getClient(aDestination);
   assert(myClient);
 
   // execute the lambda function
-  const auto myReq = aReq.makeOneMoreHop();
+  const auto myReq  = aReq.makeOneMoreHop();
   auto       myResp = myClient->RunLambda(myReq, aDry);
 
-  // if the lambda does not include the actual responder then we set it to the
-  // destination
+  // if the lambda does not include the actual responder then we set it to
+  // the destination
   if (myResp.theResponder.empty()) {
     myResp.theResponder = aDestination;
   }
@@ -73,7 +77,7 @@ std::pair<LambdaResponse, double> EdgeClientPool::
   return std::make_pair(myResp, myChrono.stop());
 }
 
-std::unique_ptr<EdgeClient>
+std::unique_ptr<EdgeClientInterface>
 EdgeClientPool::getClient(const std::string& aDestination) {
   std::unique_lock<std::mutex> myLock(theMutex);
   auto&                        myDesc = thePool[aDestination]; // may insert
@@ -85,18 +89,20 @@ EdgeClientPool::getClient(const std::string& aDestination) {
   if (myDesc.theFree.empty()) {
     assert(theMaxClients == 0 or myDesc.theBusy < theMaxClients);
     myDesc.theBusy++;
-    return std::make_unique<EdgeClient>(aDestination);
+
+    return EdgeClientFactory::make({aDestination}, theServerConf);
   }
   assert(not myDesc.theFree.empty());
-  std::unique_ptr<EdgeClient> myNewClient;
+  std::unique_ptr<EdgeClientInterface> myNewClient;
   myNewClient.swap(myDesc.theFree.front());
   myDesc.theFree.pop_front();
   myDesc.theBusy++;
   return myNewClient;
 }
 
-void EdgeClientPool::releaseClient(const std::string&            aDestination,
-                                   std::unique_ptr<EdgeClient>&& aClient) {
+void EdgeClientPool::releaseClient(
+    const std::string&                     aDestination,
+    std::unique_ptr<EdgeClientInterface>&& aClient) {
   const std::lock_guard<std::mutex> myLock(theMutex);
   auto& myDesc = thePool[aDestination]; // may insert
   myDesc.theFree.emplace_back(std::move(aClient));

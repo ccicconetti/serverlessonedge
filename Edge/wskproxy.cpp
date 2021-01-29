@@ -28,6 +28,7 @@ SOFTWARE.
 */
 
 #include "wskproxy.h"
+#include "Support/conf.h"
 
 #include <glog/logging.h>
 
@@ -39,7 +40,7 @@ WskProxy::WskProxy(const std::string& aApiRoot,
                    const size_t       aConcurrency)
     : rest::Server(aApiRoot)
     , theEndpoint(aEndpoint)
-    , theClientPool(aConcurrency) {
+    , theClientPool(support::Conf("type=grpc"), aConcurrency) {
   (*this)(web::http::methods::POST,
           "/api/v1/namespaces/(.*)",
           [this](web::http::http_request aReq) { handleInvocation(aReq); });
@@ -92,7 +93,8 @@ void WskProxy::handleInvocation(web::http::http_request aReq) {
                    std::string("{\"error\":\"") + res.first.theRetCode + "\"}");
       } else {
         aReq.reply(web::http::status_codes::OK,
-                   std::string("{\"payload\":\"") + res.first.theOutput + "\"}");
+                   std::string("{\"payload\":\"") + res.first.theOutput +
+                       "\"}");
       }
     }
   }

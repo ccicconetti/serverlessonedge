@@ -75,7 +75,8 @@ class EdgeDispatcher final : public EdgeLambdaProcessor
                           const std::string&   aCommandsEndpoint,
                           const std::string&   aControllerEndpoint,
                           const support::Conf& aProcessorConf,
-                          const support::Conf& aPtimeEstimatorConf);
+                          const support::Conf& aPtimeEstimatorConf,
+                          const support::Conf& aServerQuicConf);
 
   std::vector<ForwardingTableInterface*> tables() override;
 

@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
      po::value<std::string>(&myServerEndpoints)->default_value("localhost:6473"),
      "Server end-points (comma-separated list).")
     ("client-conf",
-     po::value<std::string>(&myClientConf)->default_value("persistence=0.05"),
+     po::value<std::string>(&myClientConf)->default_value("type=grpc, persistence=0.05"),
      "Configuration of the edge clients.")
     ("lambda",
      po::value<std::string>(&myLambda)->default_value("clambda0"),
@@ -125,6 +125,14 @@ int main(int argc, char* argv[]) {
       throw std::runtime_error("Empty end-points: " + myServerEndpoints);
     }
 
+    const auto myEdgeClientConf      = uiiit::support::Conf(myClientConf);
+    const auto myClientTransportType = myEdgeClientConf("type");
+    if (myClientTransportType != std::string("grpc") &&
+        myClientTransportType != std::string("quic")) {
+      throw std::runtime_error("Invalid Client type configuration in "
+                               "--client-conf option");
+    }
+
     const auto mySizeSet =
         uiiit::support::split<std::vector<size_t>>(mySizes, ",");
     if (mySizeSet.empty()) {
@@ -132,8 +140,7 @@ int main(int argc, char* argv[]) {
     }
 
     LOG_IF(INFO, not myContent.empty())
-        << "Using a custom content for all lambda requests: "
-        << myContent;
+        << "Using a custom content for all lambda requests: " << myContent;
 
     std::this_thread::sleep_for(
         std::chrono::nanoseconds(static_cast<int64_t>(myInitialDelay * 1e9)));
@@ -152,7 +159,7 @@ int main(int argc, char* argv[]) {
           i,
           myMaxRequests,
           uiiit::support::split<std::set<std::string>>(myServerEndpoints, ","),
-          uiiit::support::Conf(myClientConf),
+          myEdgeClientConf,
           myLambda,
           mySaver,
           myVarMap.count("dry") > 0));

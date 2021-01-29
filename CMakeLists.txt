@@ -67,10 +67,8 @@ file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
 include_directories(${PROTO_SRC_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
-include_directories(SYSTEM ${PROXYGEN_ROOT})
-include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/deps/include")
-include_directories(SYSTEM "${PROXYGEN_ROOT}/proxygen/_build/generated")
-link_directories("${PROXYGEN_ROOT}/proxygen/_build/deps/lib")
+include_directories(SYSTEM "thirdparty/include")
+link_directories("thirdparty/libs")
 
 # executables
 add_subdirectory(Executables)
@@ -80,10 +78,9 @@ add_subdirectory(Edge)
 if(WITH_OPENCV)
   add_subdirectory(OpenCV)
 endif()
+add_subdirectory(Quic)
 add_subdirectory(Rpc)
 add_subdirectory(Simulation)
-
-#add_subdirectory(hq)
 
 # external repos
 add_subdirectory(etsimec/Executables)

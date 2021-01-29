@@ -29,7 +29,7 @@ SOFTWARE.
 
 #include "Edge/composer.h"
 #include "Edge/computer.h"
-#include "Edge/edgeclient.h"
+#include "Edge/edgeclientgrpc.h"
 #include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerclient.h"
 #include "Edge/edgecomputerserver.h"
@@ -55,7 +55,7 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-struct TestLambdaTransaction : public ::testing::Test {
+struct TestLambdaTransactionGrpc : public ::testing::Test {
 
   struct System {
     enum Type { ROUTER = 0, DISPATCHER = 1 };
@@ -80,7 +80,8 @@ struct TestLambdaTransaction : public ::testing::Test {
                             theControllerEndpoint,
                             support::Conf(EdgeLambdaProcessor::defaultConf()),
                             support::Conf("type=random"),
-                            support::Conf("type=trivial,period=10,stat=mean")) :
+                            support::Conf("type=trivial,period=10,stat=mean"),
+                            support::Conf("type=grpc,persistence=0.05")) :
                         nullptr)
         , theDispatcher(
               aType == DISPATCHER ?
@@ -90,7 +91,8 @@ struct TestLambdaTransaction : public ::testing::Test {
                       theControllerEndpoint,
                       support::Conf(EdgeLambdaProcessor::defaultConf()),
                       support::Conf(
-                          PtimeEstimatorFactory::defaultConf(aSubtype))) :
+                          PtimeEstimatorFactory::defaultConf(aSubtype)),
+                      support::Conf("type=grpc,persistence=0.05")) :
                   nullptr)
         , theForwardingTableServer(nullptr)
         , theUtils() {
@@ -183,7 +185,7 @@ struct TestLambdaTransaction : public ::testing::Test {
   };
 };
 
-TEST_F(TestLambdaTransaction, test_endtoend) {
+TEST_F(TestLambdaTransactionGrpc, test_grpc_endtoend) {
   const size_t N = 50;
 
   const std::list<System::Type> myTypes({System::ROUTER, System::DISPATCHER});
@@ -204,8 +206,8 @@ TEST_F(TestLambdaTransaction, test_endtoend) {
 
       System mySystem(myType, mySubtype);
 
-      EdgeClient    myClient(mySystem.theRouterEndpoint);
-      LambdaRequest myReq("clambda0", std::string(1000, 'A'));
+      EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+      LambdaRequest  myReq("clambda0", std::string(1000, 'A'));
 
       support::Chrono myChrono(false);
       for (size_t i = 0; i < N; i++) {

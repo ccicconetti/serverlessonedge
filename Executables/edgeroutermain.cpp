@@ -30,12 +30,10 @@ SOFTWARE.
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgelambdaprocessoroptions.h"
 #include "Edge/edgerouter.h"
-
 #include "Edge/edgeservergrpc.h"
 #include "Edge/edgeserverimpl.h"
-#include "Edge/edgeserverquic.h"
-
 #include "Edge/forwardingtableserver.h"
+#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 
@@ -60,7 +58,7 @@ int main(int argc, char* argv[]) {
   myDesc.add_options()
   ("server-conf",
    po::value<std::string>(&myServerConf)->default_value("type=grpc"),
-   "Comma-separated configuration of the server.") // endpoint, numthreads OR string of conf parameters to build HQParams
+   "Comma-separated configuration of the server.")
   ("table-conf",
    po::value<std::string>(&myTableConf)->default_value("type=random"),
    "Comma-separated configuration of the forwarding table.")
@@ -83,23 +81,26 @@ int main(int argc, char* argv[]) {
                                myCli.forwardingEndpoint());
     }
 
+    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
+
     ec::EdgeRouter myEdgeRouter(myCli.serverEndpoint(),
                                 myCli.forwardingEndpoint(),
                                 myCli.controllerEndpoint(),
                                 uiiit::support::Conf(myCli.routerConf()),
                                 uiiit::support::Conf(myTableConf),
-                                uiiit::support::Conf(myOptimizerConf));
+                                uiiit::support::Conf(myOptimizerConf),
+                                myServerImplConf);
 
     std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
 
     if (myServerImplConf("type") == "grpc") {
       myServerImpl.reset(new ec::EdgeServerGrpc(
           myEdgeRouter, myCli.serverEndpoint(), myCli.numThreads()));
     } else if (myServerImplConf("type") == "quic") {
-      // myServerImpl.reset(new ec::EdgeServerQuic()); // Costruttore da mettere
-      // parametri makeHqParams(myImplConf)
-      LOG(INFO) << "COSTRUTTORE EDGE SERVER QUIC" << '\n';
+      myServerImpl.reset(new ec::EdgeServerQuic(
+          myEdgeRouter,
+          ec::QuicParamsBuilder::buildServerHQParams(
+              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
     } else {
       throw std::runtime_error("EdgeServer type not allowed: " +
                                myServerImplConf("type"));
@@ -117,7 +118,6 @@ int main(int argc, char* argv[]) {
         myCli.forwardingEndpoint(), *myTables[0], *myTables[1]);
 
     myForwardingTableServer.run(false); // non-blocking
-
     myServerImpl->run();
     myServerImpl->wait();
 

@@ -39,6 +39,7 @@ SOFTWARE.
 #include <functional>
 #include <map>
 #include <string>
+#include <thread>
 
 namespace uiiit {
 namespace edge {
@@ -61,7 +62,6 @@ class FaceDetectComputer final : public EdgeServer
  public:
   /**
    * \param aServerEndpoint the end-point of the gRPC server.
-   * \param aNumWorkers the number of workers to spawn.
    * \param aNumThreads the number of threads used by the OpenCV library.
    * \param aModels the classification models, one for each lambda function.
    * \param aFaceDetectScale the object detection scale parameter.
@@ -77,7 +77,6 @@ class FaceDetectComputer final : public EdgeServer
    */
   explicit FaceDetectComputer(
       const std::string&                            aServerEndpoint,
-      const size_t                                  aNumWorkers,
       const size_t                                  aNumThreads,
       const Models&                                 aModels,
       const double                                  aFaceDetectScale,
@@ -91,7 +90,7 @@ class FaceDetectComputer final : public EdgeServer
    * \throw std::runtime_error if the initialiation of the classifiers fail
    * for any reason.
    */
-  void init() override;
+  void init(const std::set<std::thread::id>& aThreadIds) override;
 
   //! Check the lambda request and run the appropriate lambda function.
   rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;

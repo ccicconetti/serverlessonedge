@@ -27,33 +27,42 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeclient.h"
+#pragma once
 
-#include "RpcSupport/utils.h"
+#include "Quic/quicparamsbuilder.h"
 
-#include <grpc++/grpc++.h>
+#include <quic/server/QuicServerTransport.h>
+#include <quic/server/QuicServerTransportFactory.h>
 
 namespace uiiit {
 namespace edge {
 
-EdgeClient::EdgeClient(const std::string& aServerEndpoint)
-    : EdgeClientInterface()
-    , SimpleClient(aServerEndpoint) {
-}
+using HTTPTransactionHandlerProvider =
+    std::function<proxygen::HTTPTransactionHandler*(proxygen::HTTPMessage*,
+                                                    const HQParams&)>;
 
-EdgeClient::~EdgeClient() {
-  // nihil
-}
+class HQServerTransportFactory : public quic::QuicServerTransportFactory
+{
+ public:
+  explicit HQServerTransportFactory(
+      const HQParams&                       aQuicParamsConf,
+      const HTTPTransactionHandlerProvider& aHttpTransactionHandlerProvider);
+  ~HQServerTransportFactory() override = default;
 
-LambdaResponse EdgeClient::RunLambda(const LambdaRequest& aReq,
-                                     const bool           aDry) {
-  rpc::LambdaResponse myRep;
-  grpc::ClientContext myContext;
-  auto                myReq = aReq.toProtobuf();
-  myReq.set_dry(aDry);
-  rpc::checkStatus(theStub->RunLambda(&myContext, myReq, &myRep));
-  return LambdaResponse(myRep);
-}
+  // Creates new quic server transport
+  quic::QuicServerTransport::Ptr
+  make(folly::EventBase*                      aEvb,
+       std::unique_ptr<folly::AsyncUDPSocket> aSocket,
+       const folly::SocketAddress& /* peerAddr */,
+       std::shared_ptr<const fizz::server::FizzServerContext> aCtx) noexcept
+      override;
+
+ private:
+  // Configuration params
+  const HQParams& theQuicParamsConf;
+  // Provider of HTTPTransactionHandler
+  HTTPTransactionHandlerProvider theHttpTransactionHandlerProvider;
+};
 
 } // namespace edge
 } // namespace uiiit
