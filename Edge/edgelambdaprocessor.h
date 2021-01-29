@@ -127,7 +127,7 @@ class EdgeLambdaProcessor : public EdgeServer
    * If the end-point of a controller was specified in the ctor, announce this
    * element to it.
    */
-  void init() override;
+  void init(const std::set<std::thread::id>& aThreadIds) override;
 
   //! Send a command to the controller.
   void controllerCommand(

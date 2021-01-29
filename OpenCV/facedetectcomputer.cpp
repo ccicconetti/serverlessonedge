@@ -49,13 +49,12 @@ namespace edge {
 
 FaceDetectComputer::FaceDetectComputer(
     const std::string&                            aServerEndpoint,
-    const size_t                                  aNumWorkers,
     const size_t                                  aNumThreads,
     const Models&                                 aModels,
     const double                                  aFaceDetectScale,
     const std::string&                            aDummyLambda,
     const std::function<std::array<double, 3>()>& aProcessLoadCallback)
-    : EdgeServer(aServerEndpoint, aNumWorkers)
+    : EdgeServer(aServerEndpoint)
     , theNumOpenCvThreads(aNumThreads)
     , theClassifiers()
     , theModels(aModels)
@@ -79,21 +78,23 @@ FaceDetectComputer::FaceDetectComputer(
   }
 }
 
-void FaceDetectComputer::init() {
-  const auto myThreadIds = threadIds();
-  assert(not myThreadIds.empty());
+void FaceDetectComputer::init(const std::set<std::thread::id>& aThreadIds) {
+  if (aThreadIds.empty()) {
+    throw std::runtime_error(
+        "Unimplemented: cannot use FaceDetectComputer with a transport layer "
+        "that does not support exposing the list of threads spawned");
+  }
   assert(theClassifiers.empty());
 
   for (const auto& myPair : theModels) {
     assert(myPair.first != theDummyLambda);
     assert(not myPair.first.empty());
 
-    const auto it =
+    [[maybe_unused]] const auto it =
         theClassifiers.insert({myPair.first, Classifiers::mapped_type()});
     assert(it.second);
-    std::ignore = it; // to suppress unused warning with NDEBUG
 
-    for (const auto& myThreadId : myThreadIds) {
+    for (const auto& myThreadId : aThreadIds) {
       VLOG(1) << "registering handler with thread id " << myThreadId;
       const auto jt =
           it.first->second.insert({myThreadId, cv::CascadeClassifier()});
@@ -122,7 +123,8 @@ FaceDetectComputer::process(const rpc::LambdaRequest& aReq) {
         const auto jt = it->second.find(std::this_thread::get_id());
         if (jt == it->second.end()) {
           LOG(FATAL) << "the impossible happened: job executed by a thread "
-                        "with unregisted handler: " << std::this_thread::get_id();
+                        "with unregisted handler: "
+                     << std::this_thread::get_id();
         }
         faceDetect(jt->second, aReq, myResp);
 

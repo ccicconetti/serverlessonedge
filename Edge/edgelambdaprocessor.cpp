@@ -71,7 +71,8 @@ EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
   LOG_IF(INFO, theFakeProcessor) << "FAKE edge lambda processor configuration";
 }
 
-void EdgeLambdaProcessor::init() {
+void EdgeLambdaProcessor::init([
+    [maybe_unused]] const std::set<std::thread::id>& aThreads) {
   if (theControllerClient) {
     LOG(INFO) << "Announcing to " << theControllerEndpoint;
     controllerCommand([this](EdgeControllerClient& aClient) {

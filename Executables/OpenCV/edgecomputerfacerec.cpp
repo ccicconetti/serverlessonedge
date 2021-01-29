@@ -30,8 +30,11 @@ SOFTWARE.
 #include "Edge/edgecomputerserver.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrollermessages.h"
+#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserveroptions.h"
 #include "Edge/processloadserver.h"
 #include "OpenCV/facedetectcomputer.h"
+#include "Quic/edgeserverquic.h"
 #include "Support/checkfiles.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
@@ -55,35 +58,27 @@ int main(int argc, char* argv[]) {
   uiiit::support::GlogRaii          myGlogRaii(argv[0]);
   uiiit::support::SignalHandlerWait mySignalHandler;
 
-  std::string myServerEndpoint;
+  std::string myServerConf;
   std::string myUtilServerEndpoint;
-  std::string myControllerEndpoint;
-  size_t      myNumThreads;
-  size_t      myNumWorkers;
   std::string myModels;
   std::string myDummyLambda;
   double      myScale;
+  size_t      myNumThreads;
 
   po::options_description myDesc("Allowed options");
 
   // clang-format off
   myDesc.add_options()
   ("help,h", "produce help message")
-  ("server-endpoint",
-   po::value<std::string>(&myServerEndpoint)->default_value("0.0.0.0:6473"),
-   "Server end-point.")
+  ("server-conf",
+   po::value<std::string>(&myServerConf)->default_value("type=grpc"),
+   "Comma-separated configuration of the server.") // endpoint, numthreads OR string of conf parameters to build HQParams
   ("utilization-endpoint",
    po::value<std::string>(&myUtilServerEndpoint)->default_value("0.0.0.0:6476"),
    "Utilization server end-point. If empty utilization is not computed.")
-  ("controller-endpoint",
-   po::value<std::string>(&myControllerEndpoint)->default_value(""),
-   "If specified announce to this controller.")
   ("num-threads",
    po::value<size_t>(&myNumThreads)->default_value(4),
    "Number of threads that can be used by the OpenCV library.")
-  ("num-workers",
-   po::value<size_t>(&myNumWorkers)->default_value(1),
-   "Number of workers.")
   ("scale",
    po::value<double>(&myScale)->default_value(1.0),
    "Image scale.")
@@ -99,17 +94,15 @@ int main(int argc, char* argv[]) {
   // clang-format on
 
   try {
-    po::variables_map myVarMap;
-    po::store(po::parse_command_line(argc, argv, myDesc), myVarMap);
-    po::notify(myVarMap);
+    uiiit::edge::EdgeServerOptions myCli(argc, argv, myDesc);
 
-    if (myVarMap.count("help")) {
+    if (myCli.varMap().count("help")) {
       std::cout << myDesc << std::endl;
       return EXIT_FAILURE;
     }
 
-    if (myServerEndpoint.empty()) {
-      throw std::runtime_error("Empty end-point: " + myServerEndpoint);
+    if (myCli.serverEndpoint().empty()) {
+      throw std::runtime_error("Empty end-point: " + myCli.serverEndpoint());
     }
 
     const uiiit::support::Conf myConf(myModels);
@@ -144,21 +137,38 @@ int main(int argc, char* argv[]) {
       };
     }
 
-    // start the server
-    ec::FaceDetectComputer myServer(myServerEndpoint,
-                                    myNumWorkers,
+    // create server
+    ec::FaceDetectComputer myServer(myCli.serverEndpoint(),
                                     myNumThreads,
                                     myConf,
                                     myScale,
                                     myDummyLambda,
                                     myProcessLoadCallback);
 
+    // create transport layer
+    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
+    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
+
+    if (myServerImplConf("type") == "grpc") {
+      myServerImpl.reset(new ec::EdgeServerGrpc(
+          myServer, myCli.serverEndpoint(), myCli.numThreads()));
+    } else if (myServerImplConf("type") == "quic") {
+      myServerImpl.reset(new ec::EdgeServerQuic(
+          myServer,
+          ec::QuicParamsBuilder::buildServerHQParams(
+              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
+    } else {
+      throw std::runtime_error("EdgeServer type not allowed: " +
+                               myServerImplConf("type"));
+    }
+    assert(myServerImpl != nullptr);
+
     // announce the edge computer to the edge controller, if known
-    if (myControllerEndpoint.empty()) {
+    if (myCli.controllerEndpoint().empty()) {
       VLOG(1) << "No controller specified: announce disabled";
 
     } else {
-      ec::EdgeControllerClient myControllerClient(myControllerEndpoint);
+      ec::EdgeControllerClient myControllerClient(myCli.controllerEndpoint());
       ec::ContainerList        myContainerList;
       for (const auto& myLambda : myConf.keys()) {
         myContainerList.theContainers.emplace_back(ec::ContainerList::Container{
@@ -172,19 +182,20 @@ int main(int argc, char* argv[]) {
           uiiit::support::System::instance().cpuName(),
           myDummyLambda,
           1});
-      myControllerClient.announceComputer(myServerEndpoint, myContainerList);
-      LOG(INFO) << "Announced to " << myControllerEndpoint;
+      myControllerClient.announceComputer(myCli.serverEndpoint(),
+                                          myContainerList);
+      LOG(INFO) << "Announced to " << myCli.controllerEndpoint();
     }
 
     // waiting until terminated by the user
-    myServer.run(); // non-blocking
-    // myServer.wait();     // blocking
+    myServerImpl->run(); // non-blocking
+    // myServerImpl->wait(); // blocking
     mySignalHandler.wait(); // blocking
 
     // perform clean exit by removing this computer from the controller
-    if (not myControllerEndpoint.empty()) {
-      ec::EdgeControllerClient myControllerClient(myControllerEndpoint);
-      myControllerClient.removeComputer(myServerEndpoint);
+    if (not myCli.controllerEndpoint().empty()) {
+      ec::EdgeControllerClient myControllerClient(myCli.controllerEndpoint());
+      myControllerClient.removeComputer(myCli.serverEndpoint());
     }
 
     return EXIT_SUCCESS;

@@ -64,7 +64,7 @@ EdgeServerQuic::EdgeServerQuic(EdgeServer&     aEdgeServer,
             return new EchoHandler(aParams);
           }) {
   VLOG(4) << "EdgeServerQuic::ctor";
-  theEdgeServer.init();
+  theEdgeServer.init({});
 } // namespace edge
 
 void EdgeServerQuic::run() {

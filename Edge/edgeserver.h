@@ -30,7 +30,11 @@ SOFTWARE.
 #pragma once
 
 #include "Support/macros.h"
+
 #include "edgeserver.grpc.pb.h"
+
+#include <set>
+#include <thread>
 
 namespace uiiit {
 namespace edge {
@@ -59,8 +63,11 @@ class EdgeServer
    * This method is invoked by the implementation class immediately after the
    * communication interface has been set up. It can be overriden by
    * specialized classes, if needed.
+   *
+   * \param aThreads The threads spawned.
    */
-  virtual void init() {
+  virtual void init([
+      [maybe_unused]] const std::set<std::thread::id>& aThreadIds) {
     // noop
   }
 
