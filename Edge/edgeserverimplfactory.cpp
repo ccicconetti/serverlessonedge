@@ -27,15 +27,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeclientfactory.h"
+#include "Edge/edgeserverimplfactory.h"
 
-#include "Edge/edgeclientgrpc.h"
-#include "Edge/edgeclientinterface.h"
-#include "Edge/edgeclientmulti.h"
+#include "Edge/edgeservergrpc.h"
 #include "Support/conf.h"
 
 #ifdef WITH_QUIC
-#include "Quic/edgeclientquic.h"
+#include "Quic/edgeserverquic.h"
 #include "Quic/quicparamsbuilder.h"
 #endif
 
@@ -44,29 +42,22 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-std::unique_ptr<EdgeClientInterface>
-EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
-                        const support::Conf&         aConf) {
-  if (aEndpoints.empty()) {
-    throw std::runtime_error(
-        "Cannot create an edge client with an empty set of destinations");
-  }
-
-  const auto myType = aConf("type");
-  if (aEndpoints.size() == 1) {
-    if (myType == "grpc") {
-      return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
+std::unique_ptr<EdgeServerImpl>
+EdgeServerImplFactory::make(EdgeServer&          aEdgeServer,
+                            const std::string&   aEndpoint,
+                            const size_t         aNumThreads,
+                            const support::Conf& aConf) {
+  if (aConf("type") == "grpc") {
+    return std::make_unique<EdgeServerGrpc>(
+        aEdgeServer, aEndpoint, aNumThreads);
 #ifdef WITH_QUIC
-    } else if (myType == "quic") {
-      return std::make_unique<EdgeClientQuic>(
-          QuicParamsBuilder::buildClientHQParams(aConf, *aEndpoints.begin()));
+  } else if (aConf("type") == "quic") {
+    return std::make_unique<EdgeServerQuic>(
+        aEdgeServer,
+        QuicParamsBuilder::buildServerHQParams(aConf, aEndpoint, aNumThreads));
 #endif
-    } else {
-      throw std::runtime_error("Unknown client type: " + myType);
-    }
   }
-
-  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
+  throw std::runtime_error("Unknown edge server transport: " + aConf("type"));
 }
 
 } // end namespace edge

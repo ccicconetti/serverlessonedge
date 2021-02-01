@@ -24,17 +24,24 @@ find_package(Boost
   REQUIRED
   COMPONENTS program_options filesystem system chrono thread
 )
+find_package(CppREST REQUIRED) # populates CPP_REST_INCLUDE_DIR and CPP_REST_LIBRARY
 if(WITH_OPENCV)
+  MESSAGE("Compiling with OpenCV support")
   find_package(OpenCV REQUIRED) # http://opencv.org
 endif()
-find_package(CppREST REQUIRED) # populates CPP_REST_INCLUDE_DIR and CPP_REST_LIBRARY
+if(WITH_QUIC)
+  MESSAGE("Compiling with QUIC support")
+endif()
 
 set(PROXYGEN_ROOT "${PROJECT_SOURCE_DIR}/thirdparty/proxygen")
 
-set (DISABLE_WARNINGS "-Wno-missing-field-initializers -Wno-unused-parameter -Wnon-virtual-dtor")
-set (COMPILER_COMMON_FLAGS "-Wall -Wextra -Werror -DGTEST_CREATE_SHARED_LIBRARY=1 -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -fPIC ${DISABLE_WARNINGS}")
-set (CMAKE_CXX_FLAGS_DEBUG "${COMPILER_COMMON_FLAGS} -g -O0")
-set (CMAKE_CXX_FLAGS_RELEASE "${COMPILER_COMMON_FLAGS} -O2 -DNDEBUG")
+set(DISABLE_WARNINGS "-Wno-missing-field-initializers -Wno-unused-parameter -Wnon-virtual-dtor")
+set(COMPILER_COMMON_FLAGS "-Wall -Wextra -Werror -DGTEST_CREATE_SHARED_LIBRARY=1 -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -fPIC ${DISABLE_WARNINGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${COMPILER_COMMON_FLAGS} -g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${COMPILER_COMMON_FLAGS} -O2 -DNDEBUG")
+if(WITH_QUIC)
+  add_compile_definitions(WITH_QUIC)
+endif()
 
 MESSAGE("============CONFIGURATION SUMMARY================")
 MESSAGE("")
@@ -70,6 +77,12 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(SYSTEM "thirdparty/include")
 link_directories("thirdparty/libs")
 
+# optional library
+set(LIBEDGEQUIC "")
+if(WITH_QUIC)
+  set(LIBEDGEQUIC uiiitedgequic)
+endif()
+
 # executables
 add_subdirectory(Executables)
 
@@ -78,7 +91,9 @@ add_subdirectory(Edge)
 if(WITH_OPENCV)
   add_subdirectory(OpenCV)
 endif()
-add_subdirectory(Quic)
+if(WITH_QUIC)
+  add_subdirectory(Quic)
+endif()
 add_subdirectory(Rpc)
 add_subdirectory(Simulation)
 

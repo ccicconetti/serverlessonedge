@@ -30,10 +30,10 @@ SOFTWARE.
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgedispatcher.h"
 #include "Edge/edgelambdaprocessoroptions.h"
-#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserverimpl.h"
+#include "Edge/edgeserverimplfactory.h"
 #include "Edge/forwardingtableserver.h"
 #include "Edge/ptimeestimator.h"
-#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 
@@ -86,21 +86,11 @@ int main(int argc, char* argv[]) {
         uiiit::support::Conf(myPtimeEstimatorConf),
         myServerImplConf);
 
-    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-
-    if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(
-          myEdgeDispatcher, myCli.serverEndpoint(), myCli.numThreads()));
-    } else if (myServerImplConf("type") == "quic") {
-      myServerImpl.reset(new ec::EdgeServerQuic(
-          myEdgeDispatcher,
-          ec::QuicParamsBuilder::buildServerHQParams(
-              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
-    } else {
-      throw std::runtime_error("EdgeServer type not allowed: " +
-                               myServerImplConf("type"));
-    }
-    assert(myServerImpl != nullptr);
+    const auto myServerImpl =
+        ec::EdgeServerImplFactory::make(myEdgeDispatcher,
+                                        myCli.serverEndpoint(),
+                                        myCli.numThreads(),
+                                        uiiit::support::Conf(myServerConf));
 
     auto myTables = myEdgeDispatcher.tables();
     assert(myTables.size() == 1);
@@ -112,7 +102,6 @@ int main(int argc, char* argv[]) {
         myCli.forwardingEndpoint(), *myTables[0]);
 
     myForwardingTableServer.run(false); // non-blocking
-
     myServerImpl->run();
     myServerImpl->wait();
 

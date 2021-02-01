@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$TEXT" -eq 1 ] ; then
+if [ "$TEXT" == "1" ] ; then
   OPTS="--output-file=report.txt"
 else
   OPTS="--xml --xml-version=2 --output-file=report.xml"

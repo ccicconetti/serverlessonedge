@@ -30,10 +30,10 @@ SOFTWARE.
 #include "Edge/edgecomputerwsk.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrollermessages.h" // ContainerList
-#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserverimpl.h"
+#include "Edge/edgeserverimplfactory.h"
 #include "Edge/edgeserveroptions.h"
 #include "OpenWhisk/lister.h"
-#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 #include "Support/periodictask.h"
@@ -135,22 +135,11 @@ int main(int argc, char* argv[]) {
     ec::EdgeComputerWsk myServer(
         myCli.serverEndpoint(), myWskApiRoot, myWskAuth);
 
-    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
-
-    if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(
-          myServer, myCli.serverEndpoint(), myCli.numThreads()));
-    } else if (myServerImplConf("type") == "quic") {
-      myServerImpl.reset(new ec::EdgeServerQuic(
-          myServer,
-          ec::QuicParamsBuilder::buildServerHQParams(
-              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
-    } else {
-      throw std::runtime_error("EdgeServer type not allowed: " +
-                               myServerImplConf("type"));
-    }
-    assert(myServerImpl != nullptr);
+    const auto myServerImpl =
+        ec::EdgeServerImplFactory::make(myServer,
+                                        myCli.serverEndpoint(),
+                                        myCli.numThreads(),
+                                        uiiit::support::Conf(myServerConf));
 
     myServerImpl->run();
     mySignalHandler.wait(); // blocking

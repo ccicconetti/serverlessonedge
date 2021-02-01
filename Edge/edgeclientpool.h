@@ -68,11 +68,12 @@ class EdgeClientPool
   /**
    * Create a pool with no clients that can host up to a max.
    *
+   * \param aConf The edge client configuration.
+   *
    * \param aMaxClients The maximum number of clients per destination. 0 means
-   * ulimited.
+   * unlimited.
    */
-  explicit EdgeClientPool(const support::Conf& aQuicServerConf,
-                          const size_t         aMaxClients);
+  explicit EdgeClientPool(const support::Conf& aConf, const size_t aMaxClients);
 
   /**
    * Execute a lambda on a given edge computer identified by its end-point.
@@ -102,7 +103,7 @@ class EdgeClientPool
  private:
   const size_t                      theMaxClients;
   mutable std::mutex                theMutex;
-  const support::Conf               theServerConf;
+  const support::Conf               theConf;
   std::map<std::string, Descriptor> thePool;
 };
 

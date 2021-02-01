@@ -32,9 +32,9 @@ SOFTWARE.
 #include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerserver.h"
 #include "Edge/edgecontrollerclient.h"
-#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserverimpl.h"
+#include "Edge/edgeserverimplfactory.h"
 #include "Edge/edgeserveroptions.h"
-#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 #include "Support/signalhandlerwait.h"
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   myDesc.add_options()
   ("server-conf",
    po::value<std::string>(&myServerConf)->default_value("type=grpc"),
-   "Comma-separated configuration of the server.") // endpoint, numthreads OR string of conf parameters to build HQParams
+   "Comma-separated configuration of the server.")
   ("utilization-endpoint",
    po::value<std::string>(&myUtilServerEndpoint)->default_value("0.0.0.0:6476"),
    "Utilization server end-point. If empty utilization is not computed.")
@@ -102,22 +102,11 @@ int main(int argc, char* argv[]) {
 
     ec::EdgeComputer myServer(myCli.serverEndpoint(), myUtilCallback);
 
-    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
-
-    if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(
-          myServer, myCli.serverEndpoint(), myCli.numThreads()));
-    } else if (myServerImplConf("type") == "quic") {
-      myServerImpl.reset(new ec::EdgeServerQuic(
-          myServer,
-          ec::QuicParamsBuilder::buildServerHQParams(
-              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
-    } else {
-      throw std::runtime_error("EdgeServer type not allowed: " +
-                               myServerImplConf("type"));
-    }
-    assert(myServerImpl != nullptr);
+    const auto myServerImpl =
+        ec::EdgeServerImplFactory::make(myServer,
+                                        myCli.serverEndpoint(),
+                                        myCli.numThreads(),
+                                        uiiit::support::Conf(myServerConf));
 
     ec::Composer()(uiiit::support::Conf(myConf), myServer.computer());
 
@@ -130,8 +119,7 @@ int main(int argc, char* argv[]) {
       LOG(INFO) << "Announced to " << myCli.controllerEndpoint();
     }
 
-    myServerImpl->run(); // non-blocking
-    // myServerImpl->wait(); // blocking
+    myServerImpl->run();    // non-blocking
     mySignalHandler.wait(); // blocking
 
     // perform clean exit by removing this computer from the controller

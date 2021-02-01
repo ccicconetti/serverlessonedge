@@ -44,12 +44,12 @@ EdgeRouter::EdgeRouter(const std::string&   aLambdaEndpoint,
                        const support::Conf& aProcessorConf,
                        const support::Conf& aTableConf,
                        const support::Conf& aLocalOptimizerConf,
-                       const support::Conf& aQuicServerConf)
+                       const support::Conf& aClientConf)
     : EdgeLambdaProcessor(aLambdaEndpoint,
                           aCommandsEndpoint,
                           aControllerEndpoint,
                           aProcessorConf,
-                          aQuicServerConf)
+                          aClientConf)
     , theOverallTable(ForwardingTableFactory::make(aTableConf))
     , theOverallOptimizer(
           LocalOptimizerFactory::make(*theOverallTable, aLocalOptimizerConf))

@@ -30,10 +30,9 @@ SOFTWARE.
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgelambdaprocessoroptions.h"
 #include "Edge/edgerouter.h"
-#include "Edge/edgeservergrpc.h"
 #include "Edge/edgeserverimpl.h"
+#include "Edge/edgeserverimplfactory.h"
 #include "Edge/forwardingtableserver.h"
-#include "Quic/edgeserverquic.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 
@@ -91,21 +90,11 @@ int main(int argc, char* argv[]) {
                                 uiiit::support::Conf(myOptimizerConf),
                                 myServerImplConf);
 
-    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-
-    if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(
-          myEdgeRouter, myCli.serverEndpoint(), myCli.numThreads()));
-    } else if (myServerImplConf("type") == "quic") {
-      myServerImpl.reset(new ec::EdgeServerQuic(
-          myEdgeRouter,
-          ec::QuicParamsBuilder::buildServerHQParams(
-              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
-    } else {
-      throw std::runtime_error("EdgeServer type not allowed: " +
-                               myServerImplConf("type"));
-    }
-    assert(myServerImpl != nullptr);
+    const auto myServerImpl =
+        ec::EdgeServerImplFactory::make(myEdgeRouter,
+                                        myCli.serverEndpoint(),
+                                        myCli.numThreads(),
+                                        uiiit::support::Conf(myServerConf));
 
     auto myTables = myEdgeRouter.tables();
     assert(myTables.size() == 2);

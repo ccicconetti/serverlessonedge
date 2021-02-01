@@ -70,13 +70,16 @@ class EdgeDispatcher final : public EdgeLambdaProcessor
    *
    * \param aPtimeEstimatorConf the configuration of the processing time
    * estimator object.
+   *
+   * \param aClientConf the configuration of the clients used to forward lambda
+   * requests.
    */
   explicit EdgeDispatcher(const std::string&   aLambdaEndpoint,
                           const std::string&   aCommandsEndpoint,
                           const std::string&   aControllerEndpoint,
                           const support::Conf& aProcessorConf,
                           const support::Conf& aPtimeEstimatorConf,
-                          const support::Conf& aServerQuicConf);
+                          const support::Conf& aClientConf);
 
   std::vector<ForwardingTableInterface*> tables() override;
 

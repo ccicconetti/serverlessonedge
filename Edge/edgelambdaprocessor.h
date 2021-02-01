@@ -65,7 +65,7 @@ class EdgeLambdaProcessor : public EdgeServer
    * \param aControllerEndpoint the end-point of the edge controller. Can be
    * empty, in which case it is assumed that there is no controller.
    *
-   * \param aConf the configuration of this object.
+   * \param aRouterConf the configuration of this object.
    *
    * The configuration consists of the following parameters:
    *
@@ -77,12 +77,15 @@ class EdgeLambdaProcessor : public EdgeServer
    *   In addition to the real time of selecting the destination of any lambda,
    *   we add an artificial process time randomly drawn from U[A, B].
    *   A and B are in fractional seconds.
+
+   * \param aClientConf the configuration of the clients used to forward lambda
+   * requests.
    */
   explicit EdgeLambdaProcessor(const std::string&   aLambdaEndpoint,
                                const std::string&   aCommandsEndpoint,
                                const std::string&   aControllerEndpoint,
                                const support::Conf& aRouterConf,
-                               const support::Conf& aQuicServerConf);
+                               const support::Conf& aClientConf);
 
   ~EdgeLambdaProcessor() override;
 

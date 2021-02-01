@@ -80,7 +80,7 @@ add_executable(edgecomputer
 
 target_link_libraries(edgecomputer
   uiiitedge
-  uiiitedgequic
+  ${LIBEDGEQUIC}
   ${GLOG}
   ${Boost_LIBRARIES}
 )
@@ -91,7 +91,7 @@ add_executable(edgecomputerwsk
 
 target_link_libraries(edgecomputerwsk
   uiiitedge
-  uiiitedgequic
+  ${LIBEDGEQUIC}
   uiiitopenwhisk
   ${GLOG}
   ${Boost_LIBRARIES}
@@ -103,7 +103,7 @@ add_executable(edgedispatcher
 
 target_link_libraries(edgedispatcher
   uiiitedge
-  uiiitedgequic
+  ${LIBEDGEQUIC}
   ${GLOG}
   ${Boost_LIBRARIES}
 )
@@ -114,7 +114,7 @@ add_executable(edgerouter
 
 target_link_libraries(edgerouter
   uiiitedge
-  uiiitedgequic
+  ${LIBEDGEQUIC}
   ${GLOG}
   ${Boost_LIBRARIES}
 )
@@ -126,6 +126,7 @@ add_executable(wskproxy
 target_link_libraries(wskproxy
   uiiitedge
   uiiitopenwhisk
+  ${LIBEDGEQUIC}
   ${GLOG}
   ${Boost_LIBRARIES}
 )

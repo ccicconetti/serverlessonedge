@@ -29,6 +29,14 @@ endif()
 
 include_directories(${CMAKE_BINARY_DIR}/googletest-src/googletest/include)
 
+set(QUICTESTS "")
+if(WITH_QUIC)
+  set(QUICTESTS
+    ${CMAKE_CURRENT_SOURCE_DIR}/testedgeserverquic.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/testedgeclientmultiquic.cpp
+  )
+endif()
+
 add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/trivialedgecontrollerinstaller.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomputer.cpp
@@ -40,7 +48,6 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrolleretsibalanced.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrollerflat.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrollerhier.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/testedgeserverquic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testetsitransaction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testforwardingtable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambda.cpp
@@ -48,13 +55,14 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testprocessor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testptimeestimator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testtopology.cpp
+  ${QUICTESTS}
 )
 
 target_link_libraries(testedgelib
   uiiitedge
-  uiiitedgequic
   uiiitetsimec
   uiiitrest
+  ${LIBEDGEQUIC}
 
   gtest
   ${Boost_LIBRARIES}

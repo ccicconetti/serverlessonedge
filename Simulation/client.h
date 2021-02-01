@@ -148,19 +148,22 @@ class Client
    */
   virtual size_t loop() = 0;
 
+  //! Set the finish flag.
+  void finish();
+
  protected:
-  const size_t            theSeedUser;
-  const size_t            theSeedInc;
+  const size_t theSeedUser;
+  const size_t theSeedInc;
 
  private:
-  mutable std::mutex      theMutex;
-  std::condition_variable theSleepCondition;
-  std::condition_variable theExitCondition;
-  bool                    theStopFlag;
-  bool theFinishedFlag;
+  mutable std::mutex                         theMutex;
+  std::condition_variable                    theSleepCondition;
+  std::condition_variable                    theExitCondition;
+  bool                                       theStopFlag;
+  bool                                       theFinishedFlag;
   support::Chrono                            theLambdaChrono;
   std::unique_ptr<edge::EdgeClientInterface> theClient;
-  const size_t            theNumRequests;
+  const size_t                               theNumRequests;
   const std::string                          theLambda;
   const support::Saver&                      theSaver;
   support::SummaryStat                       theLatencyStat;

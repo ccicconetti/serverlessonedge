@@ -82,6 +82,9 @@ class EdgeRouter final : public EdgeLambdaProcessor
    * \param aTableConf the configuration of the ForwardingTable object.
    *
    * \param aLocalOptimizerConf the configuration of the weight updater object.
+   *
+   * \param aClientConf the configuration of the clients used to forward lambda
+   * requests.
    */
   explicit EdgeRouter(const std::string&   aLambdaEndpoint,
                       const std::string&   aCommandsEndpoint,
@@ -89,7 +92,7 @@ class EdgeRouter final : public EdgeLambdaProcessor
                       const support::Conf& aProcessorConf,
                       const support::Conf& aTableConf,
                       const support::Conf& aLocalOptimizerConf,
-                      const support::Conf& aQuicServerConf);
+                      const support::Conf& aClientConf);
 
   //! \return The forwarding tables: 0 is the overall, 1 is the final.
   std::vector<ForwardingTableInterface*> tables() override;

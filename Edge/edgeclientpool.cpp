@@ -41,12 +41,13 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeClientPool::EdgeClientPool(const support::Conf& aServerConf,
+EdgeClientPool::EdgeClientPool(const support::Conf& aConf,
                                const size_t         aMaxClients)
     : theMaxClients(aMaxClients)
     , theMutex()
-    , theServerConf(aServerConf)
+    , theConf(aConf)
     , thePool() {
+  // noop
 }
 
 std::pair<LambdaResponse, double>
@@ -90,7 +91,7 @@ EdgeClientPool::getClient(const std::string& aDestination) {
     assert(theMaxClients == 0 or myDesc.theBusy < theMaxClients);
     myDesc.theBusy++;
 
-    return EdgeClientFactory::make({aDestination}, theServerConf);
+    return EdgeClientFactory::make({aDestination}, theConf);
   }
   assert(not myDesc.theFree.empty());
   std::unique_ptr<EdgeClientInterface> myNewClient;

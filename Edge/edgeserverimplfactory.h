@@ -27,47 +27,39 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgeclientfactory.h"
+#pragma once
 
-#include "Edge/edgeclientgrpc.h"
-#include "Edge/edgeclientinterface.h"
-#include "Edge/edgeclientmulti.h"
-#include "Support/conf.h"
-
-#ifdef WITH_QUIC
-#include "Quic/edgeclientquic.h"
-#include "Quic/quicparamsbuilder.h"
-#endif
-
-#include <stdexcept>
+#include <memory>
+#include <string>
 
 namespace uiiit {
+
+namespace support {
+class Conf;
+}
+
 namespace edge {
 
-std::unique_ptr<EdgeClientInterface>
-EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
-                        const support::Conf&         aConf) {
-  if (aEndpoints.empty()) {
-    throw std::runtime_error(
-        "Cannot create an edge client with an empty set of destinations");
-  }
+class EdgeServerImpl;
+class EdgeServer;
 
-  const auto myType = aConf("type");
-  if (aEndpoints.size() == 1) {
-    if (myType == "grpc") {
-      return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
-#ifdef WITH_QUIC
-    } else if (myType == "quic") {
-      return std::make_unique<EdgeClientQuic>(
-          QuicParamsBuilder::buildClientHQParams(aConf, *aEndpoints.begin()));
-#endif
-    } else {
-      throw std::runtime_error("Unknown client type: " + myType);
-    }
-  }
-
-  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
-}
+class EdgeServerImplFactory final
+{
+ public:
+  /**
+   * @brief Create a transport layer object for a given edge server.
+   *
+   * @param aEdgeServer The edge server.
+   * @param aEndpoint The end-point of the server.
+   * @param aNumThreads The number of threads to spawn.
+   * @param aConf The configuration.
+   * @return std::unique_ptr<EdgeServerImpl>
+   */
+  static std::unique_ptr<EdgeServerImpl> make(EdgeServer&          aEdgeServer,
+                                              const std::string&   aEndpoints,
+                                              const size_t         aNumThreads,
+                                              const support::Conf& aConf);
+}; // end class EdgeClient
 
 } // end namespace edge
 } // end namespace uiiit

@@ -29,9 +29,9 @@ SOFTWARE.
 
 #include "client.h"
 
+#include "Edge/edgeclientfactory.h"
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
-#include "Edge/edgeclientfactory.h"
 #include "Support/saver.h"
 #include "Support/stat.h"
 
@@ -75,18 +75,27 @@ Client::~Client() {
 }
 
 void Client::operator()() {
-  for (size_t myCounter = 0; myCounter < theNumRequests; /* incr in body */) {
-    {
-      const std::lock_guard<std::mutex> myLock(theMutex);
-      if (theStopFlag) {
-        VLOG(2) << "client execution interrupted after sending " << myCounter
-                << " requests out of " << theNumRequests;
-        break;
+  try {
+    for (size_t myCounter = 0; myCounter < theNumRequests; /* incr in body */) {
+      {
+        const std::lock_guard<std::mutex> myLock(theMutex);
+        if (theStopFlag) {
+          VLOG(2) << "client execution interrupted after sending " << myCounter
+                  << " requests out of " << theNumRequests;
+          break;
+        }
       }
-    }
 
-    myCounter += loop();
+      myCounter += loop();
+    }
+  } catch (...) {
+    finish();
+    throw;
   }
+  finish();
+}
+
+void Client::finish() {
   const std::lock_guard<std::mutex> myLock(theMutex);
   theFinishedFlag = true;
   theExitCondition.notify_one();

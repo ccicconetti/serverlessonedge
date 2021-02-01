@@ -33,6 +33,7 @@ SOFTWARE.
 #include "Support/saver.h"
 #include "Support/split.h"
 #include "Support/threadpool.h"
+#include "Support/tostring.h"
 
 #include <glog/logging.h>
 
@@ -125,13 +126,7 @@ int main(int argc, char* argv[]) {
       throw std::runtime_error("Empty end-points: " + myServerEndpoints);
     }
 
-    const auto myEdgeClientConf      = uiiit::support::Conf(myClientConf);
-    const auto myClientTransportType = myEdgeClientConf("type");
-    if (myClientTransportType != std::string("grpc") &&
-        myClientTransportType != std::string("quic")) {
-      throw std::runtime_error("Invalid Client type configuration in "
-                               "--client-conf option");
-    }
+    const auto myEdgeClientConf = uiiit::support::Conf(myClientConf);
 
     const auto mySizeSet =
         uiiit::support::split<std::vector<size_t>>(mySizes, ",");
@@ -183,12 +178,9 @@ int main(int argc, char* argv[]) {
       myTerminationThread.join();
     }
 
-    std::stringstream myErrorStr;
-    for (const auto& myError : myErrors) {
-      myErrorStr << '\n' << myError;
-    }
     LOG_IF(ERROR, not myErrors.empty())
-        << "Errors occurred:" << myErrorStr.str();
+        << myErrors.size() << " error" << (myErrors.size() > 1 ? "s" : "")
+        << " occurred: " << ::toString(myErrors, " | ");
 
     for (auto myClient : myClients) {
       assert(myClient != nullptr);

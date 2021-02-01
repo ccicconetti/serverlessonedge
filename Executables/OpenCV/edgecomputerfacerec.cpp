@@ -30,11 +30,11 @@ SOFTWARE.
 #include "Edge/edgecomputerserver.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrollermessages.h"
-#include "Edge/edgeservergrpc.h"
+#include "Edge/edgeserverimpl.h"
+#include "Edge/edgeserverimplfactory.h"
 #include "Edge/edgeserveroptions.h"
 #include "Edge/processloadserver.h"
 #include "OpenCV/facedetectcomputer.h"
-#include "Quic/edgeserverquic.h"
 #include "Support/checkfiles.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
@@ -146,22 +146,11 @@ int main(int argc, char* argv[]) {
                                     myProcessLoadCallback);
 
     // create transport layer
-    std::unique_ptr<ec::EdgeServerImpl> myServerImpl;
-    const auto myServerImplConf = uiiit::support::Conf(myServerConf);
-
-    if (myServerImplConf("type") == "grpc") {
-      myServerImpl.reset(new ec::EdgeServerGrpc(
-          myServer, myCli.serverEndpoint(), myCli.numThreads()));
-    } else if (myServerImplConf("type") == "quic") {
-      myServerImpl.reset(new ec::EdgeServerQuic(
-          myServer,
-          ec::QuicParamsBuilder::buildServerHQParams(
-              myServerImplConf, myCli.serverEndpoint(), myCli.numThreads())));
-    } else {
-      throw std::runtime_error("EdgeServer type not allowed: " +
-                               myServerImplConf("type"));
-    }
-    assert(myServerImpl != nullptr);
+    const auto myServerImpl =
+        ec::EdgeServerImplFactory::make(myServer,
+                                        myCli.serverEndpoint(),
+                                        myCli.numThreads(),
+                                        uiiit::support::Conf(myServerConf));
 
     // announce the edge computer to the edge controller, if known
     if (myCli.controllerEndpoint().empty()) {

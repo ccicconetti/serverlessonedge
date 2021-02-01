@@ -31,9 +31,12 @@ SOFTWARE.
 
 #include "Edge/edgeclientfactory.h"
 #include "Edge/edgeclientgrpc.h"
-#include "Quic/edgeclientquic.h"
 #include "Support/random.h"
 #include "Support/tostring.h"
+
+#ifdef WITH_QUIC
+#include "Quic/edgeclientquic.h"
+#endif
 
 #include <cassert>
 #include <stdexcept>
@@ -73,11 +76,15 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
     myDesc.theIndex    = i;
     myDesc.theEndpoint = myEndpoint;
 
-    if (myClientType == std::string("grpc")) {
+    if (myClientType == "grpc") {
       myDesc.theClient.reset(new EdgeClientGrpc(myEndpoint));
-    } else {
+#ifdef WITH_QUIC
+    } else if (myClientType == "quic") {
       myDesc.theClient.reset(new EdgeClientQuic(
           QuicParamsBuilder::buildClientHQParams(aClientConf, myEndpoint)));
+#endif
+    } else {
+      throw std::runtime_error("Unknown client type: " + myClientType);
     }
 
     myDesc.theThread = std::thread([this, &myDesc]() {
