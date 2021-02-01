@@ -54,6 +54,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdatransactiongrpc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testprocessor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testptimeestimator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/teststatesim.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testtopology.cpp
   ${QUICTESTS}
 )
@@ -62,7 +63,7 @@ target_link_libraries(testedgelib
   uiiitedge
   uiiitetsimec
   uiiitrest
-  ${LIBEDGEQUIC}
+  uiiitstatesim
 
   gtest
   ${Boost_LIBRARIES}

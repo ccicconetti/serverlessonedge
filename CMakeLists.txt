@@ -96,6 +96,7 @@ if(WITH_QUIC)
 endif()
 add_subdirectory(Rpc)
 add_subdirectory(Simulation)
+add_subdirectory(StateSim)
 
 # external repos
 add_subdirectory(etsimec/Executables)
