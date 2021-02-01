@@ -10,7 +10,8 @@ The reference system is depicted in the figure below.
 - The _serverless platforms_ are systems that can execute tasks upon receiving a lambda function execution request. It is not required that these platforms interact with one another.
 - The _brokers_ are the entry point of clients in the system: they forward every incoming lambda function to the serverless platform that is deemed to be the best choice at any given point in time. Like serverless platforms, the brokers do not communicated with another. However, they must be notified of the existence of serverless platforms (and which lambda functions they can use), which can be done by a so-called _edge controller_ not depicted in the figure above.
 
-The components communicate with one another via [gRPC](https://grpc.io/).
+The components communicate with one another via Google's [gRPC](https://grpc.io/).
+An alternative, there is experimental support of [QUIC](https://quicwg.org/) using Facebook's [proxygen](https://github.com/facebook/proxygen) and [mvfst](https://github.com/facebookincubator/mvfst).
 
 ## Components
 

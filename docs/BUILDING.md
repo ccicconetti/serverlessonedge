@@ -20,7 +20,7 @@ make
 
 Note that [gmock](https://github.com/google/googlemock) is also needed to compile the unit tests but, if everything goes right, it will be downloaded automatically by CMake (needless to say: you do need a working Internet connection for this step).
 
-This will compile the full build tree *except OpenCV*. The executables will be in `build/debug/Executables` from the repo root.
+This will compile the full build tree *except OpenCV and without QUIC support*. The executables will be in `build/debug/Executables` from the repo root.
 
 The unit tests can be executed by running `build/debug/Test/testedge` or, if you want to execute _all_ the unit tests (including those of the sub-modules), run `NOBUILD=1 etsimec/rest/support/jenkins/run_tests.sh`. Note that without setting the environment variable `NOBUILD` the script will remove the full content of the build directory.
 
@@ -37,12 +37,24 @@ The unit tests will not be compiled (gmock will not be even downloaded).
 If you want to compile *also the executables and libraries depending OpenCV* then run (e.g., in debug mode):
 
 ```
-cd etsimec/build/debug
+cd build/debug
 ../build.sh g++ -DWITH_OPENCV=1
 make
 ```
 
 Note that this requires extra dependencies, as explained below.
+
+If you want to compile *with QUIC support* then first compile [proxygen](https://github.com/facebook/proxygen) with [mvfst](https://github.com/facebookincubator/mvfst) support with:
+
+```
+cd thirdparty
+./build_deps.sh
+cd ..
+```
+
+then run the build script (or directly cmake) with `-DWITH_QUIC=1`. The `build_deps.sh` script has been tested successfully only on Linux/Ubuntu 18.04.
+
+OpenCV and QUIC can be enabled at the same time with `-DWITH_QUIC=1 -DWITH_OPENCV=1`.
 
 ## Dependencies
 
