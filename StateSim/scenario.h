@@ -47,18 +47,33 @@ namespace uiiit {
 namespace statesim {
 
 struct PerformanceData {
-  //! For each job, the processing time, in s.
-  std::vector<double> theProcDelays;
-  //! For each job, the network delay, in s.
-  std::vector<double> theNetDelays;
-  //! For each job, the amount of data transferred, in bytes.
-  std::vector<size_t> theDataTransfer;
+  struct Job {
+    //! Processing time, in s.
+    double theProcDelay;
+    //! Network delay, in s.
+    double theNetDelay;
+    //! Amount of data transferred, in bytes.
+    size_t theDataTransfer;
+    //! Number of tasks in the chain.
+    size_t theChainSize;
+
+    //! Sum processing/network delays and the data transferred.
+    void merge(const Job& aOther) noexcept;
+
+    //! \return a string with the space-separated values.
+    std::string toString() const;
+
+    //! \return true if the two structs are bit-wise identical.
+    bool operator==(const Job& aOther) const noexcept;
+  };
+  //! Data for each job.
+  std::vector<Job> theJobData;
   //! For each processing node, the number of tasks assigned.
   std::vector<size_t> theLoad;
 
   //! \return the number of jobs.
   size_t numJobs() const noexcept {
-    return theProcDelays.size();
+    return theJobData.size();
   }
 
   //! \return the number of (processing) nodes.
@@ -71,7 +86,7 @@ struct PerformanceData {
   void                   save(std::ofstream& aOutput) const;
   static PerformanceData load(std::ifstream& aInput);
 
-  static constexpr size_t theVersion = 1;
+  static constexpr size_t theVersion = 2;
 };
 
 enum class Policy : int {
@@ -85,7 +100,6 @@ class Scenario
   NONCOPYABLE_NONMOVABLE(Scenario);
 
   using Allocation = std::vector<std::vector<Node*>>;
-  using ExecStat   = std::tuple<double, double, size_t>;
 
  public:
   struct Conf {
@@ -178,11 +192,11 @@ class Scenario
    * \return execution time (network transfer, processing), in s, and data
    * transferred, in bytes
    */
-  ExecStat execStatsTwoWay(const size_t aOps,
-                           const size_t aInSize,
-                           const size_t aOutSize,
-                           const Node&  aOrigin,
-                           const Node&  aTarget) const;
+  PerformanceData::Job execStatsTwoWay(const size_t aOps,
+                                       const size_t aInSize,
+                                       const size_t aOutSize,
+                                       const Node&  aOrigin,
+                                       const Node&  aTarget) const;
   /**
    * Return the execution time (processing vs. network) of a given task
    * allocated to a candidate node when transferring the given amount
@@ -200,10 +214,10 @@ class Scenario
    * \return execution time (network transfer, processing), in s, and data
    * transferred, in bytes
    */
-  std::tuple<double, double, size_t> execStatsOneWay(const size_t aOps,
-                                                     const size_t aSize,
-                                                     const Node&  aOrigin,
-                                                     const Node& aTarget) const;
+  PerformanceData::Job execStatsOneWay(const size_t aOps,
+                                       const size_t aSize,
+                                       const Node&  aOrigin,
+                                       const Node&  aTarget) const;
 
   //! \return a random order of the job identifiers
   std::vector<size_t> shuffleJobIds();
@@ -216,8 +230,6 @@ class Scenario
   //! \return the sum of all the job states and the input vs. output of a task.
   static std::pair<size_t, size_t> allStatesArgSizes(const Job&  aJob,
                                                      const Task& aTask);
-
-  static void merge(ExecStat& aTarget, const ExecStat& aOrigin);
 
  private:
   std::default_random_engine            theRng;

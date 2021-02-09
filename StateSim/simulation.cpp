@@ -242,8 +242,7 @@ void Simulation::saveDir(const boost::filesystem::path& aDir) {
     {
       std::ofstream myOutstream((aDir / ("job-" + myDesc.toString())).string());
       for (size_t i = 0; i < myPerf.numJobs(); i++) {
-        myOutstream << myPerf.theProcDelays[i] << ' ' << myPerf.theNetDelays[i]
-                    << ' ' << myPerf.theDataTransfer[i] << '\n';
+        myOutstream << myPerf.theJobData[i].toString() << '\n';
       }
     }
 

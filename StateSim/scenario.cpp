@@ -39,11 +39,28 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
-bool PerformanceData::operator==(const PerformanceData& aOther) const {
-  return theProcDelays == aOther.theProcDelays and
-         theNetDelays == aOther.theNetDelays and
+void PerformanceData::Job::merge(const Job& aOther) noexcept {
+  theProcDelay += aOther.theProcDelay;
+  theNetDelay += aOther.theNetDelay;
+  theDataTransfer += aOther.theDataTransfer;
+}
+
+std::string PerformanceData::Job::toString() const {
+  std::stringstream ret;
+  ret << theProcDelay << ' ' << theNetDelay << ' ' << theDataTransfer << ' '
+      << theChainSize;
+  return ret.str();
+}
+
+bool PerformanceData::Job::operator==(const Job& aOther) const noexcept {
+  return theProcDelay == aOther.theProcDelay and
+         theNetDelay == aOther.theNetDelay and
          theDataTransfer == aOther.theDataTransfer and
-         theLoad == aOther.theLoad;
+         theChainSize == aOther.theChainSize;
+}
+
+bool PerformanceData::operator==(const PerformanceData& aOther) const {
+  return theJobData == aOther.theJobData and theLoad == aOther.theLoad;
 }
 
 void PerformanceData::save(std::ofstream& aOutput) const {
@@ -55,12 +72,8 @@ void PerformanceData::save(std::ofstream& aOutput) const {
   aOutput.write(reinterpret_cast<const char*>(&J), sizeof(J));
 
   // save per-job samples
-  aOutput.write(reinterpret_cast<const char*>(theProcDelays.data()),
-                sizeof(double) * J);
-  aOutput.write(reinterpret_cast<const char*>(theNetDelays.data()),
-                sizeof(double) * J);
-  aOutput.write(reinterpret_cast<const char*>(theDataTransfer.data()),
-                sizeof(size_t) * J);
+  aOutput.write(reinterpret_cast<const char*>(theJobData.data()),
+                sizeof(PerformanceData::Job) * J);
 
   // save number of nodes
   const size_t N = numNodes();
@@ -87,17 +100,9 @@ PerformanceData PerformanceData::load(std::ifstream& aInput) {
   aInput.read(reinterpret_cast<char*>(&myNumJobs), sizeof(myNumJobs));
 
   // read per-job samples
-  ret.theProcDelays.resize(myNumJobs);
-  aInput.read(reinterpret_cast<char*>(ret.theProcDelays.data()),
-              sizeof(double) * myNumJobs);
-
-  ret.theNetDelays.resize(myNumJobs);
-  aInput.read(reinterpret_cast<char*>(ret.theNetDelays.data()),
-              sizeof(double) * myNumJobs);
-
-  ret.theDataTransfer.resize(myNumJobs);
-  aInput.read(reinterpret_cast<char*>(ret.theDataTransfer.data()),
-              sizeof(size_t) * myNumJobs);
+  ret.theJobData.resize(myNumJobs);
+  aInput.read(reinterpret_cast<char*>(ret.theJobData.data()),
+              sizeof(PerformanceData::Job) * myNumJobs);
 
   // read number of nodes
   size_t myNumNodes;
@@ -230,9 +235,7 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
   //
   // measure performance for each job
   //
-  ret.theProcDelays.reserve(theJobs.size());
-  ret.theNetDelays.reserve(theJobs.size());
-  ret.theDataTransfer.reserve(theJobs.size());
+  ret.theJobData.reserve(theJobs.size());
   for (const auto& myJob : theJobs) {
     // retrieve the client of this job
     assert(myJob.id() < theClients.size());
@@ -241,8 +244,9 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
     // last known location of the state, only used with StateLocal policy
     std::vector<Node*> myStateLocation(myJob.stateSizes().size(), myClient);
 
-    ExecStat myExecStat;
-    Node*    myPrevNode = nullptr;
+    PerformanceData::Job myExecStat;
+    myExecStat.theChainSize = myJob.tasks().size();
+    Node* myPrevNode        = nullptr;
     for (const auto& myTask : myJob.tasks()) {
       // retrieve the node to which this task has been allocated
       assert(myJob.id() < theAllocation.size());
@@ -261,37 +265,35 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
               << ", policy " << toString(aPolicy);
 
       if (aPolicy == Policy::PureFaaS) {
-        merge(myExecStat,
-              execStatsTwoWay(
-                  myTask.ops(), myInSize, myOutSize, *myClient, *myNode));
+        myExecStat.merge(execStatsTwoWay(
+            myTask.ops(), myInSize, myOutSize, *myClient, *myNode));
       } else if (aPolicy == Policy::StatePropagate) {
-        merge(myExecStat,
-              execStatsOneWay(myTask.ops(),
-                              myInSize,
-                              myPrevNode == nullptr ? *myClient : *myPrevNode,
-                              *myNode));
+        myExecStat.merge(
+            execStatsOneWay(myTask.ops(),
+                            myInSize,
+                            myPrevNode == nullptr ? *myClient : *myPrevNode,
+                            *myNode));
         if (myLastTask) {
-          merge(myExecStat, execStatsOneWay(0, myOutSize, *myNode, *myClient));
+          myExecStat.merge(execStatsOneWay(0, myOutSize, *myNode, *myClient));
         }
       } else {
         assert(aPolicy == Policy::StateLocal);
         // execution time + transfer of the argument from previous node
         // to the current one
-        merge(myExecStat,
-              execStatsOneWay(myTask.ops(),
-                              myTask.size(),
-                              myPrevNode == nullptr ? *myClient : *myPrevNode,
-                              *myNode));
+        myExecStat.merge(
+            execStatsOneWay(myTask.ops(),
+                            myTask.size(),
+                            myPrevNode == nullptr ? *myClient : *myPrevNode,
+                            *myNode));
 
         // transfer of state from its last known location
         for (const auto myStateId : myTask.deps()) {
           assert(myStateId < myJob.stateSizes().size());
           assert(myStateId < myStateLocation.size());
-          merge(myExecStat,
-                execStatsOneWay(0,
-                                myJob.stateSizes()[myStateId],
-                                *myStateLocation[myStateId],
-                                *myNode));
+          myExecStat.merge(execStatsOneWay(0,
+                                           myJob.stateSizes()[myStateId],
+                                           *myStateLocation[myStateId],
+                                           *myNode));
 
           // update location of this state to the current node
           myStateLocation[myStateId] = myNode;
@@ -299,16 +301,14 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
 
         // last return value to client
         if (myLastTask) {
-          merge(myExecStat,
-                execStatsOneWay(0, myJob.retSize(), *myNode, *myClient));
+          myExecStat.merge(
+              execStatsOneWay(0, myJob.retSize(), *myNode, *myClient));
         }
       }
 
       myPrevNode = myNode;
     }
-    ret.theProcDelays.emplace_back(std::get<0>(myExecStat));
-    ret.theNetDelays.emplace_back(std::get<1>(myExecStat));
-    ret.theDataTransfer.emplace_back(std::get<2>(myExecStat));
+    ret.theJobData.emplace_back(myExecStat);
   }
 
   //
@@ -336,12 +336,11 @@ std::pair<double, double> Scenario::execTimeNew(const size_t aOps,
   return {myProcTime, myTxTime};
 }
 
-std::tuple<double, double, size_t>
-Scenario::execStatsTwoWay(const size_t aOps,
-                          const size_t aInSize,
-                          const size_t aOutSize,
-                          const Node&  aTarget,
-                          const Node&  aNode) const {
+PerformanceData::Job Scenario::execStatsTwoWay(const size_t aOps,
+                                               const size_t aInSize,
+                                               const size_t aOutSize,
+                                               const Node&  aTarget,
+                                               const Node&  aNode) const {
   assert(aNode.id() < theLoad.size());
   assert(theLoad[aNode.id()] > 0);
 
@@ -351,14 +350,13 @@ Scenario::execStatsTwoWay(const size_t aOps,
   const auto myDataTransferred = theNetwork->hops(aTarget, aNode) * aInSize +
                                  theNetwork->hops(aNode, aTarget) * aOutSize;
 
-  return {myProcTime, myTxTime, myDataTransferred};
+  return {myProcTime, myTxTime, myDataTransferred, 0};
 }
 
-std::tuple<double, double, size_t>
-Scenario::execStatsOneWay(const size_t aOps,
-                          const size_t aSize,
-                          const Node&  aOrigin,
-                          const Node&  aTarget) const {
+PerformanceData::Job Scenario::execStatsOneWay(const size_t aOps,
+                                               const size_t aSize,
+                                               const Node&  aOrigin,
+                                               const Node&  aTarget) const {
   assert(aOps == 0 or aTarget.id() < theLoad.size());
   assert(aOps == 0 or theLoad[aTarget.id()] > 0);
 
@@ -367,7 +365,7 @@ Scenario::execStatsOneWay(const size_t aOps,
   const auto myTxTime          = theNetwork->txTime(aOrigin, aTarget, aSize);
   const auto myDataTransferred = theNetwork->hops(aOrigin, aTarget) * aSize;
 
-  return {myProcTime, myTxTime, myDataTransferred};
+  return {myProcTime, myTxTime, myDataTransferred, 0};
 }
 
 std::vector<size_t> Scenario::shuffleJobIds() {
@@ -421,12 +419,6 @@ std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
                          aJob.tasks()[aTask.id() + 1].size());
 
   return {myInSize, myOutSize};
-}
-
-void Scenario::merge(ExecStat& aTarget, const ExecStat& aOrigin) {
-  std::get<0>(aTarget) += std::get<0>(aOrigin);
-  std::get<1>(aTarget) += std::get<1>(aOrigin);
-  std::get<2>(aTarget) += std::get<2>(aOrigin);
 }
 
 std::string toString(const Policy aPolicy) {

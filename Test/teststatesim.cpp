@@ -184,20 +184,13 @@ struct TestStateSim : public ::testing::Test {
     }
   }
 
-  static bool check(const PerformanceData& aData) {
-    const auto N = std::min(
-        aData.theProcDelays.size(),
-        std::min(aData.theNetDelays.size(), aData.theDataTransfer.size()));
-    for (size_t i = 0; i < N; i++) {
-      VLOG(1) << "J#" << i << ' ' << aData.theProcDelays[i] << ' '
-              << aData.theNetDelays[i] << ' ' << aData.theDataTransfer[i];
+  static void print(const PerformanceData& aData) {
+    for (size_t i = 0; i < aData.numJobs(); i++) {
+      VLOG(1) << "J#" << i << ' ' << aData.theJobData[i].toString();
     }
     for (size_t i = 0; i < aData.numNodes(); i++) {
       VLOG(1) << "N#" << i << ' ' << aData.theLoad[i];
     }
-    return aData.numJobs() == aData.theProcDelays.size() and
-           aData.numJobs() == aData.theNetDelays.size() and
-           aData.numJobs() == aData.theDataTransfer.size();
   }
 
   /*
@@ -483,7 +476,7 @@ TEST_F(TestStateSim, test_scenario_from_files) {
   ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
 
   const auto myData = myScenario.performance(Policy::PureFaaS);
-  ASSERT_TRUE(check(myData));
+  print(myData);
 }
 
 TEST_F(TestStateSim, test_scenario) {
@@ -514,7 +507,7 @@ TEST_F(TestStateSim, test_scenario) {
   ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
 
   const auto myData = myScenario.performance(Policy::PureFaaS);
-  ASSERT_TRUE(check(myData));
+  print(myData);
 
   const auto myDataFilename = (theTestDir / "data").string();
   {
