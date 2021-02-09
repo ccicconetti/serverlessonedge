@@ -39,6 +39,22 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
+PerformanceData::Job::Job()
+    : Job(0, 0, 0, 0) {
+  // noop
+}
+
+PerformanceData::Job::Job(const double aProcDelay,
+                          const double aNetDelay,
+                          const size_t aDataTransfer,
+                          const size_t aChainSize)
+    : theProcDelay(aProcDelay)
+    , theNetDelay(aNetDelay)
+    , theDataTransfer(aDataTransfer)
+    , theChainSize(aChainSize) {
+  // noop
+}
+
 void PerformanceData::Job::merge(const Job& aOther) noexcept {
   theProcDelay += aOther.theProcDelay;
   theNetDelay += aOther.theNetDelay;
@@ -350,7 +366,7 @@ PerformanceData::Job Scenario::execStatsTwoWay(const size_t aOps,
   const auto myDataTransferred = theNetwork->hops(aTarget, aNode) * aInSize +
                                  theNetwork->hops(aNode, aTarget) * aOutSize;
 
-  return {myProcTime, myTxTime, myDataTransferred, 0};
+  return PerformanceData::Job(myProcTime, myTxTime, myDataTransferred, 0);
 }
 
 PerformanceData::Job Scenario::execStatsOneWay(const size_t aOps,
@@ -365,7 +381,7 @@ PerformanceData::Job Scenario::execStatsOneWay(const size_t aOps,
   const auto myTxTime          = theNetwork->txTime(aOrigin, aTarget, aSize);
   const auto myDataTransferred = theNetwork->hops(aOrigin, aTarget) * aSize;
 
-  return {myProcTime, myTxTime, myDataTransferred, 0};
+  return PerformanceData::Job(myProcTime, myTxTime, myDataTransferred, 0);
 }
 
 std::vector<size_t> Scenario::shuffleJobIds() {

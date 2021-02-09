@@ -57,6 +57,12 @@ struct PerformanceData {
     //! Number of tasks in the chain.
     size_t theChainSize;
 
+    explicit Job();
+    explicit Job(const double aProcDelay,
+                 const double aNetDelay,
+                 const size_t aDataTransfer,
+                 const size_t aChainSize);
+
     //! Sum processing/network delays and the data transferred.
     void merge(const Job& aOther) noexcept;
 
