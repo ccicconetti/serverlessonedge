@@ -74,12 +74,12 @@ file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
 include_directories(${PROTO_SRC_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
-include_directories(SYSTEM "thirdparty/include")
-link_directories("thirdparty/libs")
 
 # optional library
 set(LIBEDGEQUIC "")
 if(WITH_QUIC)
+  include_directories(SYSTEM "thirdparty/include")
+  link_directories("thirdparty/libs")
   set(LIBEDGEQUIC uiiitedgequic)
 endif()
 
