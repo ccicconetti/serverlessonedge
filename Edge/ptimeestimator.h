@@ -1,12 +1,14 @@
 /*
- ___ ___ __     __ ____________
-|   |   |  |   |__|__|__   ___/   Ubiquitout Internet @ IIT-CNR
-|   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
-|   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
-|_______|__|__/__/   /__/
+              __ __ __
+             |__|__|  | __
+             |  |  |  ||__|
+  ___ ___ __ |  |  |  |
+ |   |   |  ||  |  |  |    Ubiquitous Internet @ IIT-CNR
+ |   |   |  ||  |  |  |    C++ edge computing libraries and tools
+ |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
 
-Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
+Licensed under the MIT License <http://opensource.org/licenses/MIT>
+Copyright (c) 2021 C. Cicconetti <https://ccicconetti.github.io/>
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -153,8 +155,7 @@ class PtimeEstimator : public ForwardingTableInterface
 
  private:
   //! Internal function to remove a destination for a given lambda.
-  void internalRemove(const std::string& aLambda,
-              const std::string& aDest);
+  void internalRemove(const std::string& aLambda, const std::string& aDest);
 
   //! Called as a new destination is added for the given lambda.
   virtual void privateAdd(const std::string& aLambda,
@@ -164,11 +165,11 @@ class PtimeEstimator : public ForwardingTableInterface
                              const std::string& aDestination) = 0;
 
  protected:
-  const Type                                          theType;
-  mutable std::mutex                                  theMutex;
-  std::set<std::string>                               theLambdas;
+  const Type            theType;
+  mutable std::mutex    theMutex;
+  std::set<std::string> theLambdas;
   std::map<std::string, std::map<std::string, std::pair<float, bool>>> theTable;
-  std::unordered_map<uint64_t, Estimates>             theEstimates;
+  std::unordered_map<uint64_t, Estimates> theEstimates;
 };
 
 const std::string& toString(const PtimeEstimator::Type aType);

@@ -1,12 +1,14 @@
 /*
- ___ ___ __     __ ____________
-|   |   |  |   |__|__|__   ___/   Ubiquitout Internet @ IIT-CNR
-|   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
-|   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
-|_______|__|__/__/   /__/
+              __ __ __
+             |__|__|  | __
+             |  |  |  ||__|
+  ___ ___ __ |  |  |  |
+ |   |   |  ||  |  |  |    Ubiquitous Internet @ IIT-CNR
+ |   |   |  ||  |  |  |    C++ edge computing libraries and tools
+ |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
 
-Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
+Licensed under the MIT License <http://opensource.org/licenses/MIT>
+Copyright (c) 2021 C. Cicconetti <https://ccicconetti.github.io/>
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -50,8 +52,9 @@ ProportionalRequirements::ProportionalRequirements(
     , theMemOffset(aMemOffset) {
 }
 
-LambdaRequirements ProportionalRequirements::
-                   operator()(const Processor& aProc, const LambdaRequest& aReq) const noexcept {
+LambdaRequirements
+ProportionalRequirements::operator()(const Processor&     aProc,
+                                     const LambdaRequest& aReq) const noexcept {
   std::ignore            = aProc;
   const auto myInputSize = aReq.theInput.size();
   return LambdaRequirements{
@@ -89,7 +92,8 @@ LambdaRequirements Lambda::requirements(const Processor&     aProc,
 std::shared_ptr<const LambdaResponse>
 Lambda::execute(const LambdaRequest&         aReq,
                 const std::array<double, 3>& aLoads) const {
-  return std::make_shared<const LambdaResponse>("OK", theCopyInput ? aReq.theInput : theOutput, aLoads);
+  return std::make_shared<const LambdaResponse>(
+      "OK", theCopyInput ? aReq.theInput : theOutput, aLoads);
 }
 
 } // namespace edge

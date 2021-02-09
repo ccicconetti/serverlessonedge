@@ -1,12 +1,14 @@
 /*
- ___ ___ __     __ ____________
-|   |   |  |   |__|__|__   ___/   Ubiquitout Internet @ IIT-CNR
-|   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
-|   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
-|_______|__|__/__/   /__/
+              __ __ __
+             |__|__|  | __
+             |  |  |  ||__|
+  ___ ___ __ |  |  |  |
+ |   |   |  ||  |  |  |    Ubiquitous Internet @ IIT-CNR
+ |   |   |  ||  |  |  |    C++ edge computing libraries and tools
+ |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
 
-Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
+Licensed under the MIT License <http://opensource.org/licenses/MIT>
+Copyright (c) 2021 C. Cicconetti <https://ccicconetti.github.io/>
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -56,8 +58,9 @@ void PtimeEstimator::change(const std::string& aLambda,
   const std::lock_guard<std::mutex> myLock(theMutex);
 
   bool myAdded = false;
-  auto it =
-      theTable.emplace(aLambda, std::map<std::string, std::pair<float, bool>>({{aDest, std::make_pair(1.0f, aFinal)}}));
+  auto it      = theTable.emplace(aLambda,
+                             std::map<std::string, std::pair<float, bool>>(
+                                 {{aDest, std::make_pair(1.0f, aFinal)}}));
   if (it.second) {
     theLambdas.emplace(aLambda);
     LOG(INFO) << "New lambda supported: " << aLambda << ", destination is "
@@ -66,8 +69,9 @@ void PtimeEstimator::change(const std::string& aLambda,
 
   } else {
     assert(it.first != theTable.end());
-    const auto jt = it.first->second.emplace(aDest, std::make_pair(1.0f, aFinal));
-    myAdded       = jt.second;
+    const auto jt =
+        it.first->second.emplace(aDest, std::make_pair(1.0f, aFinal));
+    myAdded = jt.second;
     LOG_IF(INFO, myAdded) << "New destination added to lambda " << aLambda
                           << ": " << aDest << (aFinal ? " (F)" : "");
   }
@@ -105,7 +109,7 @@ void PtimeEstimator::remove(const std::string& aLambda,
 }
 
 void PtimeEstimator::internalRemove(const std::string& aLambda,
-                            const std::string& aDest) {
+                                    const std::string& aDest) {
   ASSERT_IS_LOCKED(theMutex);
 
   assert((theLambdas.find(aLambda) == theLambdas.end()) ==

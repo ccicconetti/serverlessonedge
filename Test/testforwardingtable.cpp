@@ -1,12 +1,14 @@
 /*
- ___ ___ __     __ ____________
-|   |   |  |   |__|__|__   ___/   Ubiquitout Internet @ IIT-CNR
-|   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
-|   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
-|_______|__|__/__/   /__/
+              __ __ __
+             |__|__|  | __
+             |  |  |  ||__|
+  ___ ___ __ |  |  |  |
+ |   |   |  ||  |  |  |    Ubiquitous Internet @ IIT-CNR
+ |   |   |  ||  |  |  |    C++ edge computing libraries and tools
+ |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
 
-Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
+Licensed under the MIT License <http://opensource.org/licenses/MIT>
+Copyright (c) 2021 C. Cicconetti <https://ccicconetti.github.io/>
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -28,13 +30,13 @@ SOFTWARE.
 */
 
 #include "Edge/forwardingtable.h"
-#include "Edge/forwardingtablefactory.h"
 #include "Edge/forwardingtableexceptions.h"
+#include "Edge/forwardingtablefactory.h"
 #include "Edge/lambda.h"
 #include "Support/chrono.h"
+#include "Support/conf.h"
 #include "Support/tostring.h"
 #include "Support/wait.h"
-#include "Support/conf.h"
 
 #include "gtest/gtest.h"
 #include <cmath>
@@ -48,22 +50,26 @@ struct TestForwardingTable : public ::testing::Test {};
 TEST_F(TestForwardingTable, test_ctor) {
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::Random)));
   ASSERT_NO_THROW((ForwardingTable(ForwardingTable::Type::LeastImpedance)));
-  
-  std::unique_ptr<ForwardingTable> myTable1(ForwardingTableFactory::make(support::Conf("type=random,alpha=2,beta=1")));
+
+  std::unique_ptr<ForwardingTable> myTable1(ForwardingTableFactory::make(
+      support::Conf("type=random,alpha=2,beta=1")));
   ASSERT_TRUE(static_cast<bool>(myTable1));
-  std::unique_ptr<ForwardingTable> myTable2(ForwardingTableFactory::make(support::Conf("type=least-impedance,alpha=2,beta=1")));
+  std::unique_ptr<ForwardingTable> myTable2(ForwardingTableFactory::make(
+      support::Conf("type=least-impedance,alpha=2,beta=1")));
   ASSERT_TRUE(static_cast<bool>(myTable2));
 }
 
 TEST_F(TestForwardingTable, test_pf_ctor) {
   ASSERT_NO_THROW(
       (ForwardingTable(ForwardingTable::Type::ProportionalFairness)));
-  std::unique_ptr<ForwardingTable> myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
+  std::unique_ptr<ForwardingTable> myTable(ForwardingTableFactory::make(
+      support::Conf("type=proportional-fairness,alpha=2,beta=1")));
   ASSERT_TRUE(static_cast<bool>(myTable));
 }
 
 TEST_F(TestForwardingTable, test_pf_operations) {
-  std::unique_ptr<ForwardingTable> myTable(ForwardingTableFactory::make(support::Conf("type=proportional-fairness,alpha=2,beta=1")));
+  std::unique_ptr<ForwardingTable> myTable(ForwardingTableFactory::make(
+      support::Conf("type=proportional-fairness,alpha=2,beta=1")));
 
   (*myTable).change("lambda1", "dest1:666", 1, true);
   (*myTable).change("lambda1", "dest2:666", 1, true);
@@ -108,7 +114,7 @@ TEST_F(TestForwardingTable, test_pf_operations) {
   scheduledDestination = (*myTable)("lambda1");
   ASSERT_EQ(scheduledDestination, std::string("dest1:667"));
   ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
-                        "        [1] dest1:667 (F)\n" 
+                        "        [1] dest1:667 (F)\n"
                         "lambda2 [1] dest2:667 (F)\n"
                         "        [1] dest3:668 (F)\n"),
             ::toString((*myTable)));
@@ -116,7 +122,7 @@ TEST_F(TestForwardingTable, test_pf_operations) {
   // this statement simulates the EdgeRouter.processSuccess()
   (*myTable).change("lambda1", scheduledDestination, 3);
   ASSERT_EQ(std::string("lambda1 [2] dest1:666 (F)\n"
-                        "        [3] dest1:667 (F)\n" 
+                        "        [3] dest1:667 (F)\n"
                         "lambda2 [1] dest2:667 (F)\n"
                         "        [1] dest3:668 (F)\n"),
             ::toString((*myTable)));

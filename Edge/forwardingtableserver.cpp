@@ -1,12 +1,14 @@
 /*
- ___ ___ __     __ ____________
-|   |   |  |   |__|__|__   ___/   Ubiquitout Internet @ IIT-CNR
-|   |   |  |  /__/  /  /  /    C++ edge computing libraries and tools
-|   |   |  |/__/  /   /  /  https://bitbucket.org/ccicconetti/edge_computing/
-|_______|__|__/__/   /__/
+              __ __ __
+             |__|__|  | __
+             |  |  |  ||__|
+  ___ ___ __ |  |  |  |
+ |   |   |  ||  |  |  |    Ubiquitous Internet @ IIT-CNR
+ |   |   |  ||  |  |  |    C++ edge computing libraries and tools
+ |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
 
-Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-Copyright (c) 2018 Claudio Cicconetti <https://about.me/ccicconetti>
+Licensed under the MIT License <http://opensource.org/licenses/MIT>
+Copyright (c) 2021 C. Cicconetti <https://ccicconetti.github.io/>
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -68,9 +70,9 @@ grpc::Status ForwardingTableServer::ForwardingTableServerImpl::Configure(
       for (auto i = 0u; i < theTables.size(); i++) {
         if (theTables.size() == 1 or i == 0 or aReq->final()) {
           theTables[i]->change(aReq->lambda(),
-                          aReq->destination(),
-                          aReq->weight(),
-                          aReq->final());
+                               aReq->destination(),
+                               aReq->weight(),
+                               aReq->final());
         }
       }
 
