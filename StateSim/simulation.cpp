@@ -57,7 +57,8 @@ std::string Simulation::Conf::toString() const {
   ret << "nodes " << theNodesPath << ", links " << theLinksPath << ", edges "
       << theEdgesPath << ", tasks " << theTasksPath << ", " << theNumFunctions
       << " lambda functions, " << theNumJobs << " jobs, ops factor "
-      << theOpsFactor << ", mem factor " << theMemFactor;
+      << theOpsFactor << ", arg factor " << theArgFactor << ", state factor "
+      << theStateFactor;
   return ret.str();
 }
 
@@ -162,7 +163,8 @@ void Simulation::run(const Conf&  aConf,
   // load all jobs from file (with seed = 0)
   auto myJobs = loadJobs(aConf.theTasksPath,
                          aConf.theOpsFactor,
-                         aConf.theMemFactor,
+                         aConf.theArgFactor,
+                         aConf.theStateFactor,
                          myFuncWeights,
                          0,
                          true);

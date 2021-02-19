@@ -2,7 +2,7 @@
               __ __ __
              |__|__|  | __
              |  |  |  ||__|
-  ___ ___ __ |  |  |  |    
+  ___ ___ __ |  |  |  |
  |   |   |  ||  |  |  |    Ubiquitous Internet @ IIT-CNR
  |   |   |  ||  |  |  |    C++ edge computing libraries and tools
  |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
@@ -96,11 +96,13 @@ class Job
  *        used by Alibaba traces (https://github.com/All-less/trace-generator)
  *        in the batch_task.csv file
  *
- * \param aOpsFactor The multiplicative factor to determine the number
+ * \param aOpsFactor The factor to determine the number
  *        of operations of a task
  *
- * \param aMemFactor The multiplicative factor to determine the size of the
- *        states and the intermediate function input/output sizes
+ * \param aArgFactor The factor to determine the size of the
+ *        intermediate function input/output sizes
+
+ * \param aStateFactor The factor to determine the size of the states
  *
  * \param aFuncWeights The function names to pick randomly, with weights
  *
@@ -114,7 +116,8 @@ class Job
  */
 std::vector<Job> loadJobs(const std::string&                   aPath,
                           const double                         aOpsFactor,
-                          const double                         aMemFactor,
+                          const double                         aArgFactor,
+                          const double                         aStateFactor,
                           const std::map<std::string, double>& aFuncWeights,
                           const size_t                         aSeed,
                           const bool                           aStatefulOnly);

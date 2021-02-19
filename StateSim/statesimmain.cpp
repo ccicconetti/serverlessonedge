@@ -57,8 +57,9 @@ int main(int argc, char* argv[]) {
   size_t      myNumJobs;
   size_t      myStartingSeed;
   size_t      myNumReplications;
-  float       myOpsFactor;
-  float       myMemFactor;
+  double      myOpsFactor;
+  double      myArgFactor;
+  double      myStateFactor;
   size_t      myNumThreads;
 
   po::options_description myDesc("Allowed options");
@@ -93,11 +94,14 @@ int main(int argc, char* argv[]) {
      po::value<size_t>(&myNumReplications)->default_value(1),
      "The number of replications.")
     ("ops-factor",
-     po::value<float>(&myOpsFactor)->default_value(1000),
+     po::value<double>(&myOpsFactor)->default_value(1000),
      "The multiplier of the number of operations of loaded tasks.")
-    ("mem-factor",
-     po::value<float>(&myMemFactor)->default_value(1000),
-     "The multiplier of the memory/state size of loaded tasks.")
+    ("arg-factor",
+     po::value<double>(&myArgFactor)->default_value(1000),
+     "The multiplier of the argument size of loaded tasks.")
+    ("state-factor",
+     po::value<double>(&myStateFactor)->default_value(1000),
+     "The multiplier of the state size of loaded tasks.")
     ("num-threads",
      po::value<size_t>(&myNumThreads)->default_value(
        std::max(1u,
@@ -127,7 +131,8 @@ int main(int argc, char* argv[]) {
               myNumFunctions,
               myNumJobs,
               myOpsFactor,
-              myMemFactor},
+              myArgFactor,
+              myStateFactor},
              myStartingSeed,
              myNumReplications);
     LOG(INFO) << "simulation lasted " << myChrono.stop() << " s";

@@ -141,7 +141,8 @@ Scenario::Scenario(const Conf& aConf)
           aConf.theNodesPath, aConf.theLinksPath, aConf.theEdgesPath))
     , theJobs(loadJobs(aConf.theTasksPath,
                        aConf.theOpsFactor,
-                       aConf.theMemFactor,
+                       aConf.theArgFactor,
+                       aConf.theStateFactor,
                        aConf.theFuncWeights,
                        aConf.theSeed,
                        aConf.theStatefulOnly))

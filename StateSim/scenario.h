@@ -119,8 +119,10 @@ class Scenario
     const std::string theTasksPath;
     //! Multiplier for number of operations of tasks
     const double theOpsFactor;
-    //! Multiplier for amount of memory/argument size of tasks
-    const double theMemFactor;
+    //! Multiplier for argument sizes
+    const double theArgFactor;
+    //! Multiplier for state sizes
+    const double theStateFactor;
     //! Weights to draw randomly assignment of lambda functions
     const std::map<std::string, double>& theFuncWeights;
     //! Seed to initialize random number generation

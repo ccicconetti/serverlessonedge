@@ -121,7 +121,8 @@ std::string Job::toString() const {
 
 std::vector<Job> loadJobs(const std::string&                   aPath,
                           const double                         aOpsFactor,
-                          const double                         aMemFactor,
+                          const double                         aArgFactor,
+                          const double                         aStateFactor,
                           const std::map<std::string, double>& aFuncWeights,
                           const size_t                         aSeed,
                           const bool                           aStatefulOnly) {
@@ -137,7 +138,7 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
   struct TaskData {
     std::set<size_t> thePrecedences;
     size_t           theOps;
-    size_t           theSize;
+    double           theSize;
   };
   struct JobData {
     size_t                theId;
@@ -161,7 +162,7 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
   size_t               myNextJobId = 0;
   size_t               myLastJobId = 0;
   std::string          myLine;
-  std::vector<JobData> theJobs;
+  std::vector<JobData> myJobsData;
   while (myFile) {
     std::getline(myFile, myLine);
     if (myLine.empty()) {
@@ -181,7 +182,7 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
     }
 
     if (myLastJobId != myCurJobId) {
-      theJobs.emplace_back(JobData{myNextJobId, std::stod(myTokens[0]), {}});
+      myJobsData.emplace_back(JobData{myNextJobId, std::stod(myTokens[0]), {}});
       myNextJobId++;
     }
     myLastJobId = myCurJobId;
@@ -201,7 +202,7 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
       throw std::runtime_error("Invalid task identifier (0): " + myLine);
     }
     myTaskId--;
-    auto& myJob = theJobs.back();
+    auto& myJob = myJobsData.back();
     if (myJob.theTasks.size() <= myTaskId) {
       myJob.theTasks.resize(myTaskId + 1);
     }
@@ -211,13 +212,13 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
     }
     myTask.theOps = static_cast<size_t>(0.5 + 1.0 * myDuration * myCpu / 100.0 *
                                                   aOpsFactor);
-    myTask.theSize = static_cast<size_t>(0.5 + myMem * aMemFactor);
+    myTask.theSize = myMem; // scale factor to be applied later
   }
 
   // add all the jobs
   std::vector<Job> myJobs;
   FunctionPicker   myFunctionPicker(aFuncWeights, aSeed);
-  for (const auto& myJob : theJobs) {
+  for (const auto& myJob : myJobsData) {
     VLOG(1) << "job " << myJob.theId << " at " << myJob.theStartTime;
     size_t i = 0;
     for (const auto& myTask : myJob.theTasks) {
@@ -307,17 +308,20 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
       for (const auto myStateId : myStateDependencies[myTaskId]) {
         myDeps.emplace_back(myStateIdMap[myStateId]);
       }
-      myTasks.emplace_back(Task(myTaskIdMap[myTaskId],
-                                myJob.theTasks[myTaskId].theSize,
-                                myJob.theTasks[myTaskId].theOps,
-                                myFunctionPicker(),
-                                myDeps));
+      myTasks.emplace_back(
+          Task(myTaskIdMap[myTaskId],
+               static_cast<size_t>(0.5 + aArgFactor *
+                                             myJob.theTasks[myTaskId].theSize),
+               myJob.theTasks[myTaskId].theOps,
+               myFunctionPicker(),
+               myDeps));
     }
 
     // initialize the size of the states
     std::vector<size_t> myStateSizes(myStateIdMap.size());
     for (const auto myStateId : myAllStates) {
-      myStateSizes[myStateIdMap[myStateId]] = myJob.theTasks[myStateId].theSize;
+      myStateSizes[myStateIdMap[myStateId]] = static_cast<size_t>(
+          0.5 + aStateFactor * myJob.theTasks[myStateId].theSize);
     }
 
     // check that the id mapping maps have not been increased by mistake

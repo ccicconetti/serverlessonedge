@@ -142,8 +142,8 @@ struct TestStateSim : public ::testing::Test {
   };
 
   void analyze_tasks(const bool aStatefulOnly) {
-    const auto myJobs =
-        loadJobs("batch_task.csv", 1000, 100, {{"", 1.0}}, 42, aStatefulOnly);
+    const auto myJobs = loadJobs(
+        "batch_task.csv", 1000, 100, 10, {{"", 1.0}}, 42, aStatefulOnly);
     LOG(INFO) << "#jobs " << myJobs.size();
     std::map<size_t, size_t> myChainSizeHisto;
     std::map<size_t, size_t> myNumStatesHisto;
@@ -401,7 +401,7 @@ TEST_F(TestStateSim, test_all_tasks) {
   });
 
   const auto myJobs = loadJobs(
-      (theTestDir / "tasks").string(), 1000, 100, myWeights, 42, false);
+      (theTestDir / "tasks").string(), 1000, 100, 10, myWeights, 42, false);
   ASSERT_EQ(22, myJobs.size());
 
   const auto& myJob = myJobs[10];
@@ -413,7 +413,7 @@ TEST_F(TestStateSim, test_all_tasks) {
   ASSERT_EQ(40000, myJob.tasks()[3].ops());
   ASSERT_EQ(59, myJob.tasks()[3].size());
   ASSERT_EQ(std::vector<size_t>({0, 1, 2}), myJob.tasks()[3].deps());
-  ASSERT_EQ(std::vector<size_t>({39, 59, 49}), myJob.stateSizes());
+  ASSERT_EQ(std::vector<size_t>({4, 6, 5}), myJob.stateSizes());
 
   std::map<std::string, size_t> myFunctions;
   for (const auto& myJob : myJobs) {
@@ -430,7 +430,7 @@ TEST_F(TestStateSim, test_all_tasks) {
 TEST_F(TestStateSim, test_stateful_tasks) {
   ASSERT_TRUE(prepareTaskFiles());
   const auto myJobs = loadJobs(
-      (theTestDir / "tasks").string(), 1000, 100, {{"", 1.0}}, 42, true);
+      (theTestDir / "tasks").string(), 1000, 100, 10, {{"", 1.0}}, 42, true);
   ASSERT_EQ(6, myJobs.size());
   for (const auto& myJob : myJobs) {
     auto myAllStateless = true;
@@ -466,6 +466,7 @@ TEST_F(TestStateSim, test_scenario_from_files) {
                                      (theTestDir / "tasks").string(),
                                      1000,
                                      100,
+                                     10,
                                      myFuncWeights,
                                      42,
                                      true,
