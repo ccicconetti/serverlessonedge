@@ -185,6 +185,16 @@ The same example can be executed, for instance, launching:
 - `edgedispatcher` instead of `edgerouter`;
 - `OpenCV/facerecclient` instead of `edgeclient` and `edgecomputerfacerec` instead of `OpenCV/edgecomputer`, though the latter requires to download suitable models from [OpenCV repositories](https://github.com/opencv).
 
+### Performance evaluation
+
+The ServerlessOnEdge framework has been evaluated extensively in an emulated environment using [mininet](http://mininet.org/).
+
+The scenarios used, together with the scripts for setting up the environment and post-processing the results, are available, see the [experiments page](experiments/README.md).
+
+## StateSim
+
+The repository also includes a stand-alone simulator of the execution/network latency of chain of stateful invocations in an edge network, check the [StateSim page](StateSim/README.md) for more details.
+
 ## Credits
 
 - Chiara Spinelli ([twitter](https://twitter.com/chiarapeggy) / [instagram](https://www.instagram.com/chiarapeggy/)): logo artwork
