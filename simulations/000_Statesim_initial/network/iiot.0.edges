@@ -1,0 +1,206 @@
+nuc_0 link_nuc_0
+link_nuc_0 nuc_0 switch_lan_1
+switch_lan_1 link_nuc_0 link_tx2_0 switch_lan_0
+tx2_0 link_tx2_0
+link_tx2_0 tx2_0 switch_lan_1
+switch_lan_0 switch_lan_1 link_0 up_lan_0 down_cloudlet_0
+rpi3_0 link_rpi3_0
+link_rpi3_0 rpi3_0 link_0
+link_0 link_rpi3_0 link_rpi3_1 link_rpi3_2 switch_lan_0
+rpi3_1 link_rpi3_1
+link_rpi3_1 rpi3_1 link_0
+rpi3_2 link_rpi3_2
+link_rpi3_2 rpi3_2 link_0
+up_lan_0 internet_chix
+down_lan_0 switch_lan_0
+internet_chix down_lan_0 down_lan_5 down_lan_10 internet_nyc
+server_0 link_server_0
+link_server_0 server_0 switch_lan_2
+switch_lan_2 link_server_0 link_server_1 link_server_2 link_server_3 link_server_4 switch_cloudlet_0
+server_1 link_server_1
+link_server_1 server_1 switch_lan_2
+server_2 link_server_2
+link_server_2 server_2 switch_lan_2
+server_3 link_server_3
+link_server_3 server_3 switch_lan_2
+server_4 link_server_4
+link_server_4 server_4 switch_lan_2
+switch_cloudlet_0 switch_lan_2 switch_lan_3 switch_lan_4 up_cloudlet_0
+server_5 link_server_5
+link_server_5 server_5 switch_lan_3
+switch_lan_3 link_server_5 link_server_6 link_server_7 link_server_8 link_server_9 switch_cloudlet_0
+server_6 link_server_6
+link_server_6 server_6 switch_lan_3
+server_7 link_server_7
+link_server_7 server_7 switch_lan_3
+server_8 link_server_8
+link_server_8 server_8 switch_lan_3
+server_9 link_server_9
+link_server_9 server_9 switch_lan_3
+server_10 link_server_10
+link_server_10 server_10 switch_lan_4
+switch_lan_4 link_server_10 link_server_11 link_server_12 link_server_13 link_server_14 switch_cloudlet_0
+server_11 link_server_11
+link_server_11 server_11 switch_lan_4
+server_12 link_server_12
+link_server_12 server_12 switch_lan_4
+server_13 link_server_13
+link_server_13 server_13 switch_lan_4
+server_14 link_server_14
+link_server_14 server_14 switch_lan_4
+up_cloudlet_0 switch_lan_0
+down_cloudlet_0 switch_cloudlet_0
+nuc_1 link_nuc_1
+link_nuc_1 nuc_1 switch_lan_6
+switch_lan_6 link_nuc_1 link_tx2_1 switch_lan_5
+tx2_1 link_tx2_1
+link_tx2_1 tx2_1 switch_lan_6
+switch_lan_5 switch_lan_6 link_1 up_lan_5 down_cloudlet_1
+rpi3_3 link_rpi3_3
+link_rpi3_3 rpi3_3 link_1
+link_1 link_rpi3_3 link_rpi3_4 link_rpi3_5 switch_lan_5
+rpi3_4 link_rpi3_4
+link_rpi3_4 rpi3_4 link_1
+rpi3_5 link_rpi3_5
+link_rpi3_5 rpi3_5 link_1
+up_lan_5 internet_chix
+down_lan_5 switch_lan_5
+server_15 link_server_15
+link_server_15 server_15 switch_lan_7
+switch_lan_7 link_server_15 link_server_16 link_server_17 link_server_18 link_server_19 switch_cloudlet_1
+server_16 link_server_16
+link_server_16 server_16 switch_lan_7
+server_17 link_server_17
+link_server_17 server_17 switch_lan_7
+server_18 link_server_18
+link_server_18 server_18 switch_lan_7
+server_19 link_server_19
+link_server_19 server_19 switch_lan_7
+switch_cloudlet_1 switch_lan_7 switch_lan_8 switch_lan_9 up_cloudlet_1
+server_20 link_server_20
+link_server_20 server_20 switch_lan_8
+switch_lan_8 link_server_20 link_server_21 link_server_22 link_server_23 link_server_24 switch_cloudlet_1
+server_21 link_server_21
+link_server_21 server_21 switch_lan_8
+server_22 link_server_22
+link_server_22 server_22 switch_lan_8
+server_23 link_server_23
+link_server_23 server_23 switch_lan_8
+server_24 link_server_24
+link_server_24 server_24 switch_lan_8
+server_25 link_server_25
+link_server_25 server_25 switch_lan_9
+switch_lan_9 link_server_25 link_server_26 link_server_27 link_server_28 link_server_29 switch_cloudlet_1
+server_26 link_server_26
+link_server_26 server_26 switch_lan_9
+server_27 link_server_27
+link_server_27 server_27 switch_lan_9
+server_28 link_server_28
+link_server_28 server_28 switch_lan_9
+server_29 link_server_29
+link_server_29 server_29 switch_lan_9
+up_cloudlet_1 switch_lan_5
+down_cloudlet_1 switch_cloudlet_1
+nuc_2 link_nuc_2
+link_nuc_2 nuc_2 switch_lan_11
+switch_lan_11 link_nuc_2 link_tx2_2 switch_lan_10
+tx2_2 link_tx2_2
+link_tx2_2 tx2_2 switch_lan_11
+switch_lan_10 switch_lan_11 link_2 up_lan_10 down_cloudlet_2
+rpi3_6 link_rpi3_6
+link_rpi3_6 rpi3_6 link_2
+link_2 link_rpi3_6 link_rpi3_7 link_rpi3_8 switch_lan_10
+rpi3_7 link_rpi3_7
+link_rpi3_7 rpi3_7 link_2
+rpi3_8 link_rpi3_8
+link_rpi3_8 rpi3_8 link_2
+up_lan_10 internet_chix
+down_lan_10 switch_lan_10
+server_30 link_server_30
+link_server_30 server_30 switch_lan_12
+switch_lan_12 link_server_30 link_server_31 link_server_32 link_server_33 link_server_34 switch_cloudlet_2
+server_31 link_server_31
+link_server_31 server_31 switch_lan_12
+server_32 link_server_32
+link_server_32 server_32 switch_lan_12
+server_33 link_server_33
+link_server_33 server_33 switch_lan_12
+server_34 link_server_34
+link_server_34 server_34 switch_lan_12
+switch_cloudlet_2 switch_lan_12 switch_lan_13 switch_lan_14 up_cloudlet_2
+server_35 link_server_35
+link_server_35 server_35 switch_lan_13
+switch_lan_13 link_server_35 link_server_36 link_server_37 link_server_38 link_server_39 switch_cloudlet_2
+server_36 link_server_36
+link_server_36 server_36 switch_lan_13
+server_37 link_server_37
+link_server_37 server_37 switch_lan_13
+server_38 link_server_38
+link_server_38 server_38 switch_lan_13
+server_39 link_server_39
+link_server_39 server_39 switch_lan_13
+server_40 link_server_40
+link_server_40 server_40 switch_lan_14
+switch_lan_14 link_server_40 link_server_41 link_server_42 link_server_43 link_server_44 switch_cloudlet_2
+server_41 link_server_41
+link_server_41 server_41 switch_lan_14
+server_42 link_server_42
+link_server_42 server_42 switch_lan_14
+server_43 link_server_43
+link_server_43 server_43 switch_lan_14
+server_44 link_server_44
+link_server_44 server_44 switch_lan_14
+up_cloudlet_2 switch_lan_10
+down_cloudlet_2 switch_cloudlet_2
+nuc_3 link_nuc_3
+link_nuc_3 nuc_3 switch_lan_16
+switch_lan_16 link_nuc_3 link_tx2_3 switch_lan_15
+tx2_3 link_tx2_3
+link_tx2_3 tx2_3 switch_lan_16
+switch_lan_15 switch_lan_16 link_3 up_lan_15 down_cloudlet_3
+rpi3_9 link_rpi3_9
+link_rpi3_9 rpi3_9 link_3
+link_3 link_rpi3_9 link_rpi3_10 link_rpi3_11 switch_lan_15
+rpi3_10 link_rpi3_10
+link_rpi3_10 rpi3_10 link_3
+rpi3_11 link_rpi3_11
+link_rpi3_11 rpi3_11 link_3
+up_lan_15 internet_nyc
+down_lan_15 switch_lan_15
+internet_nyc down_lan_15 internet_chix
+server_45 link_server_45
+link_server_45 server_45 switch_lan_17
+switch_lan_17 link_server_45 link_server_46 link_server_47 link_server_48 link_server_49 switch_cloudlet_3
+server_46 link_server_46
+link_server_46 server_46 switch_lan_17
+server_47 link_server_47
+link_server_47 server_47 switch_lan_17
+server_48 link_server_48
+link_server_48 server_48 switch_lan_17
+server_49 link_server_49
+link_server_49 server_49 switch_lan_17
+switch_cloudlet_3 switch_lan_17 switch_lan_18 switch_lan_19 up_cloudlet_3
+server_50 link_server_50
+link_server_50 server_50 switch_lan_18
+switch_lan_18 link_server_50 link_server_51 link_server_52 link_server_53 link_server_54 switch_cloudlet_3
+server_51 link_server_51
+link_server_51 server_51 switch_lan_18
+server_52 link_server_52
+link_server_52 server_52 switch_lan_18
+server_53 link_server_53
+link_server_53 server_53 switch_lan_18
+server_54 link_server_54
+link_server_54 server_54 switch_lan_18
+server_55 link_server_55
+link_server_55 server_55 switch_lan_19
+switch_lan_19 link_server_55 link_server_56 link_server_57 link_server_58 link_server_59 switch_cloudlet_3
+server_56 link_server_56
+link_server_56 server_56 switch_lan_19
+server_57 link_server_57
+link_server_57 server_57 switch_lan_19
+server_58 link_server_58
+link_server_58 server_58 switch_lan_19
+server_59 link_server_59
+link_server_59 server_59 switch_lan_19
+up_cloudlet_3 switch_lan_15
+down_cloudlet_3 switch_cloudlet_3

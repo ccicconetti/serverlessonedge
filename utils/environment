@@ -1,0 +1,3 @@
+PYTHONPATH=$PYTHONPATH:$PWD/experiments/Common
+PATH=$PATH:$PWD/scripts/
+export PATH PYTHONPATH

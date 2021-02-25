@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "processors": [{
+      "name": "arm",
+      "type": "GenericCpu",
+      "speed": 4e9,
+      "memory": 500e6
+    },
+    {
+      "name": "bm2837",
+      "type": "GenericGpu",
+      "speed": 1e9,
+      "memory": 500e6
+    }
+  ],
+
+  "containers": [{
+      "name": "ccontainer0",
+      "processor": "arm",
+      "lambda": {
+        "name": "clambda0",
+        "requirements": "proportional",
+        "op-coeff": 1e6,
+        "op-offset": 4e6,
+        "mem-coeff": 100,
+        "mem-offset": 0
+      },
+      "num-workers": 5
+    },
+    {
+      "name": "gcontainer0",
+      "processor": "bm2837",
+      "lambda": {
+        "name": "glambda0",
+        "requirements": "proportional",
+        "op-coeff": 1e6,
+        "op-offset": 1e6,
+        "mem-coeff": 100,
+        "mem-offset": 0
+      },
+      "num-workers": 5
+    }
+  ]
+}
