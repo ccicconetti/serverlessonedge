@@ -42,4 +42,4 @@ Allowed options:
 
 ## Examples
 
-Please have a look to the [../simulations](simulations bundled in this repository), which also include pre-compiled network topologies and instructions on how to create an input workload.
+Please have a look to the [simulations bundled in this repository](../simulations/), which also include pre-compiled network topologies and instructions on how to create an input workload.
