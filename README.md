@@ -57,9 +57,9 @@ If interested check out more details and instructions [here](docs/openwhisk_inte
 
 See [building instructions](docs/BUILDING.md).
 
-## Example
+### Example
 
-See [a full example](docs/exmple.md).
+See [a full example](docs/example.md).
 
 ### Performance evaluation
 
