@@ -30,93 +30,39 @@ function run {
 }
 
 function analyze {
-  meandir=derived/mean
+  meandir=derived
 
   mkdir -p $meandir 2> /dev/null
 
   oldpwd=$PWD
   cd results
 
-  metrics="out-mean out-090 out-095 out-099 util-mean util-fair tpt-mean loss-mean loss-fair"
+  rm -f $oldpwd/$meandir/ 2> /dev/null
 
+  for t in $links ; do
   for e in $experiments ; do
 
-    mangle_out="e=$e"
+    mangle_out="t=$t.e=$e"
+    echo $mangle_out
 
-    rm $oldpwd/$meandir/*.tmp-* 2> /dev/null
+    for l in $losses ; do
 
-    for c in $numclients ; do
+      mangle_in="t=$t.l=$l.e=$e.1"
 
-      mangle_in="c=$c.$mangle_out"
 
-      echo $mangle_in
+      ret=$($percentile --col 2 --mean --quantiles 0.90 0.95 0.99 < out.$mangle_in)
+      echo "$l $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-avg.dat
+      echo "$l $(grep ^"0.9 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-090.dat
+      echo "$l $(grep ^"0.95 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-095.dat
+      echo "$l $(grep ^"0.99 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-099.dat
 
-      for x in $seed ; do
+      ret=$($percentile --col -1 --mean < ovsstat.$mangle_in)
+      echo "$l $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/tpt-$mangle_out-avg.dat
 
-        tmp_out=tmp-$x
-
-        # delay
-
-        rm tmp 2> /dev/null
-        for infile in out.$x.$mangle_in.* ; do
-          cat $infile | $percentile --col 2 --mean --quantiles 0.90 0.95 0.99 >> tmp
-        done
-
-        res=$(grep '+-' tmp | percentile.py --col 1 --mean | cut -f 1 -d ' ')
-        echo "$c $res" >> $oldpwd/$meandir/out-mean.$tmp_out
-        #res=$(grep ^'0.9 ' tmp | percentile.py --col 2 --quantile 0.90 | cut -f 2 -d ' ')
-        res=$(grep ^'0.9 ' tmp | percentile.py --col 2 --mean | cut -f 1 -d ' ')
-        echo "$c $res" >> $oldpwd/$meandir/out-090.$tmp_out
-        #res=$(grep ^'0.95 ' tmp | percentile.py --col 2 --quantile 0.95 | cut -f 2 -d ' ')
-        res=$(grep ^'0.95 ' tmp | percentile.py --col 2 --mean | cut -f 1 -d ' ')
-        echo "$c $res" >> $oldpwd/$meandir/out-095.$tmp_out
-        #res=$(grep ^'0.99 ' tmp | percentile.py --col 2 --quantile 0.99 | cut -f 2 -d ' ')
-        res=$(grep ^'0.99 ' tmp | percentile.py --col 2 --mean | cut -f 1 -d ' ')
-        echo "$c $res" >> $oldpwd/$meandir/out-099.$tmp_out
-
-        # utilization
-
-        cat util.$x.$mangle_in.* | $percentile --col 3 --mean > tmp
-
-        res=$(grep +- tmp | cut -f 1 -d ' ')
-        echo "$c $res" >> $oldpwd/$meandir/util-mean.$tmp_out
-
-        rm -f util-tmp
-        for infile in util.$x.$mangle_in.* ; do
-          cat $infile | $percentile --col 3 --mean | grep +- | cut -f 1 -d ' ' >> util-tmp
-        done
-        util_min=$(sort -n util-tmp | head -n 1)
-        util_max=$(sort -n util-tmp | tail -n 1)
-        res=$(echo "scale=2;$util_max - $util_min" | bc)
-        echo "$c $res" >> $oldpwd/$meandir/util-fair.$tmp_out
-
-        # network traffc
-
-        cat ovsstat.$x.$mangle_in | $percentile --col -1 --mean > tmp
-
-        res=$(grep +- tmp | cut -f 1 -d ' ')
-        echo "$c $res" >> $oldpwd/$meandir/tpt-mean.$tmp_out
-
-        # loss
-
-        res=$(cat loss.$x.$mangle_in.* | percentile.py --col 1 --mean | cut -f 1 -d ' ')
-        echo "$c $res" >> $oldpwd/$meandir/loss-mean.$tmp_out
-
-        loss_min=$(cat loss.$x.$mangle_in.* | sort -n | head -n 1)
-        loss_max=$(cat loss.$x.$mangle_in.* | sort -n | tail -n 1)
-        res=$(echo "scale=2;$loss_max - $loss_min" | bc)
-        echo "$c $res" >> $oldpwd/$meandir/loss-fair.$tmp_out
-
-      done
-    done
-
-    for metric in $metrics ; do
-      $confidence --xcol 1 --ycol 2 $oldpwd/$meandir/$metric.tmp-* > $oldpwd/$meandir/$metric.$mangle_out
     done
 
   done
-
-  rm $oldpwd/$meandir/*.tmp-* 2> /dev/null
+  done
 
   cd $oldpwd
 }
