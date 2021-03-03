@@ -1,0 +1,9 @@
+../results/out.t=fast.l=0.e=grpc.1: 500 records
+../results/out.t=fast.l=0.e=quic0rtt.1: 500 records
+../results/out.t=fast.l=0.e=quic.1: 501 records
+../results/out.t=medium.l=0.e=grpc.1: 500 records
+../results/out.t=medium.l=0.e=quic0rtt.1: 500 records
+../results/out.t=medium.l=0.e=quic.1: 500 records
+../results/out.t=slow.l=0.e=grpc.1: 248 records
+../results/out.t=slow.l=0.e=quic0rtt.1: 247 records
+../results/out.t=slow.l=0.e=quic.1: 247 records

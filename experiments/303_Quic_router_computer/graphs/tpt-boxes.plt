@@ -22,8 +22,8 @@ set ydata
 set xdata 
 set y2data 
 set x2data 
-set boxwidth 0.5 absolute
-set style fill   solid 0.50 border lt -1
+set boxwidth 0.5 relative
+set style fill   solid 1.00 border
 set style rectangle back fc  bgnd fillstyle   solid 1.00 border lt -1
 set style circle radius graph 0.02 
 set style ellipse size graph 0.05, 0.03 angle 0 units xy
@@ -40,8 +40,7 @@ set timefmt "%d/%m/%y,%H:%M"
 set angles radians
 set tics back
 set grid nopolar
-unset grid
-set grid nomxtics ytics nomytics noztics nomztics nortics nomrtics \
+set grid noxtics nomxtics ytics nomytics noztics nomztics nortics nomrtics \
  nox2tics nomx2tics noy2tics nomy2tics nocbtics nomcbtics
 set grid layerdefault   lt 0 linecolor 0 linewidth 0.500,  lt 0 linecolor 0 linewidth 0.500
 unset raxis
@@ -52,7 +51,6 @@ set key fixed right top vertical Right noreverse enhanced autotitle nobox
 set key noinvert samplen 4 spacing 1 width 0 height 0 
 set key maxcolumns 0 maxrows 0
 set key noopaque
-unset key
 unset label
 unset arrow
 set style increment default
@@ -62,7 +60,7 @@ set style histogram clustered gap 2 title textcolor lt -1
 unset object
 set style textbox transparent margins  1.0,  1.0 border  lt -1 linewidth  1.0
 set offsets 0, 0, 0, 0
-set pointsize 0.5
+set pointsize 1
 set pointintervalbox 1
 set encoding default
 unset polar
@@ -87,7 +85,7 @@ set cntrparam levels auto 5
 set cntrparam points 5
 set size ratio 0 1,1
 set origin 0,0
-set style data boxplot
+set style data points
 set style function lines
 unset xzeroaxis
 unset yzeroaxis
@@ -105,8 +103,8 @@ set mcbtics default
 set mrtics default
 set nomttics
 set xtics border in scale 1,0.5 mirror norotate  autojustify
-set xtics  norangelimit autofreq 
-set xtics ("gRPC" 1, "QUIC" 2, "QUIC/0-RTT" 3) scale 0.0
+set xtics  norangelimit 
+set xtics   ("Fast/gRPC" 0.00000, "Fast/QUIC 0-RTT" 1.00000, "Fast/QUIC" 2.00000, "Medium/gRPC" 3.00000, "Medium/QUIC 0-RTT" 4.00000, "Medium/QUIC" 5.00000, "Slow/gRPC" 6.00000, "Slow/QUIC 0-RTT" 7.00000, "Slow/QUIC" 8.00000)
 set ytics border in scale 1,0.5 mirror norotate  autojustify
 set ytics  norangelimit autofreq 
 set ztics border in scale 1,0.5 nomirror norotate  autojustify
@@ -136,7 +134,7 @@ set ylabel ""
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
-set yrange [ 200 : 205 ] noreverse nowriteback
+set yrange [ 0.00000 : 20000.0 ] noreverse nowriteback
 set y2range [ * : * ] noreverse nowriteback
 set zlabel "" 
 set zlabel  font "" textcolor lt -1 norotate
@@ -163,13 +161,13 @@ set palette positive nops_allcF maxcolors 0 gamma 1.5 color model RGB
 set palette rgbformulae 7, 5, 15
 set colorbox default
 set colorbox vertical origin screen 0.9, 0.2 size screen 0.05, 0.6 front  noinvert bdefault
-set style boxplot candles range  1.50 nooutliers pt 7 separation 1 labels auto unsorted
+set style boxplot candles range  1.50 outliers pt 7 separation 1 labels auto unsorted
 set loadpath 
 set fontpath 
 set psdir
 set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap v5
 GNUTERM = "wxt"
-plot 'data/out.t=slow.l=0.e=grpc.1' u (1):($2*1e3),\
-     'data/out.t=slow.l=0.e=quic.1' u (2):($2*1e3),\
-     'data/out.t=slow.l=0.e=quic0rtt.1' u (3):($2*1e3)
+x = 0.0
+## Last datafile plotted: "< paste data/tpt.dat data/count.dat"
+plot '< paste data/tpt.dat data/count.dat' u 0:($2/($6/50)) w boxes notitle
 #    EOF
