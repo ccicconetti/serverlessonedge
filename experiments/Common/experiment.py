@@ -743,13 +743,19 @@ class Experiment(object):
             print "NAT hosts\n{}".format(self.nathosts)
 
         print "Testing network connectivity"
-        # self.net.pingAll()
-        for h in self.hosts:
-            if h == self.hosts[0] or h in self.nathosts:
-                continue
-            if self.net.ping([self.hosts[0], h]) != 0:
-                raise Exception(
-                    "Ping from {} to {} failed, bailing out".format(self.hosts[0].name, h.name))
+        if 'pingtest' in self.confopts and self.confopts['pingtest'] == 'all':
+            self.net.pingAll()
+        elif 'pingtest' in self.confopts and self.confopts['pingtest'] == 'none':
+            print "Skipped"
+        elif 'pingtest' not in self.confopts and self.confopts['pingtest'] == "single":
+            for h in self.hosts:
+                if h == self.hosts[0] or h in self.nathosts:
+                    continue
+                if self.net.ping([self.hosts[0], h]) != 0:
+                    raise Exception(
+                        "Ping from {} to {} failed, bailing out".format(self.hosts[0].name, h.name))
+        else:
+            raise RuntimeError("Invalid 'pingtest' option: {}".format(self.confopts['pingtest']))
 
         # create the controller, if needed
         self.createEdgeController()
