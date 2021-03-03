@@ -22,8 +22,8 @@ set ydata
 set xdata 
 set y2data 
 set x2data 
-set boxwidth 0.5 relative
-set style fill   solid 1.00 border
+set boxwidth 0.4 relative
+set style fill   solid 0.5 border
 set style rectangle back fc  bgnd fillstyle   solid 1.00 border lt -1
 set style circle radius graph 0.02 
 set style ellipse size graph 0.05, 0.03 angle 0 units xy
@@ -102,9 +102,9 @@ set my2tics default
 set mcbtics default
 set mrtics default
 set nomttics
-set xtics border in scale 1,0.5 mirror norotate  autojustify
+set xtics border in scale 1,0.5 mirror norotate autojustify
 set xtics  norangelimit 
-set xtics   ("Fast/gRPC" 0.00000, "Fast/QUIC 0-RTT" 1.00000, "Fast/QUIC" 2.00000, "Medium/gRPC" 3.00000, "Medium/QUIC 0-RTT" 4.00000, "Medium/QUIC" 5.00000, "Slow/gRPC" 6.00000, "Slow/QUIC 0-RTT" 7.00000, "Slow/QUIC" 8.00000)
+set xtics   ("gRPC" 0.00000, "QUIC/0-RTT" 1.00000, "QUIC" 2.00000, "gRPC" 3.00000, "QUIC/0-RTT" 4.00000, "QUIC" 5.00000, "gRPC" 6.00000, "QUIC/0-RTT" 7.00000, "QUIC" 8.00000)
 set ytics border in scale 1,0.5 mirror norotate  autojustify
 set ytics  norangelimit autofreq 
 set ztics border in scale 1,0.5 nomirror norotate  autojustify
@@ -130,7 +130,7 @@ set x2label ""
 set x2label  font "" textcolor lt -1 norotate
 set xrange [ * : * ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback
-set ylabel "" 
+set ylabel "Per function invocation network traffic (bytes)" 
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
@@ -169,5 +169,7 @@ set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap 
 GNUTERM = "wxt"
 x = 0.0
 ## Last datafile plotted: "< paste data/tpt.dat data/count.dat"
-plot '< paste data/tpt.dat data/count.dat' u 0:($2/($6/50)) w boxes notitle
+plot '< paste data/tpt.dat data/count.dat | grep fast' u 0:($2/($6/50)) w boxes title "Fast",\
+'< paste data/tpt.dat data/count.dat | grep medium' u ($0+3):($2/($6/50)) w boxes title "Medium",\
+'< paste data/tpt.dat data/count.dat | grep slow' u ($0+6):($2/($6/50)) w boxes title "Slow"
 #    EOF
