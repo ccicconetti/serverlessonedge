@@ -5,18 +5,22 @@ function run {
     mkdir log results 2> /dev/null
   fi
 
-  for n in $numclients ; do
+  for t in $links ; do
   for l in $losses ; do
   for e in $experiments ; do
   for s in $seed ; do
 
-    mangle="bw.1.d.10000us.s.1000.e.$e.n.$n.l.$l.$s"
+    mangle="t=$t.l=$l.e=$e"
     
-    cmd="python $script_name --experiment $e --duration $duration --bw $bw --delay $delay --size 1000 --loss $l --numclients $n --seed $s"
+    cmd="python $script_name --experiment $e --duration $duration --link $t --size 1000 --numclients 1 --loss $l --seed $s"
 
     echo $cmd
     if [ $dryrun -ne 1 ] ; then
-      $cmd >& log/$mangle.log
+      if [ ! -r log/$mangle.log ] ; then
+        $cmd >& log/$mangle.log
+      else
+        echo "skipped"
+      fi
     fi
 
   done
@@ -25,7 +29,7 @@ function run {
   done
 }
 
-function mean {
+function analyze {
   meandir=derived/mean
 
   mkdir -p $meandir 2> /dev/null
@@ -117,45 +121,6 @@ function mean {
   cd $oldpwd
 }
 
-function histo {
-  echo "unimplemented"
-  return
-
-  histodir=derived/histo
-
-  mkdir -p $histodir 2> /dev/null
-
-  oldpwd=$PWD
-  cd results
-
-  for c in $numclients ; do
-  for e in $experiments ; do
-
-    mangle="c=$c.e=$e.a=$a"
-    echo $mangle
-
-    outfile=$oldpwd/$histodir/out-q90-$mangle.dat
-    rm -f xxx
-    for infile in $(ls -1 out.*.$mangle.*) ; do
-      $percentile --col 2 --quantile 0.9 < $infile | cut -f 2 -d ' ' >> xxx
-    done
-    sort -n xxx > $outfile
-
-    outfile=$oldpwd/$histodir/tpt-$mangle.dat
-    cat ovsstat.*.$mangle | $percentile --col -1 --mean > $outfile
-
-    outfile=$oldpwd/$histodir/loss-$mangle.dat
-    cat loss.*.$mangle.* | sort -n > $outfile
-
-    outfile=$oldpwd/$histodir/out-dist-$mangle.dat
-    cat out.*.$mangle.* | $percentile --col 2 --cdf > $outfile
-
-  done
-  done
-
-  cd $oldpwd
-}
-
 function enumerate {
   dryrun=1
   run
@@ -163,7 +128,7 @@ function enumerate {
 
 function print_help {
   cat << EOF
-Syntax: `basename $0` <run|mean|histo|enumerate>
+Syntax: `basename $0` <run|analyze|enumerate>
 Accepted options:
   -h: print this help
 EOF
@@ -195,16 +160,13 @@ dryrun=0 # set automatically if command 'enumerate' is given
 #
 # configuration starts here
 #
-seed="1 2 3 4 5 6 7 8 9 10"
-duration=60
-bw="1"
-delay="10000us"
-sizes="1000"
-losses="0" #1,3,5 - 10 non più
+seed="1"
+duration=120
+links="slow medium fast"
+losses="0 1 2 3 4 5"
 percentile="percentile.py --warmup_col 1 --warmup 10 --duration $duration"
 confidence="confidence.py --alpha 0.05"
-numclients="1 5"
-script_name="linear_quic.py"
+script_name="quic_computer_loss.py"
 
 experiments="grpc quic quic0rtt"
 $1

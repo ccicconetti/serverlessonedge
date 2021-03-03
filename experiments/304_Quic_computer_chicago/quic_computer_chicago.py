@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Uncoordinated serverless access in a realistic IoT topology"""
+"""QUIC serverless access in a realistic IoT topology"""
 
 import random
 import time
@@ -9,7 +9,7 @@ import experiment
 import topo
 
 
-class UncoordinatedChicago(experiment.Experiment):
+class QuicComputerChicago(experiment.Experiment):
     """One edge dispatcher in the leftmost host, all other nodes are edge computers"""
 
     def __init__(self, **kwargs):
@@ -153,12 +153,9 @@ class UncoordinatedChicago(experiment.Experiment):
 
         print "Starting traffic"
 
-        pids = []
-        chi = 0.1
-
-        if(self.confopts['lambda_protocol'] == 'grpc'):
-            client_conf = 'grpc,persistence={}'.format(chi)
-        elif(self.confopts['lambda_protocol'] == 'quic'):
+        if self.confopts['lambda_protocol'] == 'grpc':
+            client_conf = 'grpc,persistence=0.1'
+        elif self.confopts['lambda_protocol'] == 'quic':
             client_conf = 'quic,attempt-early-data=false'
         else:
             client_conf = 'quic,attempt-early-data=true'
@@ -166,53 +163,27 @@ class UncoordinatedChicago(experiment.Experiment):
         for counter in range(self.confopts['n_clients']):
             h = random.choice(self.hosts)
 
-            pids.append(self.cmd.run(
+            self.cmd.run(
                 h,
                 ('../bin/edgeclient '
                  '--server-endpoint {} '
                  '--client-conf type={} '
                  '--lambda clambda0 '
                  '--num-threads 1 '
-                 '--duration {} '
                  '--sizes 1000 '
-                 '--inter-request-time 1 '  # <<<<<<<<<<<<<<<<<<<<<<<<
-                 #'--inter-request-type poisson '
+                 '--inter-request-time 1 ' 
                  '--seed {} '
                  '--output-file {}').format(
                     ','.join(random.sample(pool[h], dest_pool_size)),
                     client_conf,
-                    self.confopts['duration'],
                     self.confopts['seed'] * 1000 + counter,
                     'results/out.{}.{}'.format(self.experiment_id, counter)),
-                is_background=True))
-
-            # pids.append(self.cmd.run(
-            #     h,
-            #     ('../bin/edgeippclient '
-            #      '--server-endpoint {} '
-            #      '--client-conf type={} '
-            #      '--client-type poisson '
-            #      '--lambda clambda0 '
-            #      '--duration {} '
-            #      '--sizes 1000 '
-            #      '--period-mean 10 '
-            #      '--burst-size-mean 25 '
-            #      '--min-sleep 0.100 '
-            #      '--max-sleep 0.200 '
-            #      '--seed {} '
-            #      '--loss-file {} '
-            #      '--output-file {}').format(
-            #          ','.join(random.sample(pool[h], dest_pool_size)),
-            #          client_conf,
-            #          self.confopts['duration'],
-            #          1000 * self.confopts['seed'] + counter,
-            #          'results/loss.{}.{}'.format(self.experiment_id, counter),
-            #          'results/out.{}.{}'.format(self.experiment_id, counter)),
-            #     is_background=True))
+                is_background=True)
 
         print "Waiting for the experiment to complete"
-        for pid in pids:
-            pid[0].cmd('wait', pid[1])
+        time.sleep(self.confopts['duration'])
+        for h in self.hosts:
+            h.cmd('killall edgeclient')
 
 
 if __name__ == '__main__':
@@ -234,7 +205,7 @@ if __name__ == '__main__':
             'lambda_protocol': [
                 str,
                 'grpc',
-                'lambda function invocation protocol'
+                'one of: grpc, quic, quic-0rtt'
             ]
         },
         {
@@ -242,10 +213,11 @@ if __name__ == '__main__':
             'balancing': 'rr-async',
             'nat': False,
             'edgetype': 'router',
-            'tclink': 'wotc'
+            'tclink': 'wotc',
+            'pingtest': 'none'
         })
 
-    experiment = UncoordinatedChicago(**vars(args))
+    experiment = QuicComputerChicago(**vars(args))
 
     experiment.runExperiment(
         topo.BriteTopo(

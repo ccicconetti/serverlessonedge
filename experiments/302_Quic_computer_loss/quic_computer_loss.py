@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Linear topology with one computer, one router and one client"""
+"""QUIC experiment with single client and single e-computer"""
 
 import time
 
@@ -7,19 +7,16 @@ import experiment
 import topo
 
 
-class LinearQuic(experiment.Experiment):
+class QuicComputerLoss(experiment.Experiment):
     """One edge controller in the leftmost host followed by an edge computer, an edge router and an edge client in the rightmost one"""
 
     def __init__(self, **kwargs):
         experiment.Experiment.__init__(self, **kwargs)
 
-        self.experiment_id = '{}.d.{}.s.{}.e.{}.l.{}.n.{}.{}'.format(
-            self.confopts['bw'],
-            self.confopts['delay'],
-            self.confopts['size'],
-            self.confopts['experiment'],
+        self.experiment_id = 't={}.l={}.e={}.{}'.format(
+            self.confopts['link'],
             self.confopts['loss'],
-            self.confopts['numclients'],
+            self.confopts['experiment'],
             self.confopts['seed']
         )
 
@@ -117,23 +114,23 @@ class LinearQuic(experiment.Experiment):
             client_conf = 'quic,attempt-early-data=true'
 
         server_endpoint = '{}:{}'.format(
-            self.hosts[2].IP(), 6473)  # router
+            self.hosts[1].IP(),  # computer IP
+            10000)  # computer port
 
         pids.append(self.cmd.run(
             self.hosts[3],
             ('../bin/edgeclient '
              '--server-endpoint {} '
              '--client-conf type={} '
-             '--num-threads 1 '
+             '--num-threads {} '
              '--inter-request-time 0.1 '
              '--lambda clambda0 '
-             '--duration {} '
              '--sizes {} '
              '--seed {} '
              '--output-file {}').format(
                 server_endpoint,
                 client_conf,
-                self.confopts['duration'],
+                self.confopts['numclients'],
                 self.confopts['size'],
                 1000 * self.confopts['seed'] + counter,
                 'results/out.{}'.format(self.experiment_id)),
@@ -142,11 +139,8 @@ class LinearQuic(experiment.Experiment):
 
         print "Waiting for the experiment to complete"
 
-        # time.sleep(self.confopts['duration'])
-        # print "Time is up!"
-        # pids[0][0].cmd('kill', pids[0][1])
-
-        pids[0][0].cmd('wait', pids[0][1])
+        time.sleep(self.confopts['duration'])
+        self.hosts[3].cmd('killall edgeclient')
 
 
 if __name__ == '__main__':
@@ -156,15 +150,10 @@ if __name__ == '__main__':
                 str,
                 'grpc',
                 'experiment type, one of: grpc, quic, quic0rtt'],
-            'bw': [
-                float,
-                100,
-                'link bandwidth, one of: 0.01, 0.1, 1, 10, 100, 1000'
-            ],
-            'delay': [
+            'link': [
                 str,
-                '100us',
-                'link delays, one of: 1us, 100us, 10ms'
+                'slow',
+                'link delays, one of: slow, medium, fast'
             ],
             'size': [
                 int,
@@ -172,8 +161,8 @@ if __name__ == '__main__':
                 'lambda request input size, one of: 100, 1000, 10000'
             ],
             'loss': [
-                float,
-                0.01,
+                int,
+                0,
                 'link loss probability'
             ],
             'numclients': [
@@ -188,20 +177,26 @@ if __name__ == '__main__':
             'controller': 'flat',
             'balancing': 'rr-async',
             'edgetype': 'router',
-            'tclink': 'wotc'
+            'tclink': 'wotc',
+            'pingtest': 'none'
         })
 
-    experiment = LinearQuic(**vars(args))
+    experiment = QuicComputerLoss(**vars(args))
+
+    # delay and bandwidth
+    link_types = {
+        'slow' : ['10ms', 1],
+        'medium' : ['1ms', 10],
+        'fast' : ['100us', 100],
+    }
 
     experiment.runExperiment(
-        # topo.LinearLossTopo(
         topo.LinearTopo(
-            4,  # hosts
-            # linkargs
+            4,
             dict(
-                bw=experiment.confopts['bw'],
-                delay=experiment.confopts['delay'],
+                delay=link_types[experiment.confopts['link']][0],
+                bw=link_types[experiment.confopts['link']][1],
                 loss=experiment.confopts['loss'],
                 max_queue_size=1000,
                 use_htb=True),
-            dict()))  # hostargs
+            dict()))

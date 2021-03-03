@@ -5,23 +5,29 @@ function run {
     mkdir log results 2> /dev/null
   fi
 
+  for x in $seed ; do
   for e in $experiments ; do
   for l in $lambdaProtocol ; do
 
-    mangle="$x.c=$c.s=$s.e=$e"
+    mangle="l=$l.e=$e.$x"
 
-    cmd="python uncoordinated_chicago.py --experiment $e --n_clients 20 --n_servers 8 --duration $duration --seed 1 --lambda_protocol $l"
+    cmd="python quic_computer_chicago.py --experiment $e --n_clients 20 --n_servers 8 --seed $x --lambda_protocol $l --duration $duration"
 
     echo $cmd
     if [ $dryrun -ne 1 ] ; then
-      $cmd >& log/$mangle.log
+      if [ ! -r log/$mangle.log ] ; then
+        $cmd >& log/$mangle.log
+      else
+        echo "skipped"
+      fi
     fi
 
   done
   done
+  done
 }
 
-function mean {
+function analyze {
   meandir=derived/mean
 
   mkdir -p $meandir 2> /dev/null
@@ -86,37 +92,6 @@ function mean {
   cd $oldpwd
 }
 
-function histo {
-  histodir=derived/histo
-
-  mkdir -p $histodir 2> /dev/null
-
-  oldpwd=$PWD
-  cd results
-
-  for c in $numclients ; do
-  for s in $numservers ; do
-  for e in $experiments ; do
-
-    outfile=$oldpwd/$histodir/out-q090-c=$c.s=$s.e=$e.dat
-    rm -f $outfile 2> /dev/null
-    echo $outfile
-
-    for infile in $(ls -1 out.*.*.*.c=$c.s=$s.e=$e.*) ; do
-      value=$($percentile --col 2 --quantile 0.9 < $infile | cut -f 2 -d ' ')
-      echo $value >> $outfile
-    done
-
-    outfile=$oldpwd/$histodir/out-dist-c=$c.s=$s.e=$e.dat
-    cat out.*.*.*.c=$c.s=$s.e=$e.* | $percentile --col 2 --cdf > $outfile
-
-  done
-  done
-  done
-
-  cd $oldpwd
-}
-
 function enumerate {
   dryrun=1
   run
@@ -124,7 +99,7 @@ function enumerate {
 
 function print_help {
   cat << EOF
-Syntax: `basename $0` <run|mean|histo|enumerate>
+Syntax: `basename $0` <run|analyze|enumerate>
 Accepted options:
   -h: print this help
 EOF
@@ -156,9 +131,8 @@ dryrun=0 # set automatically if command 'enumerate' is given
 #
 # configuration starts here
 #
-seed="1"
-duration=30 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-            # cambia anche il numero di client una volta che andrà qualcosa
+seed="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30"
+duration=60
 percentile="percentile.py --warmup_col 1 --warmup 10 --duration $duration"
 confidence="confidence.py --alpha 0.05"
 

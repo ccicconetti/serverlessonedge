@@ -7,3 +7,6 @@ This directory contains:
 - scenario directories: for each directory there is an emulation scenario that uses mininet to run real-time experiments under controlled conditions
 
 Every scenario comes with Bash scripts to run a batch of experiments with different parameters, depending on the scenario, and to post-process the experiment results, including Gnuplot scripts to generate a selection of graphs.
+
+The scenarios whose name ends with `-wip` are to be considered work-in-progress, i.e., they may not run or not give the expected results.
+
