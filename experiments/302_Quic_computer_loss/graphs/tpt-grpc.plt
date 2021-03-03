@@ -166,11 +166,10 @@ set fontpath
 set psdir
 set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap v5
 GNUTERM = "wxt"
-## Last datafile plotted: "../derived/tpt-t=slow.e=grpc-avg.dat"
-plot  '../derived/tpt-t=fast.e=grpc-avg.dat' u 1:($2*.008):($3*.008) w yerrorbars pt 4 lc 1 lt 1 title "Fast",\
+plot  'data/tpt-t=fast.e=grpc-avg.dat' u 1:($2*.008):($3*.008) w yerrorbars pt 4 lc 1 lt 1 title "Fast",\
       '' u 1:($2*.008) w l lc 1 lt 1 notitle,\
-      '../derived/tpt-t=medium.e=grpc-avg.dat' u 1:($2*.008):($3*.008) w yerrorbars pt 6 lc 1 lt 1 title "Medium",\
+      'data/tpt-t=medium.e=grpc-avg.dat' u 1:($2*.008):($3*.008) w yerrorbars pt 6 lc 1 lt 1 title "Medium",\
       '' u 1:($2*.008) w l lc 1 lt 1 notitle,\
-      '../derived/tpt-t=slow.e=grpc-avg.dat' u 1:($2*.008):($3*.008) w yerrorbars pt 8 lc 1 lt 1 title "Slow",\
+      'data/tpt-t=slow.e=grpc-avg.dat' u 1:($2*.008):($3*.008) w yerrorbars pt 8 lc 1 lt 1 title "Slow",\
       '' u 1:($2*.008) w l lc 1 lt 1 notitle
 #    EOF

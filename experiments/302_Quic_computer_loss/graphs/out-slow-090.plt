@@ -166,8 +166,7 @@ set fontpath
 set psdir
 set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap v5
 GNUTERM = "wxt"
-## Last datafile plotted: "../derived/tpt-t=slow.e=grpc-avg.dat"
-plot  '../derived/out-t=slow.e=grpc-090.dat' u 1:($2*1e3) w lp pt 4 lt 1 lc 1 title "gRPC",\
-      '../derived/out-t=slow.e=quic-090.dat' u 1:($2*1e3) w lp pt 7 lt 1 lc 1 title "QUIC",\
-      '../derived/out-t=slow.e=quic0rtt-090.dat' u 1:($2*1e3) w lp pt 9 lt 1 lc 1 title "QUIC/0-RTT",\
+plot  'data/out-t=slow.e=grpc-090.dat' u 1:($2*1e3) w lp pt 4 lt 1 lc 1 title "gRPC",\
+      'data/out-t=slow.e=quic-090.dat' u 1:($2*1e3) w lp pt 7 lt 1 lc 1 title "QUIC",\
+      'data/out-t=slow.e=quic0rtt-090.dat' u 1:($2*1e3) w lp pt 9 lt 1 lc 1 title "QUIC/0-RTT",\
 #    EOF
