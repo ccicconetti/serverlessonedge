@@ -49,7 +49,12 @@ If you want to check the full list of the experiments that will be run, you can 
 
 ### Downloading the raw results without running the experiments
 
-The raw results are also available for download at [this URL](http://turig.iit.cnr.it/~claudio/public/soe-results-303.tgz).
+The raw results are also available for download:
+
+```
+wget http://turig.iit.cnr.it/~claudio/public/soe-results-303.tgz
+```
+
 
 ### Visualization
 
