@@ -11,7 +11,7 @@ function run {
 
     mangle="l=$l.e=$e.$x"
 
-    cmd="python quic_computer_chicago.py --experiment $e --n_clients 20 --n_servers 8 --seed $x --lambda_protocol $l --duration $duration"
+    cmd="python quic_computer_chicago.py --experiment $e --n_clients 40 --n_servers 6 --seed $x --lambda_protocol $l --duration $duration"
 
     echo $cmd
     if [ $dryrun -ne 1 ] ; then

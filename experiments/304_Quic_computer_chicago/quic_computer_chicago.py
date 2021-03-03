@@ -15,11 +15,12 @@ class QuicComputerChicago(experiment.Experiment):
     def __init__(self, **kwargs):
         experiment.Experiment.__init__(self, **kwargs)
 
-        self.experiment_id += '.c={}.s={}.e={}.l={}'.format(
+        self.experiment_id = '.c={}.s={}.e={}.l={}.{}'.format(
             self.confopts['n_clients'],
             self.confopts['n_servers'],
             self.confopts['experiment'],
-            self.confopts['lambda_protocol']
+            self.confopts['lambda_protocol'],
+            self.confopts['seed']
         )
 
     def setupEdgeResources(self):
@@ -224,17 +225,8 @@ if __name__ == '__main__':
             args.verbosity >= 1,
             'nodes.topo',
             dict(
-                bw=100,
-                delay='100us',
+                bw=10,
+                delay='10ms',
                 loss=0,
                 max_queue_size=1000,
                 use_htb=True)))
-
-    # at low loads
-    # average lambda execution time 50 ms
-    # average sleep time 150 ms
-    # average period within burst 50+150 = 200 ms
-    # average number of bursts 25
-    # average burst duration 25 * 200 = 5000 ms
-    # average period duration 10000 ms
-    # duty cycle 5000/10000 = 0.5
