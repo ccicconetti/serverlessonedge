@@ -57,18 +57,6 @@ The raw results are also available for download:
 wget http://turig.iit.cnr.it/~claudio/public/soe-results-304.tgz
 ```
 
-### Post-processing
-
-The raw results can be analyzed via:
-
-```
-./experiments.sh analyze
-```
-
-which produces synthetic results in the directory `derived`.
-
-Note that executing the post-processing script requires steps 4-5 of the prerequisites above.
-
 ### Visualization
 
 Some Gnuplot scripts for visualization are provided in the `graphs` directory.

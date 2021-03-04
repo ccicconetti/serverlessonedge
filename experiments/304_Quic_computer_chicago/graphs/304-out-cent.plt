@@ -10,13 +10,13 @@
 #    	gnuplot home:     http://www.gnuplot.info
 #    	faq, bugs, etc:   type "help FAQ"
 #    	immediate help:   type "help"  (plot window: hit 'h')
-# set terminal wxt 0 enhanced
+# set terminal x11  nopersist enhanced size 960,400  position 0,0 
 # set output
 unset clip points
 set clip one
 unset clip two
 set errorbars front 1.000000 
-unset border
+set border 31 front lt black linewidth 1.000 dashtype solid
 set zdata 
 set ydata 
 set xdata 
@@ -28,23 +28,26 @@ set style rectangle back fc  bgnd fillstyle   solid 1.00 border lt -1
 set style circle radius graph 0.02 
 set style ellipse size graph 0.05, 0.03 angle 0 units xy
 set dummy x, y
-set format x "% g" 
-set format y "% g" 
-set format x2 "% g" 
-set format y2 "% g" 
-set format z "% g" 
-set format cb "% g" 
-set format r "% g" 
+set format x "% h" 
+set format y "% h" 
+set format x2 "% h" 
+set format y2 "% h" 
+set format z "% h" 
+set format cb "% h" 
+set format r "% h" 
 set ttics format "% h"
 set timefmt "%d/%m/%y,%H:%M"
 set angles radians
 set tics back
-unset grid
+set grid nopolar
+set grid xtics nomxtics ytics nomytics noztics nomztics nortics nomrtics \
+ nox2tics nomx2tics noy2tics nomy2tics nocbtics nomcbtics
+set grid layerdefault   lt 0 linecolor 0 linewidth 0.500,  lt 0 linecolor 0 linewidth 0.500
 unset raxis
 set theta counterclockwise right
 set style parallel front  lt black linewidth 2.000 dashtype solid
 set key title "" center
-set key inside right top vertical Right noreverse enhanced autotitle nobox
+set key fixed right bottom vertical Left noreverse enhanced autotitle nobox
 set key noinvert samplen 4 spacing 1 width 0 height 0 
 set key maxcolumns 0 maxrows 0
 set key noopaque
@@ -57,7 +60,7 @@ set style histogram clustered gap 2 title textcolor lt -1
 unset object
 set style textbox transparent margins  1.0,  1.0 border  lt -1 linewidth  1.0
 set offsets 0, 0, 0, 0
-set pointsize 2
+set pointsize 1
 set pointintervalbox 1
 set encoding default
 unset polar
@@ -84,11 +87,11 @@ set size ratio 0 1,1
 set origin 0,0
 set style data points
 set style function lines
-set xzeroaxis lt nodraw linecolor -2 linewidth 1.000 dashtype solid
-set yzeroaxis lt nodraw linecolor -2 linewidth 1.000 dashtype solid
-set zzeroaxis lt nodraw linecolor -2 linewidth 1.000 dashtype solid
-set x2zeroaxis lt nodraw linecolor -2 linewidth 1.000 dashtype solid
-set y2zeroaxis lt nodraw linecolor -2 linewidth 1.000 dashtype solid
+unset xzeroaxis
+unset yzeroaxis
+unset zzeroaxis
+unset x2zeroaxis
+unset y2zeroaxis
 set xyplane relative 0.5
 set tics scale  1, 0.5, 1, 1, 1
 set mxtics default
@@ -99,13 +102,18 @@ set my2tics default
 set mcbtics default
 set mrtics default
 set nomttics
-unset xtics
-unset ytics
-unset ztics
+set xtics border in scale 1,0.5 mirror norotate  autojustify
+set xtics  norangelimit autofreq 
+set ytics border in scale 1,0.5 mirror norotate  autojustify
+set ytics  norangelimit autofreq 
+set ztics border in scale 1,0.5 nomirror norotate  autojustify
+set ztics  norangelimit autofreq 
 unset x2tics
 unset y2tics
-unset cbtics
-unset rtics
+set cbtics border in scale 1,0.5 mirror norotate  autojustify
+set cbtics  norangelimit autofreq 
+set rtics axis in scale 1,0.5 nomirror norotate  autojustify
+set rtics  norangelimit autofreq 
 unset ttics
 set title "" 
 set title  font "" norotate
@@ -115,13 +123,13 @@ set timestamp  font "" norotate
 set trange [ * : * ] noreverse nowriteback
 set urange [ * : * ] noreverse nowriteback
 set vrange [ * : * ] noreverse nowriteback
-set xlabel "" 
+set xlabel "Delay (ms)" 
 set xlabel  font "" textcolor lt -1 norotate
 set x2label "" 
 set x2label  font "" textcolor lt -1 norotate
-set xrange [ * : * ] noreverse nowriteback
+set xrange [ 0 : 400 ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback
-set ylabel "" 
+set ylabel "Probability" 
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
@@ -156,10 +164,10 @@ set style boxplot candles range  1.50 outliers pt 7 separation 1 labels auto uns
 set loadpath 
 set fontpath 
 set psdir
-set fit brief noerrorvariables nocovariancevariables errorscaling noprescale nowrap v5
-GNUTERM = "x11"
-plot \
-'data/topo-lines' using 2:1:($4-$2):($3-$1) with vectors nohead notitle,\
-'data/topo-clients' u 2:1 w p notitle pt 72,\
-'data/topo-servers' u 2:1 w p notitle pt 71
+set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap v5
+GNUTERM = "wxt"
+## Last datafile plotted: "< cat ../results/out..c\=40.s\=6.e\=centralized.l=quic.*.*"
+plot '< cat ../results/out..c\=40.s\=6.e\=centralized.l=grpc.*.*' u ($2*1e3):(1) smooth cnorm w lp pointinterval 2000 pt 4 lt 1 lc 1 title "gRPC",\
+     '< cat ../results/out..c\=40.s\=6.e\=centralized.l=quic.*.*' u ($2*1e3):(1) smooth cnorm w lp pointinterval 1800 pt 7 lt 1 lc 1 title "QUIC",\
+     '< cat ../results/out..c\=40.s\=6.e\=centralized.l=quic0rtt.*.*' u ($2*1e3):(1) smooth cnorm w lp pointinterval 1700 pt 9 lt 1 lc 1 title "QUIC/0-RTT"
 #    EOF
