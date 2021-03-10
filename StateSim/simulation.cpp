@@ -46,8 +46,8 @@ namespace statesim {
 
 std::string Simulation::Desc::toString() const {
   std::stringstream myStream;
-  myStream << "alloc=" << statesim::toString(theAllocationPolicy)
-           << ".exec=" << statesim::toString(theExecutionPolicy)
+  myStream << "alloc=" << statesim::toString(theAllocPolicy)
+           << ".exec=" << statesim::toString(theExecPolicy)
            << ".seed=" << theScenario->seed();
   return myStream.str();
 }
@@ -77,9 +77,9 @@ void Simulation::Worker::operator()() {
       assert(myId < theSimulation.theDesc.size());
       auto& myDesc = theSimulation.theDesc[myId];
 
-      myDesc.theScenario->allocateTasks(myDesc.theAllocationPolicy);
+      myDesc.theScenario->allocateTasks(myDesc.theAllocPolicy);
       myDesc.thePerformanceData =
-          myDesc.theScenario->performance(myDesc.theExecutionPolicy);
+          myDesc.theScenario->performance(myDesc.theExecPolicy);
 
       theSimulation.theQueueOut.push(myId);
 
@@ -112,9 +112,11 @@ Simulation::~Simulation() {
   theWorkers.wait();
 }
 
-void Simulation::run(const Conf&  aConf,
-                     const size_t aStartingSeed,
-                     const size_t aNumReplications) {
+void Simulation::run(const Conf&                  aConf,
+                     const size_t                 aStartingSeed,
+                     const size_t                 aNumReplications,
+                     const std::set<AllocPolicy>& aAllocPolicies,
+                     const std::set<ExecPolicy>&  aExecPolicies) {
   if (aConf.theNumJobs == 0) {
     throw std::runtime_error("Invalid zero jobs");
   }
@@ -175,22 +177,25 @@ void Simulation::run(const Conf&  aConf,
       << aConf.theNumJobs << ")";
 
   // create the scenarios
-  theDesc.resize(aNumReplications * allPolicies().size());
+  theDesc.resize(aNumReplications * aAllocPolicies.size() *
+                 aExecPolicies.size());
   size_t myDescCounter = 0;
-  for (const auto myPolicy : allPolicies()) {
-    for (size_t myRun = 0; myRun < aNumReplications; myRun++) {
-      assert(myDescCounter < theDesc.size());
-      auto&      myDesc = theDesc[myDescCounter++];
-      const auto mySeed = myRun + aStartingSeed;
+  for (const auto myAllocPolicy : aAllocPolicies) {
+    for (const auto myExecPolicy : aExecPolicies) {
+      for (size_t myRun = 0; myRun < aNumReplications; myRun++) {
+        assert(myDescCounter < theDesc.size());
+        auto&      myDesc = theDesc[myDescCounter++];
+        const auto mySeed = myRun + aStartingSeed;
 
-      std::default_random_engine myRng(mySeed);
-      myDesc.theScenario = std::make_unique<Scenario>(
-          myAffinities,
-          myNetwork,
-          selectJobs(myJobs, aConf.theNumJobs, myRng),
-          mySeed);
-      myDesc.theAllocationPolicy = myPolicy;
-      myDesc.theExecutionPolicy  = myPolicy;
+        std::default_random_engine myRng(mySeed);
+        myDesc.theScenario = std::make_unique<Scenario>(
+            myAffinities,
+            myNetwork,
+            selectJobs(myJobs, aConf.theNumJobs, myRng),
+            mySeed);
+        myDesc.theAllocPolicy = myAllocPolicy;
+        myDesc.theExecPolicy  = myExecPolicy;
+      }
     }
   }
 

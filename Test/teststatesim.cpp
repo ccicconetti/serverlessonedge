@@ -474,10 +474,50 @@ TEST_F(TestStateSim, test_scenario_from_files) {
 
   ASSERT_EQ(42, myScenario.seed());
 
-  ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
+  for (const auto myPolicy : allAllocPolicies()) {
+    ASSERT_NO_THROW(myScenario.allocateTasks(myPolicy));
+  }
 
-  const auto myData = myScenario.performance(Policy::PureFaaS);
-  print(myData);
+  for (const auto myPolicy : allExecPolicies()) {
+    const auto myData = myScenario.performance(myPolicy);
+    print(myData);
+  }
+}
+
+TEST_F(TestStateSim, test_alloc_policies) {
+  std::string myList;
+  auto        myFirst = true;
+  for (const auto myPolicy : allAllocPolicies()) {
+    if (myFirst) {
+      myFirst = false;
+    } else {
+      myList.append(",");
+    }
+
+    myList.append(toString(myPolicy));
+  }
+
+  const auto myPolicies = allocPoliciesFromList(myList);
+
+  ASSERT_EQ(allAllocPolicies(), myPolicies);
+}
+
+TEST_F(TestStateSim, test_exec_policies) {
+  std::string myList;
+  auto        myFirst = true;
+  for (const auto myPolicy : allExecPolicies()) {
+    if (myFirst) {
+      myFirst = false;
+    } else {
+      myList.append(",");
+    }
+
+    myList.append(toString(myPolicy));
+  }
+
+  const auto myPolicies = execPoliciesFromList(myList);
+
+  ASSERT_EQ(allExecPolicies(), myPolicies);
 }
 
 TEST_F(TestStateSim, test_scenario) {
@@ -505,11 +545,16 @@ TEST_F(TestStateSim, test_scenario) {
 
   ASSERT_EQ(42, myScenario.seed());
 
-  ASSERT_NO_THROW(myScenario.allocateTasks(Policy::PureFaaS));
+  for (const auto myPolicy : allAllocPolicies()) {
+    ASSERT_NO_THROW(myScenario.allocateTasks(myPolicy));
+  }
 
-  const auto myData = myScenario.performance(Policy::PureFaaS);
+  PerformanceData myData;
+  for (const auto myPolicy : allExecPolicies()) {
+    myData = myScenario.performance(myPolicy);
+  }
+
   print(myData);
-
   const auto myDataFilename = (theTestDir / "data").string();
   {
     std::ofstream myDataFile(myDataFilename);
@@ -538,16 +583,24 @@ TEST_F(TestStateSim, test_simulation) {
              1000,
              100},
             10,
-            20);
+            20,
+            allAllocPolicies(),
+            allExecPolicies());
 
   ASSERT_TRUE(boost::filesystem::exists(theTestDir / "data"));
   for (size_t i = 10; i < 30; i++) {
-    ASSERT_TRUE(boost::filesystem::exists(
-        theTestDir / "data" /
-        ("job-alloc=PureFaaS.exec=PureFaaS.seed=" + std::to_string(i))));
-    ASSERT_TRUE(boost::filesystem::exists(
-        theTestDir / "data" /
-        ("node-alloc=PureFaaS.exec=PureFaaS.seed=" + std::to_string(i))));
+    for (const auto myAllocPolicy : allAllocPolicies()) {
+      for (const auto myExecPolicy : allExecPolicies()) {
+        ASSERT_TRUE(boost::filesystem::exists(
+            theTestDir / "data" /
+            ("job-alloc=" + toString(myAllocPolicy) + ".exec=" +
+             toString(myExecPolicy) + ".seed=" + std::to_string(i))));
+        ASSERT_TRUE(boost::filesystem::exists(
+            theTestDir / "data" /
+            ("node-alloc=" + toString(myAllocPolicy) + ".exec=" +
+             toString(myExecPolicy) + ".seed=" + std::to_string(i))));
+      }
+    }
   }
   ASSERT_TRUE(boost::filesystem::is_regular(theTestDir / "output.bin"));
 }

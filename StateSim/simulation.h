@@ -59,8 +59,8 @@ class Simulation final
   struct Desc {
     // conf
     std::unique_ptr<Scenario> theScenario;
-    Policy                    theAllocationPolicy;
-    Policy                    theExecutionPolicy;
+    AllocPolicy               theAllocPolicy;
+    ExecPolicy                theExecPolicy;
 
     // output
     PerformanceData thePerformanceData;
@@ -101,10 +101,15 @@ class Simulation final
 
   ~Simulation();
 
-  //! Run a batch of simulations.
-  void run(const Conf&  aConf,
-           const size_t aStartingSeed,
-           const size_t aNumReplications);
+  /**
+   *  Run a batch of simulations, full factorial on the allocation and
+   *  execution policies passed.
+   */
+  void run(const Conf&                  aConf,
+           const size_t                 aStartingSeed,
+           const size_t                 aNumReplications,
+           const std::set<AllocPolicy>& aAllocPolicies,
+           const std::set<ExecPolicy>&  aExecPolicies);
 
  private:
   /**

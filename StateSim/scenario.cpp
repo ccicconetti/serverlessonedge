@@ -31,6 +31,8 @@ SOFTWARE.
 
 #include "StateSim/scenario.h"
 
+#include "Support/split.h"
+
 #include <glog/logging.h>
 
 #include <limits>
@@ -167,7 +169,7 @@ Scenario::Scenario(const std::map<std::string, Affinity>& aAffinities,
   LOG(INFO) << "Created scenario seed " << theSeed;
 }
 
-void Scenario::allocateTasks(const Policy aPolicy) {
+void Scenario::allocateTasks(const AllocPolicy aPolicy) {
   LOG(INFO) << "allocating tasks using policy " << toString(aPolicy);
 
   // clear any previous allocation and resize data structures
@@ -239,7 +241,7 @@ void Scenario::allocateTasks(const Policy aPolicy) {
   }
 }
 
-PerformanceData Scenario::performance(const Policy aPolicy) const {
+PerformanceData Scenario::performance(const ExecPolicy aPolicy) const {
   LOG(INFO) << "measuring performance using policy " << toString(aPolicy);
 
   if (theLoad.empty()) {
@@ -281,10 +283,10 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
               << myClient->name() << " allocated to " << myNode->name()
               << ", policy " << toString(aPolicy);
 
-      if (aPolicy == Policy::PureFaaS) {
+      if (aPolicy == ExecPolicy::PureFaaS) {
         myExecStat.merge(execStatsTwoWay(
             myTask.ops(), myInSize, myOutSize, *myClient, *myNode));
-      } else if (aPolicy == Policy::StatePropagate) {
+      } else if (aPolicy == ExecPolicy::StatePropagate) {
         myExecStat.merge(
             execStatsOneWay(myTask.ops(),
                             myInSize,
@@ -294,7 +296,7 @@ PerformanceData Scenario::performance(const Policy aPolicy) const {
           myExecStat.merge(execStatsOneWay(0, myOutSize, *myNode, *myClient));
         }
       } else {
-        assert(aPolicy == Policy::StateLocal);
+        assert(aPolicy == ExecPolicy::StateLocal);
         // execution time + transfer of the argument from previous node
         // to the current one
         myExecStat.merge(
@@ -438,34 +440,81 @@ std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
   return {myInSize, myOutSize};
 }
 
-std::string toString(const Policy aPolicy) {
+std::string toString(const ExecPolicy aPolicy) {
   // clang-format off
   switch (aPolicy) {
-    case Policy::PureFaaS:       return "PureFaaS";
-    case Policy::StatePropagate: return "StatePropagate";
-    case Policy::StateLocal:     return "StateLocal";
-    default:                     assert(false);
+    case ExecPolicy::PureFaaS:       return "PureFaaS";
+    case ExecPolicy::StatePropagate: return "StatePropagate";
+    case ExecPolicy::StateLocal:     return "StateLocal";
+    default:                         assert(false);
   }
   // clang-format on
 
   return std::string();
 }
 
-Policy policyFromString(const std::string& aValue) {
+ExecPolicy execPolicyFromString(const std::string& aValue) {
   // clang-format off
-         if (aValue == "PureFaaS") {       return Policy::PureFaaS;
-  } else if (aValue == "StatePropagate") { return Policy::StatePropagate;
-  } else if (aValue == "StateLocal") {     return Policy::StateLocal;
+         if (aValue == "PureFaaS") {       return ExecPolicy::PureFaaS;
+  } else if (aValue == "StatePropagate") { return ExecPolicy::StatePropagate;
+  } else if (aValue == "StateLocal") {     return ExecPolicy::StateLocal;
   }
   // clang-format on
-  throw std::runtime_error("Invalid scenario policy: " + aValue);
+  throw std::runtime_error("Invalid execution policy: " + aValue);
 }
 
-const std::set<Policy>& allPolicies() {
-  static const std::set<Policy> myAllPolicies({
-      Policy::PureFaaS,
-      Policy::StatePropagate,
-      Policy::StateLocal,
+std::set<ExecPolicy> execPoliciesFromList(const std::string& aValue) {
+  const auto myPolicies = support::split<std::vector<std::string>>(aValue, ",");
+  std::set<ExecPolicy> ret;
+  for (const auto& myPolicy : myPolicies) {
+    ret.insert(execPolicyFromString(myPolicy));
+  }
+  return ret;
+}
+
+const std::set<ExecPolicy>& allExecPolicies() {
+  static const std::set<ExecPolicy> myAllPolicies({
+      ExecPolicy::PureFaaS,
+      ExecPolicy::StatePropagate,
+      ExecPolicy::StateLocal,
+  });
+  return myAllPolicies;
+}
+
+std::string toString(const AllocPolicy aPolicy) {
+  // clang-format off
+  switch (aPolicy) {
+    case AllocPolicy::ProcOnly: return "ProcOnly";
+    case AllocPolicy::ProcNet:  return "ProcNet";
+    default:                    assert(false);
+  }
+  // clang-format on
+
+  return std::string();
+}
+
+AllocPolicy allocPolicyFromString(const std::string& aValue) {
+  // clang-format off
+         if (aValue == "ProcOnly") { return AllocPolicy::ProcOnly;
+  } else if (aValue == "ProcNet")  { return AllocPolicy::ProcNet;
+  }
+  // clang-format on
+  throw std::runtime_error("Invalid allocation policy: " + aValue);
+}
+
+std::set<AllocPolicy> allocPoliciesFromList(const std::string& aValue) {
+  const auto myPolicies = support::split<std::vector<std::string>>(aValue, ",");
+  std::set<AllocPolicy> ret;
+  for (const auto& myPolicy : myPolicies) {
+    ret.insert(allocPolicyFromString(myPolicy));
+  }
+  return ret;
+}
+
+const std::set<AllocPolicy>& allAllocPolicies() {
+  static const std::set<AllocPolicy> myAllPolicies({
+      AllocPolicy::ProcOnly,
+      AllocPolicy::ProcNet,
   });
   return myAllPolicies;
 }

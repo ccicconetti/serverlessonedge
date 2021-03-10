@@ -95,7 +95,12 @@ struct PerformanceData {
   static constexpr size_t theVersion = 2;
 };
 
-enum class Policy : int {
+enum class AllocPolicy : int {
+  ProcOnly = 0,
+  ProcNet  = 1,
+};
+
+enum class ExecPolicy : int {
   PureFaaS       = 0,
   StatePropagate = 1,
   StateLocal     = 2,
@@ -153,10 +158,10 @@ class Scenario
    *
    * \param aPolicy The policy used
    */
-  void allocateTasks(const Policy aPolicy);
+  void allocateTasks(const AllocPolicy aPolicy);
 
   //! \return the execution and transmission delays of jobs with a given policy
-  PerformanceData performance(const Policy aPolicy) const;
+  PerformanceData performance(const ExecPolicy aPolicy) const;
 
  private:
   /**
@@ -256,9 +261,15 @@ class Scenario
   Allocation theAllocation;
 };
 
-std::string             toString(const Policy aPolicy);
-Policy                  policyFromString(const std::string& aValue);
-const std::set<Policy>& allPolicies();
+std::string                  toString(const AllocPolicy aPolicy);
+AllocPolicy                  allocPolicyFromString(const std::string& aValue);
+std::set<AllocPolicy>        allocPoliciesFromList(const std::string& aValue);
+const std::set<AllocPolicy>& allAllocPolicies();
+
+std::string                 toString(const ExecPolicy aPolicy);
+ExecPolicy                  execPolicyFromString(const std::string& aValue);
+std::set<ExecPolicy>        execPoliciesFromList(const std::string& aValue);
+const std::set<ExecPolicy>& allExecPolicies();
 
 } // namespace statesim
 } // namespace uiiit

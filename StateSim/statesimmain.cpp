@@ -60,6 +60,8 @@ int main(int argc, char* argv[]) {
   double      myOpsFactor;
   double      myArgFactor;
   double      myStateFactor;
+  std::string myAllocPolicies;
+  std::string myExecPolicies;
   size_t      myNumThreads;
 
   po::options_description myDesc("Allowed options");
@@ -102,6 +104,14 @@ int main(int argc, char* argv[]) {
     ("state-factor",
      po::value<double>(&myStateFactor)->default_value(1000),
      "The multiplier of the state size of loaded tasks.")
+    ("alloc-policies",
+     po::value<std::string>(&myAllocPolicies)->default_value(
+       ss::toString(*ss::allAllocPolicies().begin())),
+     "The comma-separated list of allocation policies.")
+    ("exec-policies",
+     po::value<std::string>(&myExecPolicies)->default_value(
+       ss::toString(*ss::allExecPolicies().begin())),
+     "The comma-separated list of execution policies.")
     ("num-threads",
      po::value<size_t>(&myNumThreads)->default_value(
        std::max(1u,
@@ -134,7 +144,9 @@ int main(int argc, char* argv[]) {
               myArgFactor,
               myStateFactor},
              myStartingSeed,
-             myNumReplications);
+             myNumReplications,
+             ss::allocPoliciesFromList(myAllocPolicies),
+             ss::execPoliciesFromList(myExecPolicies));
     LOG(INFO) << "simulation lasted " << myChrono.stop() << " s";
 
     return EXIT_SUCCESS;
