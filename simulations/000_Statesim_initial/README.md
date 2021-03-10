@@ -11,6 +11,12 @@ Simulations of execution of stateless vs. stateful chains of functions with vari
 
 ## statesim
 
+Check-out v1.1.0:
+
+```
+git checkout v1.1.0
+```
+
 See build instructions in the main repository `README.md`.
 
 At the and of the procedure copy or symlink the `statesim` executable to the current directory.
