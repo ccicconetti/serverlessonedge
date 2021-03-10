@@ -104,7 +104,7 @@ set mrtics default
 set nomttics
 set xtics border in scale 1,0.5 mirror norotate autojustify
 set xtics  norangelimit 
-set xtics   ("gRPC" 0.00000, "QUIC/0-RTT" 1.00000, "QUIC" 2.00000, "gRPC" 3.00000, "QUIC/0-RTT" 4.00000, "QUIC" 5.00000, "gRPC" 6.00000, "QUIC/0-RTT" 7.00000, "QUIC" 8.00000)
+set xtics   ("gRPC" 0.00000, "QUIC/0-RTT" 1.00000, "QUIC" 2.00000, "gRPC" 3.00000, "QUIC/0-RTT" 4.00000, "QUIC" 5.00000)
 set ytics border in scale 1,0.5 mirror norotate  autojustify
 set ytics  norangelimit autofreq 
 set ztics border in scale 1,0.5 nomirror norotate  autojustify
@@ -170,6 +170,5 @@ GNUTERM = "wxt"
 x = 0.0
 ## Last datafile plotted: "< paste data/tpt.dat data/count.dat"
 plot '< paste data/tpt.dat data/count.dat | grep fast' u 0:($2/($6/50)) w boxes title "Fast",\
-'< paste data/tpt.dat data/count.dat | grep medium' u ($0+3):($2/($6/50)) w boxes title "Medium",\
-'< paste data/tpt.dat data/count.dat | grep slow' u ($0+6):($2/($6/50)) w boxes title "Slow"
+'< paste data/tpt.dat data/count.dat | grep slow' u ($0+3):($2/($6/50)) w boxes title "Slow"
 #    EOF
