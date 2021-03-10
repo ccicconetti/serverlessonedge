@@ -376,7 +376,7 @@ Node* Network::central() {
 
   const size_t        N = 1000;
   std::vector<double> myTxTimes(theProcessing.size());
-  double              myLastWorst;
+  double              myLastWorst = 0;
   for (const auto myCandidate : theProcessing) {
     size_t i = 0;
     for (const auto myTarget : theProcessing) {
