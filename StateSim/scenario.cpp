@@ -203,9 +203,13 @@ void Scenario::allocateTasks(const AllocPolicy aPolicy) {
       const auto myAffinity = myAffinityIt->second;
 
       // retrieve argument and return value sizes (+ states, if any)
-      size_t myInSize;
-      size_t myOutSize;
-      std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask);
+      size_t myInSize  = 0;
+      size_t myOutSize = 0;
+      if (aPolicy == AllocPolicy::ProcNet) {
+        std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask);
+      } else {
+        assert(aPolicy == AllocPolicy::ProcOnly);
+      }
 
       // select the processing node with shortest execution time
       auto  myMinExecTime = 0.0;
