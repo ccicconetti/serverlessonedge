@@ -303,6 +303,11 @@ std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
 
 double
 Network::txTime(const Node& aSrc, const Node& aDst, const size_t aBytes) {
+  // short-cut for vanishing amount of data to transfer
+  if (aBytes == 0) {
+    return 0;
+  }
+
   const auto& myCacheEntry = cacheEntry(aDst.id());
   assert(aSrc.id() < myCacheEntry.second.size());
 
