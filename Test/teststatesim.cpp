@@ -391,6 +391,9 @@ TEST_F(TestStateSim, test_network) {
   ASSERT_EQ(2, myNetwork.hops(D, E));
 
   ASSERT_EQ(4, myNetwork.hops(A, E));
+
+  // check central node
+  ASSERT_EQ("D", myNetwork.central()->name());
 }
 
 TEST_F(TestStateSim, test_all_tasks) {

@@ -132,6 +132,13 @@ class Network
   //! \return the number of hops between two nodes
   size_t hops(const Node& aSrc, const Node& aDst);
 
+  /**
+   * \return the central node, defined as one of the processing nodes whose
+   *         maximum transfer time of a constant amount of data towards
+   *         any other processing node is minimum
+   */
+  Node* central();
+
  private:
   //! Convert name to numeric identifier.
   size_t id(const std::string& aName) const;

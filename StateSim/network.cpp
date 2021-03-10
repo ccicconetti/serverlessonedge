@@ -303,8 +303,8 @@ std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
 
 double
 Network::txTime(const Node& aSrc, const Node& aDst, const size_t aBytes) {
-  // short-cut for vanishing amount of data to transfer
-  if (aBytes == 0) {
+  // short-cut for vanishing amount of data to transfer and self tx
+  if (aBytes == 0 or &aSrc == &aDst) {
     return 0;
   }
 
@@ -333,6 +333,26 @@ size_t Network::hops(const Node& aSrc, const Node& aDst) {
       ret++;
     }
     myCur = myNext;
+  }
+  return ret;
+}
+
+Node* Network::central() {
+  const size_t        N = 1000;
+  std::vector<double> myTxTimes(theProcessing.size());
+  Node*               ret = nullptr;
+  double              myLastWorst;
+  for (const auto myCandidate : theProcessing) {
+    size_t i = 0;
+    for (const auto myTarget : theProcessing) {
+      myTxTimes[i++] = std::max(txTime(*myCandidate, *myTarget, N),
+                                txTime(*myTarget, *myCandidate, N));
+    }
+    const auto myWorst = *std::max_element(myTxTimes.begin(), myTxTimes.end());
+    if (ret == nullptr or myWorst < myLastWorst) {
+      myLastWorst = myWorst;
+      ret         = myCandidate;
+    }
   }
   return ret;
 }
