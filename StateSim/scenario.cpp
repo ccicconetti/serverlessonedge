@@ -206,7 +206,7 @@ void Scenario::allocateTasks(const AllocPolicy aPolicy) {
       size_t myInSize  = 0;
       size_t myOutSize = 0;
       if (aPolicy == AllocPolicy::ProcNet) {
-        std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask);
+        std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask, true);
       } else {
         assert(aPolicy == AllocPolicy::ProcOnly);
       }
@@ -270,17 +270,24 @@ PerformanceData Scenario::performance(const ExecPolicy aPolicy) const {
     PerformanceData::Job myExecStat;
     myExecStat.theChainSize = myJob.tasks().size();
     Node* myPrevNode        = nullptr;
-    for (const auto& myTask : myJob.tasks()) {
+    for (auto it = myJob.tasks().cbegin(); it != myJob.tasks().cend(); ++it) {
+      const auto& myTask = *it;
+
       // retrieve the node to which this task has been allocated
       assert(myJob.id() < theAllocation.size());
       assert(myTask.id() < theAllocation[myJob.id()].size());
-      const auto myNode     = theAllocation[myJob.id()][myTask.id()];
-      const auto myLastTask = myJob.tasks().back().id() == myTask.id();
+      const auto myNode = theAllocation[myJob.id()][myTask.id()];
 
-      // retrieve argument and return value sizes (+ states, if any)
+      // identify the next task in the job
+      const auto  jt         = std::next(it);
+      const Task* myNextTask = nullptr;
+      if (jt != myJob.tasks().cend()) {
+        myNextTask = &(*jt);
+      }
+
+      // argument and return value sizes (+ states, if any, depending on policy)
       size_t myInSize;
       size_t myOutSize;
-      std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask);
 
       // retrieve execution statistics
       VLOG(2) << "job " << myJob.id() << " task " << myTask.id() << " client "
@@ -288,19 +295,22 @@ PerformanceData Scenario::performance(const ExecPolicy aPolicy) const {
               << ", policy " << toString(aPolicy);
 
       if (aPolicy == ExecPolicy::PureFaaS) {
+        std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask, true);
         myExecStat.merge(execStatsTwoWay(
             myTask.ops(), myInSize, myOutSize, *myClient, *myNode));
+
       } else if (aPolicy == ExecPolicy::StatePropagate) {
+        std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask, true);
         myExecStat.merge(
             execStatsOneWay(myTask.ops(),
                             myInSize,
                             myPrevNode == nullptr ? *myClient : *myPrevNode,
                             *myNode));
-        if (myLastTask) {
+        if (myNextTask == nullptr) {
           myExecStat.merge(execStatsOneWay(0, myOutSize, *myNode, *myClient));
         }
-      } else {
-        assert(aPolicy == ExecPolicy::StateLocal);
+
+      } else if (aPolicy == ExecPolicy::StateLocal) {
         // execution time + transfer of the argument from previous node
         // to the current one
         myExecStat.merge(
@@ -323,10 +333,30 @@ PerformanceData Scenario::performance(const ExecPolicy aPolicy) const {
         }
 
         // last return value to client
-        if (myLastTask) {
+        if (myNextTask == nullptr) {
           myExecStat.merge(
               execStatsOneWay(0, myJob.retSize(), *myNode, *myClient));
         }
+
+      } else if (aPolicy == ExecPolicy::UnchainedExternal) {
+
+      } else if (aPolicy == ExecPolicy::UnchainedInEdge) {
+
+      } else if (aPolicy == ExecPolicy::UnchainedInFunction) {
+        myExecStat.merge(execStatsTwoWay(
+            myTask.ops(),
+            myTask.size(),
+            myNextTask == nullptr ? myJob.retSize() : myNextTask->size(),
+            *myClient,
+            *myNode));
+
+      } else if (aPolicy == ExecPolicy::UnchainedInClient) {
+        std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask, false);
+        myExecStat.merge(execStatsTwoWay(
+            myTask.ops(), myInSize, myOutSize, *myClient, *myNode));
+
+      } else {
+        LOG(FATAL) << "unknown execution policy: " << toString(aPolicy);
       }
 
       myPrevNode = myNode;
@@ -426,15 +456,25 @@ std::vector<Node*> Scenario::randomClients(const size_t                aNumJobs,
 }
 
 std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
-                                                      const Task& aTask) {
+                                                      const Task& aTask,
+                                                      const bool  aAll) {
   // size of the states (if any)
   size_t myStateSize = 0;
-  for (const auto myStateId : aTask.deps()) {
-    assert(myStateId < aJob.stateSizes().size());
-    myStateSize += aJob.stateSizes()[myStateId];
+
+  if (aAll) {
+    // all the states of the job
+    for (const auto mySize : aJob.stateSizes()) {
+      myStateSize += mySize;
+    }
+  } else {
+    // only the states on which aTask depends
+    for (const auto myStateId : aTask.deps()) {
+      assert(myStateId < aJob.stateSizes().size());
+      myStateSize += aJob.stateSizes()[myStateId];
+    }
   }
 
-  // size of the input argument and return value
+  // size of the input argument and return value, including state size
   const auto myInSize = myStateSize + aTask.size();
   const auto myOutSize =
       myStateSize + (((aTask.id() + 1) == aJob.tasks().size()) ?
@@ -447,10 +487,14 @@ std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
 std::string toString(const ExecPolicy aPolicy) {
   // clang-format off
   switch (aPolicy) {
-    case ExecPolicy::PureFaaS:       return "PureFaaS";
-    case ExecPolicy::StatePropagate: return "StatePropagate";
-    case ExecPolicy::StateLocal:     return "StateLocal";
-    default:                         assert(false);
+    case ExecPolicy::PureFaaS:            return "PureFaaS";
+    case ExecPolicy::StatePropagate:      return "StatePropagate";
+    case ExecPolicy::StateLocal:          return "StateLocal";
+    case ExecPolicy::UnchainedExternal:   return "UnchainedExternal";
+    case ExecPolicy::UnchainedInEdge:     return "UnchainedInEdge";
+    case ExecPolicy::UnchainedInFunction: return "UnchainedInFunction";
+    case ExecPolicy::UnchainedInClient:   return "UnchainedInClient";
+    default:                              assert(false);
   }
   // clang-format on
 
@@ -459,9 +503,13 @@ std::string toString(const ExecPolicy aPolicy) {
 
 ExecPolicy execPolicyFromString(const std::string& aValue) {
   // clang-format off
-         if (aValue == "PureFaaS") {       return ExecPolicy::PureFaaS;
-  } else if (aValue == "StatePropagate") { return ExecPolicy::StatePropagate;
-  } else if (aValue == "StateLocal") {     return ExecPolicy::StateLocal;
+         if (aValue == "PureFaaS") {            return ExecPolicy::PureFaaS;
+  } else if (aValue == "StatePropagate") {      return ExecPolicy::StatePropagate;
+  } else if (aValue == "StateLocal") {          return ExecPolicy::StateLocal;
+  } else if (aValue == "UnchainedExternal") {   return ExecPolicy::UnchainedExternal;
+  } else if (aValue == "UnchainedInEdge") {     return ExecPolicy::UnchainedInEdge;
+  } else if (aValue == "UnchainedInFunction") { return ExecPolicy::UnchainedInFunction;
+  } else if (aValue == "UnchainedInClient") {   return ExecPolicy::UnchainedInClient;
   }
   // clang-format on
   throw std::runtime_error("Invalid execution policy: " + aValue);
@@ -481,6 +529,10 @@ const std::set<ExecPolicy>& allExecPolicies() {
       ExecPolicy::PureFaaS,
       ExecPolicy::StatePropagate,
       ExecPolicy::StateLocal,
+      ExecPolicy::UnchainedExternal,
+      ExecPolicy::UnchainedInEdge,
+      ExecPolicy::UnchainedInFunction,
+      ExecPolicy::UnchainedInClient,
   });
   return myAllPolicies;
 }

@@ -101,9 +101,16 @@ enum class AllocPolicy : int {
 };
 
 enum class ExecPolicy : int {
+  // policies with function chaining
   PureFaaS       = 0,
   StatePropagate = 1,
   StateLocal     = 2,
+
+  // policies when each function is called individually from the client
+  UnchainedExternal   = 3,
+  UnchainedInEdge     = 4,
+  UnchainedInFunction = 5,
+  UnchainedInClient   = 6,
 };
 
 class Scenario
@@ -240,9 +247,19 @@ class Scenario
                                           const Network&              aNetwork,
                                           std::default_random_engine& aRng);
 
-  //! \return the sum of all the job states and the input vs. output of a task.
-  static std::pair<size_t, size_t> allStatesArgSizes(const Job&  aJob,
-                                                     const Task& aTask);
+  /**
+   * \return the sum of all the job states and the input vs. output of a task.
+   *
+   * \param aJob the job to which the task belongs
+   *
+   * \param aTask the task for which we return the input/output sizes
+   *
+   * \param aAll if true then the size of the state is the sum of all the
+   *        job states, otherwise the sum of only the states that this
+   *        task depends on
+   */
+  static std::pair<size_t, size_t>
+  allStatesArgSizes(const Job& aJob, const Task& aTask, const bool aAll);
 
  private:
   std::default_random_engine            theRng;
