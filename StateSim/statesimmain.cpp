@@ -52,6 +52,8 @@ int main(int argc, char* argv[]) {
   std::string myLinksFile;
   std::string myEdgesFile;
   std::string myTasksFile;
+  double      myCloudLatency;
+  double      myCloudRate;
   std::string myOutdir;
   size_t      myNumFunctions;
   size_t      myNumJobs;
@@ -80,6 +82,12 @@ int main(int argc, char* argv[]) {
     ("tasks-file",
      po::value<std::string>(&myTasksFile)->default_value("tasks"),
      "File containing the specifications of tasks.")
+    ("cloud-latency",
+     po::value<double>(&myCloudLatency)->default_value(0.1),
+     "The latency to reach the cloud, in ms.")
+    ("cloud-rate",
+     po::value<double>(&myCloudRate)->default_value(5),
+     "The transmission rate towards the cloud, in Mb/s.")
     ("outdir",
      po::value<std::string>(&myOutdir)->default_value("data"),
      "The directory where to save the results.")
@@ -140,6 +148,8 @@ int main(int argc, char* argv[]) {
               myOutdir,
               myNumFunctions,
               myNumJobs,
+              myCloudLatency,
+              myCloudRate,
               myOpsFactor,
               myArgFactor,
               myStateFactor},

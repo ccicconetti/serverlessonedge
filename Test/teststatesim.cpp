@@ -396,6 +396,27 @@ TEST_F(TestStateSim, test_network) {
   ASSERT_EQ("D", myNetwork.central()->name());
 }
 
+TEST_F(TestStateSim, test_network_cloud) {
+  Network myNetwork(
+      theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
+  const auto& A = myNetwork.nodes().find("A")->second;
+
+  ASSERT_THROW(myNetwork.cloud(-1, 1), std::runtime_error);
+  ASSERT_THROW(myNetwork.cloud(1, -1), std::runtime_error);
+  ASSERT_THROW(myNetwork.cloud(1, 0), std::runtime_error);
+
+  myNetwork.cloud(0, 1);
+  ASSERT_FLOAT_EQ(1000 * 8 / 1e6, myNetwork.txTimeCloud(A, 1000));
+
+  myNetwork.cloud(1, 1);
+  ASSERT_FLOAT_EQ(1 + 1000 * 8 / 1e6, myNetwork.txTimeCloud(A, 1000));
+
+  for (const auto& elem : myNetwork.nodes()) {
+    ASSERT_FLOAT_EQ(myNetwork.txTimeCloud(A, 1000),
+                    myNetwork.txTimeCloud(elem.second, 1000));
+  }
+}
+
 TEST_F(TestStateSim, test_all_tasks) {
   ASSERT_TRUE(prepareTaskFiles());
   const std::map<std::string, double> myWeights({
@@ -474,6 +495,8 @@ TEST_F(TestStateSim, test_scenario_from_files) {
                                      42,
                                      true,
                                      myAffinityWeights});
+
+  myScenario.network().cloud(1, 1);
 
   ASSERT_EQ(42, myScenario.seed());
 
@@ -554,7 +577,11 @@ TEST_F(TestStateSim, test_scenario) {
 
   PerformanceData myData;
   for (const auto myPolicy : allExecPolicies()) {
-    myData = myScenario.performance(myPolicy);
+    if (myPolicy == ExecPolicy::UnchainedExternal) {
+      ASSERT_THROW(myScenario.performance(myPolicy), std::runtime_error);
+    } else {
+      myData = myScenario.performance(myPolicy);
+    }
   }
 
   print(myData);

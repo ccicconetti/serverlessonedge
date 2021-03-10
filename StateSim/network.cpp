@@ -99,6 +99,7 @@ Network::Network(const std::string& aNodesPath,
     , theClients()
     , theProcessing()
     , theGraph()
+    , theCloudParams(nullptr)
     , theCache()
     , theCentral(nullptr) {
   // read from files
@@ -178,6 +179,7 @@ Network::Network(const std::set<Node>&                               aNodes,
     , theClients()
     , theProcessing()
     , theGraph()
+    , theCloudParams(nullptr)
     , theCache()
     , theCentral(nullptr) {
   // fill theNodes, theLinks, theClients, and theProcessing making sure that
@@ -289,6 +291,20 @@ void Network::initElementsGraph(const std::vector<Edge>&  aEdges,
   }
 }
 
+void Network::cloud(const double aLatency, const double aRate) {
+  if (aLatency < 0) {
+    throw std::runtime_error("the cloud latency (" + std::to_string(aLatency) +
+                             ") cannot be negative");
+  }
+  if (aRate <= 0) {
+    throw std::runtime_error("the cloud rate (" + std::to_string(aRate) +
+                             ") cannot be non-positive");
+  }
+
+  // overwrite previous settings, if any
+  theCloudParams = std::make_unique<CloudParams>(aLatency, aRate);
+}
+
 std::pair<float, std::string> Network::nextHop(const std::string& aSrc,
                                                const std::string& aDst) {
   const auto myDstId      = id(aDst);
@@ -320,6 +336,21 @@ Network::txTime(const Node& aSrc, const Node& aDst, const size_t aBytes) {
   }
 
   return myTxTime;
+}
+
+double Network::txTimeCloud(const Node& aNode, const size_t aBytes) const {
+  // short-cut for vanishing amount of data, before even checking if the
+  // cloud parameters have been set
+  if (aBytes == 0) {
+    return 0;
+  }
+
+  if (theCloudParams.get() == nullptr) {
+    throw std::runtime_error("Cloud parameters not set");
+  }
+
+  return theCloudParams->theCloudLatency +
+         (8 * aBytes) / (1e6 * theCloudParams->theCloudRate);
 }
 
 size_t Network::hops(const Node& aSrc, const Node& aDst) {

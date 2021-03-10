@@ -74,6 +74,16 @@ class Network
   using PredVec          = std::vector<std::pair<float, VertexDescriptor>>;
   using Cache            = std::vector<std::pair<bool, PredVec>>;
 
+  struct CloudParams {
+    CloudParams(const double aCloudLatency, const double aCloudRate)
+        : theCloudLatency(aCloudLatency)
+        , theCloudRate(aCloudRate) {
+      // noop
+    }
+    const double theCloudLatency;
+    const double theCloudRate;
+  };
+
  public:
   /**
    * Create a network from a set of files.
@@ -122,12 +132,36 @@ class Network
   const std::vector<Node*>&          processing() const noexcept { return theProcessing; }
   // clang-format on
 
+  /**
+   * Set the characteristics of the cloud as perceived by any node in the net.
+   *
+   * This method can be called multiple times, each call overrides the
+   * previous parameters (if set).
+   *
+   * \param aLatency the latency, in ms.
+   *
+   * \param aRate the transmission rate, in Mb/s.
+   *
+   * \throw std::runtime_error with negative aLatency or non-positive aRate
+   */
+  void cloud(const double aLatency, const double aRate);
+
   //! \return the distance and next hop identifier from aSrc to aDst
   std::pair<float, std::string> nextHop(const std::string& aSrc,
                                         const std::string& aDst);
 
   //! \return the transmission time from aSrc to aDst of a given amount of data
   double txTime(const Node& aSrc, const Node& aDst, const size_t aBytes);
+
+  /**
+   * \return the transmission time from a node to the cloud
+   *
+   * Always return 0 if aBytes is 0, even though the cloud parameters
+   * have not been set.
+   *
+   * \throw std::runtime_error if the cloud parameters have not been set
+   */
+  double txTimeCloud(const Node& aNode, const size_t aBytes) const;
 
   //! \return the number of hops between two nodes
   size_t hops(const Node& aSrc, const Node& aDst);
@@ -162,6 +196,9 @@ class Network
   std::vector<Node*>          theClients;
   std::vector<Node*>          theProcessing;
   Graph                       theGraph;
+
+  // cloud characteristics, set via the cloud() method
+  std::unique_ptr<CloudParams> theCloudParams;
 
   //
   // first index: source node id

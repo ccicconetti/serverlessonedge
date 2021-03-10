@@ -350,23 +350,19 @@ PerformanceData Scenario::performance(const ExecPolicy aPolicy) const {
             *myNode));
 
         // add state retrieve/update, if needed
-        const auto myStateSize  = stateSize(myJob, myTask, false);
-        Node*      myRepository = nullptr;
+        const auto myStateSize = stateSize(myJob, myTask, false);
+
         if (aPolicy == ExecPolicy::UnchainedExternal) {
           // repository is the cloud node
-          // myRepository = theNetwork->cloud();
+          myExecStat.merge(
+              execStatsTwoWayCloud(myStateSize, myStateSize, *myClient));
         } else if (aPolicy == ExecPolicy::UnchainedInEdge) {
           // repository is the central node in the network
-          myRepository = theNetwork->central();
+          myExecStat.merge(execStatsTwoWay(
+              0, myStateSize, myStateSize, *myClient, *theNetwork->central()));
         } else {
           // repository is in the same processing node => no data transfer
           assert(aPolicy == ExecPolicy::UnchainedInFunction);
-          assert(myRepository == nullptr);
-        }
-
-        if (myRepository != nullptr) {
-          myExecStat.merge(execStatsTwoWay(
-              0, myStateSize, myStateSize, *myClient, *myRepository));
         }
 
       } else if (aPolicy == ExecPolicy::UnchainedInClient) {
@@ -424,6 +420,16 @@ PerformanceData::Job Scenario::execStatsTwoWay(const size_t aOps,
                                  theNetwork->hops(aTarget, aOrigin) * aOutSize;
 
   return PerformanceData::Job(myProcTime, myTxTime, myDataTransferred, 0);
+}
+
+PerformanceData::Job Scenario::execStatsTwoWayCloud(const size_t aInSize,
+                                                    const size_t aOutSize,
+                                                    const Node& aOrigin) const {
+  return PerformanceData::Job(0,
+                              theNetwork->txTimeCloud(aOrigin, aInSize) +
+                                  theNetwork->txTimeCloud(aOrigin, aOutSize),
+                              aInSize + aOutSize,
+                              0);
 }
 
 PerformanceData::Job Scenario::execStatsOneWay(const size_t aOps,

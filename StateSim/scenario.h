@@ -154,6 +154,12 @@ class Scenario
                     const std::vector<Job>&                aJobs,
                     const size_t                           aSeed);
 
+  //! \return the network in this scenario
+  Network& network() {
+    assert(theNetwork.get() != nullptr);
+    return *theNetwork;
+  }
+
   //! \return the seed of this scenario
   size_t seed() const noexcept {
     return theSeed;
@@ -217,6 +223,22 @@ class Scenario
                                        const size_t aOutSize,
                                        const Node&  aOrigin,
                                        const Node&  aTarget) const;
+
+  /**
+   * Return the time to transfer data back and forth to/from the cloud.
+   *
+   * \param aInSize The total input size (argument + state, if any)
+   *
+   * \param aOutSize The total output size (argument + state, if any)
+   *
+   * \param aOrigin The origin node
+   *
+   * \return execution time (network transfer, processing), in s, and data
+   * transferred, in bytes
+   */
+  PerformanceData::Job execStatsTwoWayCloud(const size_t aInSize,
+                                            const size_t aOutSize,
+                                            const Node&  aOrigin) const;
   /**
    * Return the execution time (processing vs. network) of a given task
    * allocated to a candidate node when transferring the given amount

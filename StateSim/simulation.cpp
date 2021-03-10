@@ -56,9 +56,10 @@ std::string Simulation::Conf::toString() const {
   std::stringstream ret;
   ret << "nodes " << theNodesPath << ", links " << theLinksPath << ", edges "
       << theEdgesPath << ", tasks " << theTasksPath << ", " << theNumFunctions
-      << " lambda functions, " << theNumJobs << " jobs, ops factor "
-      << theOpsFactor << ", arg factor " << theArgFactor << ", state factor "
-      << theStateFactor;
+      << " lambda functions, " << theNumJobs << " jobs, cloud latency "
+      << (theCloudLatency * 1e3) << " ms, cloud rate " << theCloudRate
+      << " Mb/s, ops factor " << theOpsFactor << ", arg factor " << theArgFactor
+      << ", state factor " << theStateFactor;
   return ret.str();
 }
 
@@ -77,11 +78,20 @@ void Simulation::Worker::operator()() {
       assert(myId < theSimulation.theDesc.size());
       auto& myDesc = theSimulation.theDesc[myId];
 
-      myDesc.theScenario->allocateTasks(myDesc.theAllocPolicy);
-      myDesc.thePerformanceData =
-          myDesc.theScenario->performance(myDesc.theExecPolicy);
-
-      theSimulation.theQueueOut.push(myId);
+      auto myExceptionThrow = true;
+      try {
+        myDesc.theScenario->allocateTasks(myDesc.theAllocPolicy);
+        myDesc.thePerformanceData =
+            myDesc.theScenario->performance(myDesc.theExecPolicy);
+        myExceptionThrow = false;
+      } catch (const std::exception& aErr) {
+        LOG(ERROR) << "exception caught (" << aErr.what()
+                   << ") when running: " << myDesc.toString();
+      } catch (...) {
+        LOG(ERROR) << "unknown exception caught when running: "
+                   << myDesc.toString();
+      }
+      theSimulation.theQueueOut.push(not myExceptionThrow);
 
     } catch (const support::QueueClosed&) {
       myTerminated = true;
@@ -132,6 +142,9 @@ void Simulation::run(const Conf&                  aConf,
   // load network from files
   const auto myNetwork = std::make_shared<Network>(
       aConf.theNodesPath, aConf.theLinksPath, aConf.theEdgesPath);
+
+  // set the cloud parameters of the network
+  myNetwork->cloud(aConf.theCloudLatency, aConf.theCloudRate);
 
   // determine relative proportion of affinities
   std::map<Affinity, double> myAffinityWeights;
@@ -206,7 +219,11 @@ void Simulation::run(const Conf&                  aConf,
 
   // wait for all the simulations to terminate
   while (myDescCounter > 0) {
-    theQueueOut.pop();
+    const auto myGood = theQueueOut.pop();
+    if (not myGood) {
+      LOG(ERROR) << "bailing out because of exceptions thrown";
+      return;
+    }
     myDescCounter--;
   }
   if (not aConf.theOutfile.empty()) {

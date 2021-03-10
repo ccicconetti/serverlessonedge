@@ -86,6 +86,10 @@ class Simulation final
     const size_t theNumFunctions;
     //! Number of jobs per replication
     const size_t theNumJobs;
+    //! Latency to access the cloud, in s.
+    const double theCloudLatency;
+    //! Transmission rate towards the cloud, in Mb/s.
+    const double theCloudRate;
     //! The multiplier factor for the number of operations (tasks).
     const double theOpsFactor;
     //! The multiplier factor for the argument sizes (tasks).
@@ -135,7 +139,7 @@ class Simulation final
   const size_t                theNumThreads;
   support::ThreadPool<Worker> theWorkers;
   support::Queue<size_t>      theQueueIn;
-  support::Queue<size_t>      theQueueOut;
+  support::Queue<bool>        theQueueOut;
   std::vector<Desc>           theDesc;
 };
 
