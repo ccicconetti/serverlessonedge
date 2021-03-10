@@ -99,7 +99,8 @@ Network::Network(const std::string& aNodesPath,
     , theClients()
     , theProcessing()
     , theGraph()
-    , theCache() {
+    , theCache()
+    , theCentral(nullptr) {
   // read from files
   Counter<int> myCounter;
   auto         myNodes     = loadNodes(aNodesPath, myCounter);
@@ -177,8 +178,8 @@ Network::Network(const std::set<Node>&                               aNodes,
     , theClients()
     , theProcessing()
     , theGraph()
-    , theCache() {
-
+    , theCache()
+    , theCentral(nullptr) {
   // fill theNodes, theLinks, theClients, and theProcessing making sure that
   // names and numeric identifiers are unique
   std::set<size_t> myIds;
@@ -338,9 +339,12 @@ size_t Network::hops(const Node& aSrc, const Node& aDst) {
 }
 
 Node* Network::central() {
+  if (theCentral != nullptr) {
+    return theCentral;
+  }
+
   const size_t        N = 1000;
   std::vector<double> myTxTimes(theProcessing.size());
-  Node*               ret = nullptr;
   double              myLastWorst;
   for (const auto myCandidate : theProcessing) {
     size_t i = 0;
@@ -349,12 +353,12 @@ Node* Network::central() {
                                 txTime(*myTarget, *myCandidate, N));
     }
     const auto myWorst = *std::max_element(myTxTimes.begin(), myTxTimes.end());
-    if (ret == nullptr or myWorst < myLastWorst) {
+    if (theCentral == nullptr or myWorst < myLastWorst) {
       myLastWorst = myWorst;
-      ret         = myCandidate;
+      theCentral  = myCandidate;
     }
   }
-  return ret;
+  return theCentral;
 }
 
 size_t Network::id(const std::string& aName) const {

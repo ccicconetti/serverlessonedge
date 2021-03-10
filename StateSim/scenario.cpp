@@ -338,17 +338,36 @@ PerformanceData Scenario::performance(const ExecPolicy aPolicy) const {
               execStatsOneWay(0, myJob.retSize(), *myNode, *myClient));
         }
 
-      } else if (aPolicy == ExecPolicy::UnchainedExternal) {
+      } else if (aPolicy == ExecPolicy::UnchainedExternal or
+                 aPolicy == ExecPolicy::UnchainedInEdge or
+                 aPolicy == ExecPolicy::UnchainedInFunction) {
 
-      } else if (aPolicy == ExecPolicy::UnchainedInEdge) {
-
-      } else if (aPolicy == ExecPolicy::UnchainedInFunction) {
         myExecStat.merge(execStatsTwoWay(
             myTask.ops(),
             myTask.size(),
             myNextTask == nullptr ? myJob.retSize() : myNextTask->size(),
             *myClient,
             *myNode));
+
+        // add state retrieve/update, if needed
+        const auto myStateSize  = stateSize(myJob, myTask, false);
+        Node*      myRepository = nullptr;
+        if (aPolicy == ExecPolicy::UnchainedExternal) {
+          // repository is the cloud node
+          // myRepository = theNetwork->cloud();
+        } else if (aPolicy == ExecPolicy::UnchainedInEdge) {
+          // repository is the central node in the network
+          myRepository = theNetwork->central();
+        } else {
+          // repository is in the same processing node => no data transfer
+          assert(aPolicy == ExecPolicy::UnchainedInFunction);
+          assert(myRepository == nullptr);
+        }
+
+        if (myRepository != nullptr) {
+          myExecStat.merge(execStatsTwoWay(
+              0, myStateSize, myStateSize, *myClient, *myRepository));
+        }
 
       } else if (aPolicy == ExecPolicy::UnchainedInClient) {
         std::tie(myInSize, myOutSize) = allStatesArgSizes(myJob, myTask, false);
@@ -392,16 +411,17 @@ std::pair<double, double> Scenario::execTimeNew(const size_t aOps,
 PerformanceData::Job Scenario::execStatsTwoWay(const size_t aOps,
                                                const size_t aInSize,
                                                const size_t aOutSize,
-                                               const Node&  aTarget,
-                                               const Node&  aNode) const {
-  assert(aNode.id() < theLoad.size());
-  assert(theLoad[aNode.id()] > 0);
+                                               const Node&  aOrigin,
+                                               const Node&  aTarget) const {
+  assert(aOps == 0 or aTarget.id() < theLoad.size());
+  assert(aOps == 0 or theLoad[aTarget.id()] > 0);
 
-  const auto myProcTime = aOps / (aNode.speed() / theLoad[aNode.id()]);
-  const auto myTxTime   = theNetwork->txTime(aTarget, aNode, aInSize) +
-                        theNetwork->txTime(aNode, aTarget, aOutSize);
-  const auto myDataTransferred = theNetwork->hops(aTarget, aNode) * aInSize +
-                                 theNetwork->hops(aNode, aTarget) * aOutSize;
+  const auto myProcTime =
+      aOps == 0 ? 0 : (aOps / (aTarget.speed() / theLoad[aTarget.id()]));
+  const auto myTxTime = theNetwork->txTime(aOrigin, aTarget, aInSize) +
+                        theNetwork->txTime(aTarget, aOrigin, aOutSize);
+  const auto myDataTransferred = theNetwork->hops(aOrigin, aTarget) * aInSize +
+                                 theNetwork->hops(aTarget, aOrigin) * aOutSize;
 
   return PerformanceData::Job(myProcTime, myTxTime, myDataTransferred, 0);
 }
@@ -455,12 +475,9 @@ std::vector<Node*> Scenario::randomClients(const size_t                aNumJobs,
   return ret;
 }
 
-std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
-                                                      const Task& aTask,
-                                                      const bool  aAll) {
-  // size of the states (if any)
+size_t
+Scenario::stateSize(const Job& aJob, const Task& aTask, const bool aAll) {
   size_t myStateSize = 0;
-
   if (aAll) {
     // all the states of the job
     for (const auto mySize : aJob.stateSizes()) {
@@ -473,6 +490,14 @@ std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
       myStateSize += aJob.stateSizes()[myStateId];
     }
   }
+  return myStateSize;
+}
+
+std::pair<size_t, size_t> Scenario::allStatesArgSizes(const Job&  aJob,
+                                                      const Task& aTask,
+                                                      const bool  aAll) {
+  // size of the states (if any)
+  const auto myStateSize = stateSize(aJob, aTask, aAll);
 
   // size of the input argument and return value, including state size
   const auto myInSize = myStateSize + aTask.size();

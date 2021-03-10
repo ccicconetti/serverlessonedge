@@ -170,6 +170,9 @@ class Network
   //
   // lazy-initialized as needed
   Cache theCache;
+
+  // central node (lazy-initialized)
+  Node* theCentral;
 }; // namespace statesim
 
 std::vector<Node> loadNodes(const std::string& aPath, Counter<int>& aCounter);

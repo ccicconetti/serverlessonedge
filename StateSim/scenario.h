@@ -248,6 +248,13 @@ class Scenario
                                           std::default_random_engine& aRng);
 
   /**
+   * \return if aAll is true, then return the sum of all the
+   *        job states, otherwise return the sum of only the states that the
+   *        task depends on
+   */
+  static size_t stateSize(const Job& aJob, const Task& aTask, const bool aAll);
+
+  /**
    * \return the sum of all the job states and the input vs. output of a task.
    *
    * \param aJob the job to which the task belongs
