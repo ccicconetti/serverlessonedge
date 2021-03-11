@@ -33,7 +33,9 @@ SOFTWARE.
 #include "Support/chrono.h"
 #include "Support/glograii.h"
 
+#include <boost/algorithm/string/join.hpp>
 #include <boost/program_options.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
 #include <glog/logging.h>
 
@@ -65,6 +67,17 @@ int main(int argc, char* argv[]) {
   std::string myAllocPolicies;
   std::string myExecPolicies;
   size_t      myNumThreads;
+
+  const auto myAllAllocPolicies = boost::algorithm::join(
+      ss::allAllocPolicies() |
+          boost::adaptors::transformed(
+              [](const auto aValue) { return ss::toString(aValue); }),
+      ", ");
+  const auto myAllExecPolicies = boost::algorithm::join(
+      ss::allExecPolicies() |
+          boost::adaptors::transformed(
+              [](const auto aValue) { return ss::toString(aValue); }),
+      ", ");
 
   po::options_description myDesc("Allowed options");
   // clang-format off
@@ -115,11 +128,15 @@ int main(int argc, char* argv[]) {
     ("alloc-policies",
      po::value<std::string>(&myAllocPolicies)->default_value(
        ss::toString(*ss::allAllocPolicies().begin())),
-     "The comma-separated list of allocation policies.")
+     std::string("The comma-separated list of allocation policies, "
+                 "possible values are: ").
+                 append(myAllAllocPolicies).append(".").c_str())
     ("exec-policies",
      po::value<std::string>(&myExecPolicies)->default_value(
        ss::toString(*ss::allExecPolicies().begin())),
-     "The comma-separated list of execution policies.")
+     std::string("The comma-separated list of execution policies, "
+                 "possible values are: ").
+                 append(myAllExecPolicies).append(".").c_str())
     ("num-threads",
      po::value<size_t>(&myNumThreads)->default_value(
        std::max(1u,
