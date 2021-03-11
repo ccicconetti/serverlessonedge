@@ -15,7 +15,7 @@ mkdir results 2> /dev/null
 
 echo "per chain size results"
 for net in $net_values ; do
-  for apolicy in $apolicy_vlues ; do
+  for apolicy in $apolicy_values ; do
     for epolicy in $epolicy_values ; do
       for jobs in $jobs_values ; do
         echo -n "."
@@ -34,7 +34,7 @@ echo "done"
 
 echo "increasing number of jobs results"
 for net in $net_values ; do
-  for apolicy in $apolicy_vlues ; do
+  for apolicy in $apolicy_values ; do
     for epolicy in $epolicy_values ; do
       mangleout="net=$net.apolicy=$apolicy.epolicy=$epolicy"
       rm -f data/tmp*
