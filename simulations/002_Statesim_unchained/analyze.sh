@@ -1,27 +1,28 @@
 #!/bin/bash
 
-ops_values="10000 100000 1000000"
-jobs_values="50 150 300 500"
+jobs_values="100 200 300 400 500"
 net_values="urban_sensing iiot"
-policy_values="PureFaaS StatePropagate StateLocal"
+apolicy_values="ProcOnly ProcNet"
+epolicy_values="UnchainedExternal UnchainedInEdge UnchainedInFunction UnchainedInClient"
 metric_values="proclat netlat traffic"
 seed_first=1
 seed_last=200
 quantile_values="0.5 0.9 0.95 0.99"
+ops=100000
 mem=1000000
 
 mkdir results 2> /dev/null
 
 echo "per chain size results"
-for ops in $ops_values ; do
-  for net in $net_values ; do
-    for policy in $policy_values ; do
+for net in $net_values ; do
+  for apolicy in $apolicy_values ; do
+    for epolicy in $epolicy_values ; do
       for jobs in $jobs_values ; do
         echo -n "."
-        mangledir="net=$net.ops=$ops.jobs=$jobs"
-        manglefile="alloc=$policy.exec=$policy"
+        mangledir="net=$net.jobs=$jobs"
+        manglefile="alloc=$apolicy.exec=$epolicy"
         cat data/$mangledir/job-$manglefile.seed=* | ./per_chain_size.py
-        mangleout="net=$net.opts=$ops.policy=$policy.jobs=$jobs"
+        mangleout="net=$net.apolicy=$apolicy.epolicy=$epolicy.jobs=$jobs"
         for metric in $metric_values ; do
           mv $metric.dat results/pcs-$metric.$mangleout
         done
@@ -32,15 +33,15 @@ done
 echo "done"
 
 echo "increasing number of jobs results"
-for ops in $ops_values ; do
-  for net in $net_values ; do
-    for policy in $policy_values ; do
-      mangleout="net=$net.opts=$ops.policy=$policy"
+for net in $net_values ; do
+  for apolicy in $apolicy_values ; do
+    for epolicy in $epolicy_values ; do
+      mangleout="net=$net.apolicy=$apolicy.epolicy=$epolicy"
       rm -f data/tmp*
       for jobs in $jobs_values ; do
         echo -n "."
-        mangledir="net=$net.ops=$ops.jobs=$jobs"
-        manglefile="alloc=$policy.exec=$policy"
+        mangledir="net=$net.jobs=$jobs"
+        manglefile="alloc=$apolicy.exec=$epolicy"
         for (( seed = $seed_first ; seed < $seed_last ; seed++ )) ; do
           filename="data/$mangledir/job-$manglefile.seed=$seed"
           for (( col = 1 ; col <= 3 ; col++ )) ; do

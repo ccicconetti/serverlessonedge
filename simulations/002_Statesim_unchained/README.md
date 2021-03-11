@@ -1,20 +1,20 @@
-# Simulation 000
+# Simulation 002
 
 Simulations of execution of stateless vs. stateful chains of functions with variable:
 
 - topology: IIoT vs. urban sensing
 - load, in number of jobs
-- scale factor for the number of operations
-- policies: PureFaaS vs. StatePropagate vs. StateLocal
+- allocation policies: processing only vs. processing+network
+- execution policies: all unchained versions currently implemented
 
 # Dependencies
 
 ## statesim
 
-Check-out v1.1.0:
+Check-out v1.1.1:
 
 ```
-git checkout v1.1.0
+git checkout v1.1.1
 ```
 
 See build instructions in the main repository `README.md`.
@@ -23,19 +23,15 @@ At the and of the procedure copy or symlink the `statesim` executable to the cur
 
 ## spar
 
-https://github.com/All-less/trace-generator
+The source code of `spar` is available at [this repository](https://github.com/All-less/trace-generator), but you can install it in a virtual environment with [pip](https://pypi.org/project/pip/). Assuming that you have pip installed and Python 3.x, just issue:
 
 ```
-virtualenv spar 
+virtualenv -p /usr/bin/python3 spar
 source  spar/bin/activate
 pip install spar
 ```
 
-or download git repo and follow instructions:
-
-```
-git clone https://github.com/All-less/trace-generator.git
-```
+where you have to change `/usr/bin/python3` to the path of _your_ Python 3.x executable.
 
 Assuming that there is a Python virtual environment called `spar` in the simulation directory, run the following script to generate a 1-hour long trace of tasks:
 
@@ -66,13 +62,14 @@ First check that you have all dependencies installed. This includes:
 Then run the following commands to execute the full set of simulations:
 
 ```
-mkdir data
 NTHREADS=5 ./run.sh
 ```
 
 If you want to change the number of concurrent threads used, you can specify a different number for `NTHREADS`.
 
-The execution will produce its output in the directory `data`.
+The execution will produce its output in the directory `data`, which will be created by `statesim` if not existing.
+
+If you want to obtain the list of the commands that will be run, without actually running them, prepend `DRY=1` to the command above.
 
 ## Post-processing
 
