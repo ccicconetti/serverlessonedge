@@ -69,7 +69,7 @@ class EdgeClientMulti final : public EdgeClientInterface
     MOVEONLY(MessageIn);
 
     //! Empty message for terminating.
-    MessageIn()
+    explicit MessageIn()
         : theRequest(nullptr)
         , theDry(false) {
       // nihil
@@ -81,7 +81,7 @@ class EdgeClientMulti final : public EdgeClientInterface
      *
      * \pre aRequest is not null.
      */
-    MessageIn(const LambdaRequest* aRequest, const bool aDry)
+    explicit MessageIn(const LambdaRequest* aRequest, const bool aDry)
         : theRequest(aRequest)
         , theDry(aDry) {
       assert(aRequest != nullptr);
@@ -100,7 +100,7 @@ class EdgeClientMulti final : public EdgeClientInterface
     MOVEONLY(MessageOut);
 
     //! Empty message for terminating.
-    MessageOut(const size_t aIndex)
+    explicit MessageOut(const size_t aIndex)
         : theIndex(aIndex)
         , theResponse(nullptr) {
     }
@@ -111,7 +111,8 @@ class EdgeClientMulti final : public EdgeClientInterface
      *
      * \pre aResponse is not null.
      */
-    MessageOut(const size_t aIndex, std::unique_ptr<LambdaResponse>&& aResponse)
+    explicit MessageOut(const size_t                      aIndex,
+                        std::unique_ptr<LambdaResponse>&& aResponse)
         : theIndex(aIndex)
         , theResponse(std::move(aResponse)) {
       assert(theResponse);

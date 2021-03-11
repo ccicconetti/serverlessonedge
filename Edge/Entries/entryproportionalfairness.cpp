@@ -1,9 +1,40 @@
-#include "entryproportionalfairness.h"
+/*
+              __ __ __
+             |__|__|  | __
+             |  |  |  ||__|
+  ___ ___ __ |  |  |  |
+ |   |   |  ||  |  |  |    Ubiquitous Internet @ IIT-CNR
+ |   |   |  ||  |  |  |    C++ edge computing libraries and tools
+ |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
+
+Licensed under the MIT License <http://opensource.org/licenses/MIT>
+Copyright (c) 2021 C. Cicconetti <https://ccicconetti.github.io/>
+
+Permission is hereby  granted, free of charge, to any  person obtaining a copy
+of this software and associated  documentation files (the "Software"), to deal
+in the Software  without restriction, including without  limitation the rights
+to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#include "Edge/Entries/entryproportionalfairness.h"
 
 #include "Edge/forwardingtableexceptions.h"
+
 #include <algorithm>
 #include <cassert>
-#include <glog/logging.h>
 
 namespace uiiit {
 namespace edge {
@@ -26,30 +57,25 @@ std::string EntryProportionalFairness::operator()() {
     throw NoDestinations();
   }
 
-  std::string theScheduledDestination;
-  auto        theMaxWeight = 0.f, itWeight = 0.f;
+  std::string ret;
+  float       myMaxWeight;
   const auto  myNow = theChrono.time();
 
   for (auto it = theDestinations.begin(); it != theDestinations.end(); ++it) {
-    
     auto destinationStatsIt = thePFstats.find((*it).theDestination);
     assert(destinationStatsIt != thePFstats.end());
 
-    /**
-     * TODO: itWeight is write-only:
-     * is it better to compute it twice or to compute it once and store it in
-     * a variable?
-     */
-    itWeight = computeWeight((*it).theWeight,
-                             (*destinationStatsIt).second.first,
-                             (*destinationStatsIt).second.second,
-                             myNow);
-    if (itWeight > theMaxWeight) {
-      theMaxWeight            = itWeight;
-      theScheduledDestination = (*it).theDestination;
+    const auto myCurWeight = computeWeight((*it).theWeight,
+                                           (*destinationStatsIt).second.first,
+                                           (*destinationStatsIt).second.second,
+                                           myNow);
+    if (ret.empty() or myCurWeight > myMaxWeight) {
+      myMaxWeight = myCurWeight;
+      ret         = (*it).theDestination;
     }
   }
-  return theScheduledDestination;
+
+  return ret;
 }
 
 /**
@@ -70,20 +96,14 @@ float EntryProportionalFairness::computeWeight(float  experiencedLatency,
  * this function only updates thePFstats (theLambdaServedCount and the
  * Timestamp) of the destination which has served the LambdaRequest
  */
-void EntryProportionalFairness::updateWeight(const std::string& aDest,
-                                             const float        aOldWeight,
-                                             const float        aNewWeight) {
-  LOG(INFO) << "EntryPF.updateWeight" << '\n';
-  std::ignore = aOldWeight;
-  std::ignore = aNewWeight;
-
+void EntryProportionalFairness::updateWeight(
+    const std::string&           aDest,
+    [[maybe_unused]] const float aOldWeight,
+    [[maybe_unused]] const float aNewWeight) {
   const auto myNow = theChrono.time();
   auto       it    = thePFstats.find(aDest);
-
   assert(it != thePFstats.end());
-
-  (*it).second.first += 1;     // theLambdaServedCount update
-  (*it).second.second = myNow; // theTimestamp update
+  it->second = {it->second.first + 1, myNow};
   printPFstats();
 }
 
@@ -93,10 +113,8 @@ void EntryProportionalFairness::updateWeight(const std::string& aDest,
  * otherwise a "division by 0" exception is thrown during the computation of its
  * weight in the functional operator (invoked by the EdgeRouter.destination).
  */
-void EntryProportionalFairness::updateAddDest(const std::string& aDest,
-                                              const float        aWeight) {
-  LOG(INFO) << "EntryPF.updateAddDest" << '\n';
-  std::ignore = aWeight;
+void EntryProportionalFairness::updateAddDest(
+    const std::string& aDest, [[maybe_unused]] const float aWeight) {
   thePFstats.insert({aDest, std::make_pair(1, theChrono.time())});
   printPFstats();
 }
@@ -105,11 +123,9 @@ void EntryProportionalFairness::updateAddDest(const std::string& aDest,
  * this function only updates thePFstats data structure deleting the detination
  * removed in theDestination data structure.
  */
-void EntryProportionalFairness::updateDelDest(const std::string& aDest,
-                                              const float        aWeight) {
-  LOG(INFO) << "EntryPF.updateDelDest" << '\n';
-  std::ignore = aWeight;
-  auto it     = thePFstats.find(aDest);
+void EntryProportionalFairness::updateDelDest(
+    const std::string& aDest, [[maybe_unused]] const float aWeight) {
+  auto it = thePFstats.find(aDest);
   assert(it != thePFstats.end());
   thePFstats.erase(it);
   printPFstats();
