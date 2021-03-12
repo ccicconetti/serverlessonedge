@@ -67,6 +67,14 @@ The ServerlessOnEdge framework has been evaluated extensively in an emulated env
 
 The scenarios used, together with the scripts for setting up the environment and post-processing the results, are available, see the [experiments page](experiments/README.md).
 
+## Code quality
+
+The source code is written in C++-17.
+The master branch is subject to a continuous integration process supervised by a Jenkins service running in the [Ubiquitous Internet research group](http://cnd.iit.cnr.it/) infrastructure, which verifies zero-warning compilation with GNU gcc 7.5.0 and LLVM clang 10.0.0, as well as the absence of warnings by [cppcheck v2.3](http://cppcheck.sourceforge.net/).
+The source code is formatted automatically with clang-format-10 using the `.clang-format` schema shipped in this repository.
+Unit tests with [GoogleTest](https://github.com/google/googletest) are provided for all the core components, though we do not aim at full coverage.
+Despite all our efforts, it is possible that the software contains bugs, has performance issues, and exposes security flaws: _this code is intended for experimentation purposes only and it should never be used in a production system_.
+
 ## StateSim
 
 The repository also includes a stand-alone simulator of the execution/network latency of chain of stateful invocations in an edge network, check the [StateSim page](StateSim/README.md) for more details.
