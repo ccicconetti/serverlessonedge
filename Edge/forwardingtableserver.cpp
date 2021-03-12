@@ -42,17 +42,16 @@ namespace uiiit {
 namespace edge {
 
 ForwardingTableServer::ForwardingTableServerImpl::ForwardingTableServerImpl(
-    std::vector<ForwardingTableInterface*> aTables)
+    const std::vector<ForwardingTableInterface*>& aTables)
     : theTables(aTables) {
 }
 
 grpc::Status ForwardingTableServer::ForwardingTableServerImpl::Configure(
-    grpc::ServerContext*       aContext,
-    const rpc::EdgeRouterConf* aReq,
-    rpc::Return*               aRep) {
+    [[maybe_unused]] grpc::ServerContext* aContext,
+    const rpc::EdgeRouterConf*            aReq,
+    rpc::Return*                          aRep) {
   assert(aReq);
   assert(aRep);
-  std::ignore = aContext;
 
   try {
     if (aReq->action() == uiiit::rpc::EdgeRouterConf::FLUSH) {
@@ -106,12 +105,11 @@ grpc::Status ForwardingTableServer::ForwardingTableServerImpl::Configure(
 }
 
 grpc::Status ForwardingTableServer::ForwardingTableServerImpl::GetTable(
-    grpc::ServerContext*  aContext,
-    const rpc::TableId*   aReq,
-    rpc::ForwardingTable* aRep) {
+    [[maybe_unused]] grpc::ServerContext* aContext,
+    const rpc::TableId*                   aReq,
+    rpc::ForwardingTable*                 aRep) {
   assert(aReq);
   assert(aRep);
-  std::ignore = aContext;
 
   const auto myTableId = aReq->value();
 
@@ -139,12 +137,11 @@ grpc::Status ForwardingTableServer::ForwardingTableServerImpl::GetTable(
 }
 
 grpc::Status ForwardingTableServer::ForwardingTableServerImpl::GetNumTables(
-    grpc::ServerContext* aContext,
-    const rpc::Void*     aReq,
-    rpc::NumTables*      aRep) {
+    [[maybe_unused]] grpc::ServerContext* aContext,
+    const rpc::Void*                      aReq,
+    rpc::NumTables*                       aRep) {
   assert(aReq);
   assert(aRep);
-  std::ignore = aContext;
 
   aRep->set_value(theTables.size());
 
@@ -173,9 +170,8 @@ ForwardingTableServer::ForwardingTableServer(
     : SimpleServer(aServerEndpoint)
     , theServerImpl(aTables) {
   assert(not aTables.empty());
-  for (const auto elem : aTables) {
+  for ([[maybe_unused]] const auto elem : aTables) {
     assert(elem != nullptr);
-    std::ignore = elem;
   }
 }
 

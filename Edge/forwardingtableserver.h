@@ -49,7 +49,7 @@ class ForwardingTableServer final : public rpc::SimpleServer
   {
    public:
     explicit ForwardingTableServerImpl(
-        std::vector<ForwardingTableInterface*> aTables);
+        const std::vector<ForwardingTableInterface*>& aTables);
 
    private:
     grpc::Status Configure(grpc::ServerContext*       aContext,

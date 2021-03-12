@@ -525,7 +525,7 @@ TEST_F(TestStateSim, test_alloc_policies) {
 
   const auto myPolicies = allocPoliciesFromList(myList);
 
-  ASSERT_EQ(allAllocPolicies(), myPolicies);
+  ASSERT_TRUE(allAllocPolicies() == myPolicies);
 }
 
 TEST_F(TestStateSim, test_exec_policies) {
@@ -543,7 +543,7 @@ TEST_F(TestStateSim, test_exec_policies) {
 
   const auto myPolicies = execPoliciesFromList(myList);
 
-  ASSERT_EQ(allExecPolicies(), myPolicies);
+  ASSERT_TRUE(allExecPolicies() == myPolicies);
 }
 
 TEST_F(TestStateSim, test_scenario) {

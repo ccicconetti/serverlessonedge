@@ -111,17 +111,14 @@ int main(int argc, char* argv[]) {
       for (auto i = 0u; i < myClient.numTables(); i++) {
         for (const auto& myEntry : myClient.table(i)) {
           auto& myDestinations = myUpdated[myEntry.first];
-          for (const auto& myDestination : myEntry.second) {
-            if (myDestinations.insert(myDestination.first).second) {
+          for (const auto& myPair : myEntry.second) {
+            if (myDestinations.insert(myPair.first).second) {
               VLOG(1) << "Updating weight of lambda " << myEntry.first
-                      << " with "
-                      << (myDestination.second.second ? "final " : "")
-                      << "destination " << myDestination.first << " from "
-                      << myDestination.second.first << " to 1.0";
-              myClient.change(myEntry.first,
-                              myDestination.first,
-                              1.0,
-                              myDestination.second.second);
+                      << " with " << (myPair.second.second ? "final " : "")
+                      << "destination " << myPair.first << " from "
+                      << myPair.second.first << " to 1.0";
+              myClient.change(
+                  myEntry.first, myPair.first, 1.0, myPair.second.second);
             }
           }
         }

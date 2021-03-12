@@ -111,9 +111,7 @@ void PtimeEstimator::remove(const std::string& aLambda,
 void PtimeEstimator::internalRemove(const std::string& aLambda,
                                     const std::string& aDest) {
   ASSERT_IS_LOCKED(theMutex);
-
-  assert((theLambdas.find(aLambda) == theLambdas.end()) ==
-         (theTable.find(aLambda) == theTable.end()));
+  assertConsistency(aLambda);
 
   auto it = theTable.find(aLambda);
 
@@ -134,9 +132,7 @@ void PtimeEstimator::internalRemove(const std::string& aLambda,
 
 void PtimeEstimator::remove(const std::string& aLambda) {
   const std::lock_guard<std::mutex> myLock(theMutex);
-
-  assert((theLambdas.find(aLambda) == theLambdas.end()) ==
-         (theTable.find(aLambda) == theTable.end()));
+  assertConsistency(aLambda);
 
   const auto it = theTable.find(aLambda);
   if (it != theTable.end()) {
@@ -188,6 +184,14 @@ PtimeEstimator::Type ptimeEstimatorTypeFromString(const std::string& aType) {
 
 size_t PtimeEstimator::size(const rpc::LambdaRequest& aReq) {
   return std::max(aReq.datain().size(), aReq.input().size());
+}
+
+void PtimeEstimator::assertConsistency(const std::string& aLambda) const {
+  [[maybe_unused]] const auto myEmptyLambdas =
+      theLambdas.find(aLambda) == theLambdas.end();
+  [[maybe_unused]] const auto myEmptyTable =
+      theTable.find(aLambda) == theTable.end();
+  assert(myEmptyLambdas == myEmptyTable);
 }
 
 } // namespace edge

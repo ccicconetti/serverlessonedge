@@ -164,6 +164,8 @@ class PtimeEstimator : public ForwardingTableInterface
   virtual void privateRemove(const std::string& aLambda,
                              const std::string& aDestination) = 0;
 
+  void assertConsistency(const std::string& aLambda) const;
+
  protected:
   const Type            theType;
   mutable std::mutex    theMutex;

@@ -41,7 +41,11 @@ EdgeLambdaProcessorOptions::EdgeLambdaProcessorOptions(
     : support::CliOptions(argc, argv, aDesc)
     , theServerEndpoint()
     , theControllerEndpoint()
-    , theNumThreads() {
+    , theNumThreads()
+    , theForwardingEndpoint()
+    , theRouterConf()
+    , theFakeNumLambdas(0)
+    , theFakeNumDestinations(0) {
   // clang-format off
   theDesc.add_options()
   ("server-endpoint",
@@ -56,12 +60,13 @@ EdgeLambdaProcessorOptions::EdgeLambdaProcessorOptions(
    boost::program_options::value<size_t>(&theNumThreads)
      ->default_value(5),
    "Number of threads spawned in the edge router.")
-
   ("configuration-endpoint",
-   boost::program_options::value<std::string>(&theForwardingEndpoint)->default_value("0.0.0.0:6474"),
+   boost::program_options::value<std::string>(&theForwardingEndpoint)
+     ->default_value("0.0.0.0:6474"),
    "Forwarding table configuration end-point.")
   ("router-conf",
-   boost::program_options::value<std::string>(&theRouterConf)->default_value(EdgeLambdaProcessor::defaultConf()),
+   boost::program_options::value<std::string>(&theRouterConf)
+     ->default_value(EdgeLambdaProcessor::defaultConf()),
    "Comma-separated configuration of the edge router.")
   ("fake-num-lambdas",
    boost::program_options::value<size_t>(&theFakeNumLambdas)

@@ -65,21 +65,21 @@ detect(uiiit::edge::EdgeClientInterface& aClient,
   uiiit::support::Chrono myChrono(true);
 
   // send lambda request to edge computing domain for face recognition
-  const auto myResp = aClient.RunLambda(
+  const auto myRespFaces = aClient.RunLambda(
       uiiit::edge::LambdaRequest(aLambdaFaces, "", myImgString), false);
 
   // exit immediately if there were errors
-  if (myResp.theRetCode != "OK") {
-    throw std::runtime_error("error: " + myResp.theRetCode);
+  if (myRespFaces.theRetCode != "OK") {
+    throw std::runtime_error("error: " + myRespFaces.theRetCode);
   }
 
-  VLOG(1) << "face recognition: " << toString(myResp) << ", elapsed "
+  VLOG(1) << "face recognition: " << toString(myRespFaces) << ", elapsed "
           << (1e3 * myChrono.time() + 0.5) << " ms";
 
   // read the rectangles delimiting faces in the image
-  auto myJson = json::parse(myResp.theOutput);
+  auto myJsonFaces = json::parse(myRespFaces.theOutput);
 
-  for (const auto& myRect : myJson["objects"]) {
+  for (const auto& myRect : myJsonFaces["objects"]) {
     aFaces.push_back(Rect(static_cast<int>(myRect["x"]),
                           static_cast<int>(myRect["y"]),
                           static_cast<int>(myRect["w"]),
@@ -93,27 +93,27 @@ detect(uiiit::edge::EdgeClientInterface& aClient,
       // send a lambda request for each face detected
       uiiit::edge::LambdaRequest myReq(
           aLambdaEyes, "", toJpgString(aImg(myFace)));
-      const auto myResp = aClient.RunLambda(myReq, false);
+      const auto myRespEyes = aClient.RunLambda(myReq, false);
 
       // exit immediately if there were errors
-      if (myResp.theRetCode != "OK") {
-        throw std::runtime_error("error: " + myResp.theRetCode);
+      if (myRespEyes.theRetCode != "OK") {
+        throw std::runtime_error("error: " + myRespEyes.theRetCode);
       }
 
-      VLOG(1) << "eyes recognition: " << toString(myResp) << ", elapsed "
+      VLOG(1) << "eyes recognition: " << toString(myRespEyes) << ", elapsed "
               << (1e3 * myChrono.time() + 0.5) << " ms";
 
       // read the rectangles delimiting eyes in the faces
-      auto myJson = json::parse(myResp.theOutput);
+      auto myJsonEyes = json::parse(myRespEyes.theOutput);
 
       // detect normal faces (ie. with two eyes)
-      if (not aNormal or myJson["objects"].size() == 2) {
+      if (not aNormal or myJsonEyes["objects"].size() == 2) {
         myNewFaces.push_back(myFace);
       } else {
         continue;
       }
 
-      for (const auto& myRect : myJson["objects"]) {
+      for (const auto& myRect : myJsonEyes["objects"]) {
         aEyes.push_back(Rect(myFace.x + static_cast<int>(myRect["x"]),
                              myFace.y + static_cast<int>(myRect["y"]),
                              static_cast<int>(myRect["w"]),
@@ -123,7 +123,7 @@ detect(uiiit::edge::EdgeClientInterface& aClient,
     aFaces.swap(myNewFaces);
   }
 
-  return std::make_pair(myChrono.stop(), myResp.theLoad1);
+  return std::make_pair(myChrono.stop(), myRespFaces.theLoad1);
 }
 
 } // namespace cv

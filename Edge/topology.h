@@ -43,13 +43,13 @@ namespace uiiit {
 namespace edge {
 
 struct InvalidNode final : public std::runtime_error {
-  InvalidNode(const std::string& aName)
+  explicit InvalidNode(const std::string& aName)
       : std::runtime_error("Invalid or unknown node '" + aName + "'") {
   }
 };
 
 struct InvalidTopologyFile final : public std::runtime_error {
-  InvalidTopologyFile(const std::string& aName)
+  explicit InvalidTopologyFile(const std::string& aName)
       : std::runtime_error("Invalid or non-existing topology file '" + aName +
                            "'") {
   }

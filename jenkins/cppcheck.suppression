@@ -1,4 +1,5 @@
-compareBoolExpressionWithInt:../etsimec/Executables/ueapplcmproxyclientmain.cpp
-multiCondition:../etsimec/rest/support/Support/histogram.cpp
-multiCondition:../etsimec/rest/support/Support/histogram.cpp
 useStlAlgorithm:*
+*:../Quic/hqserver.cpp
+constParameter:../etsimec/EtsiMec/appinfo.cpp
+constParameter:../etsimec/rest/Rest/utils.cpp
+unknownMacro:../etsimec/rest/support/RpcSupport/simpleserver.h

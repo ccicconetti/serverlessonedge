@@ -230,8 +230,7 @@ bool UtilEstimator::add(const std::string& aLambda,
         aDestination, std::make_unique<ComputerDescriptor>(theLoadTimeout));
     assert(myAdded);
   }
-  assert(it != theComputers.end());
-  assert(it->second != nullptr);
+  assert(it != theComputers.end() and it->second != nullptr);
   it->second->theLambdas.insert(aLambda);
   return theTable.add(aLambda, aDestination);
 }

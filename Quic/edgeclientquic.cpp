@@ -160,12 +160,16 @@ class InsecureVerifierDangerousDoNotUseInProduction
 
 EdgeClientQuic::EdgeClientQuic(const HQParams& aQuicParamsConf)
     : EdgeClientInterface()
-    , theQuicParamsConf(aQuicParamsConf) {
-  VLOG(1) << "EdgeClientQuic::ctor";
+    , theQuicParamsConf(aQuicParamsConf)
+    , theQuicClientEvbThread()
+    , theQuicClient(nullptr)
+    , theEvb()
+    , theSession(nullptr)
+    , theHttpPaths() {
+  // noop
 }
 
 EdgeClientQuic::~EdgeClientQuic() {
-  VLOG(1) << "EdgeClientQuic::dtor";
   if (!theHttpPaths.empty()) {
     theSession->drain();
     theSession->closeWhenIdle();

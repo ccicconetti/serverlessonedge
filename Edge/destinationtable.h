@@ -207,7 +207,7 @@ bool DestinationTable<TYPE>::add(const std::string& aLambda,
 
   assert(it != theDescriptors.end());
 
-  auto jt = it->second.find(aDestination);
+  [[maybe_unused]] auto jt = it->second.find(aDestination);
   if (jt == it->second.end()) {
     const auto ret = it->second.emplace(
         std::make_pair(aDestination, theCtorFunc(aLambda, aDestination)));
