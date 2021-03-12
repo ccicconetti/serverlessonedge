@@ -58,7 +58,7 @@ std::string EntryProportionalFairness::operator()() {
   }
 
   std::string ret;
-  float       myMaxWeight;
+  float       myMaxWeight = 0;
   const auto  myNow = theChrono.time();
 
   for (auto it = theDestinations.begin(); it != theDestinations.end(); ++it) {
