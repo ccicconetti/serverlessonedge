@@ -71,6 +71,14 @@ The execution will produce its output in the directory `data`, which will be cre
 
 If you want to obtain the list of the commands that will be run, without actually running them, prepend `DRY=1` to the command above.
 
+## Downloading the raw results without running the experiments
+
+The raw results are also available for download:
+
+```
+wget http://turig.iit.cnr.it/~claudio/public/soe-sim-results-002.tgz
+```
+
 ## Post-processing
 
 First make sure the scripts in `scripts/` are in the system `$PATH`, e.g., go to the root of the repository and run:
@@ -97,5 +105,7 @@ Every file produced has four columns:
 - column 4: the top of the 95% conf interval of the values on the y-axis
 
 The meaning of the x- and y-axis values depend on the file and can be inferred from its name.
+
+## Visualization
 
 A selection of plots can be produced by entering the directory `graphs` and executing the corresponding scripts with [Gnuplot](http://www.gnuplot.info/).

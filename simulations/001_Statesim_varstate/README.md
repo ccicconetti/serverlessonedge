@@ -10,10 +10,10 @@ Simulations of execution of stateless vs. stateful chains of functions with vari
 
 ## statesim
 
-Check-out v1.1.0:
+Check-out v1.1.1:
 
 ```
-git checkout v1.1.0
+git checkout v1.1.1
 ```
 
 See build instructions in the main repository `README.md`.
@@ -72,6 +72,14 @@ NTHREADS=5 ./run.sh
 If you want to change the number of concurrent threads used, you can specify a different number for `NTHREADS`.
 
 The execution will produce its output in the directory `data`.
+
+## Downloading the raw results without running the experiments
+
+The raw results are also available for download:
+
+```
+wget http://turig.iit.cnr.it/~claudio/public/soe-sim-results-001.tgz
+```
 
 ## Post-processing
 
