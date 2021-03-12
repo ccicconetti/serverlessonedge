@@ -2,7 +2,6 @@
 
 net_values="urban_sensing iiot"
 state_values="125000 250000 500000 1000000 2000000 4000000 8000000"
-
 jobs=250
 ops=100000
 mem=1000000
