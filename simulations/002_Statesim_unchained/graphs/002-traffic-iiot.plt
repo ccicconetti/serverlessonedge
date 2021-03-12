@@ -48,7 +48,7 @@ set theta counterclockwise right
 set style parallel front  lt black linewidth 2.000 dashtype solid
 set key title "" center
 set key bmargin horizontal center
-set key noinvert samplen 4 spacing 1 width 0 height 0 
+set key noinvert samplen 4 spacing 1 width 0 height 1
 set key maxcolumns 0 maxrows 0
 set key noopaque
 unset label
