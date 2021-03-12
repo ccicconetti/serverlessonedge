@@ -27,6 +27,8 @@ for state in $state_values ; do
       --links network/$net.0.links \
       --edges network/$net.0.edges \
       --tasks tasks/batch_task.csv \
+      --alloc-policies ProcNet \
+      --exec-policies PureFaaS,StatePropagate,StateLocal \
       --ops-factor $ops \
       --arg-factor $mem \
       --state-factor $state \

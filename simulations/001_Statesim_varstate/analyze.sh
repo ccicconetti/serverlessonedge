@@ -20,7 +20,7 @@ for net in $net_values ; do
     for state in $state_values ; do
       echo -n "."
       mangledir="net=$net.state=$state"
-      manglefile="alloc=$policy.exec=$policy"
+      manglefile="alloc=ProcNet.exec=$policy"
       cat data/$mangledir/job-$manglefile.seed=* | ./per_chain_size.py
       mangleout="net=$net.policy=$policy.state=$state"
       for metric in $metric_values ; do
@@ -39,7 +39,7 @@ for net in $net_values ; do
     for state in $state_values ; do
       echo -n "."
       mangledir="net=$net.state=$state"
-      manglefile="alloc=$policy.exec=$policy"
+      manglefile="alloc=ProcNet.exec=$policy"
       for (( seed = $seed_first ; seed < $seed_last ; seed++ )) ; do
         filename="data/$mangledir/job-$manglefile.seed=$seed"
         for (( col = 1 ; col <= 3 ; col++ )) ; do
