@@ -133,7 +133,7 @@ set ylabel "Average network traffic (MB)"
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
-set yrange [ 0 : 16 ] noreverse nowriteback
+set yrange [ 0 : 30 ] noreverse nowriteback
 set y2range [ * : * ] noreverse nowriteback
 set zlabel "" 
 set zlabel  font "" textcolor lt -1 norotate

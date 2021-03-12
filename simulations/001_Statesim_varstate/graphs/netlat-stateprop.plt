@@ -134,7 +134,7 @@ set ylabel "Network latency ratio StateLocal/StateProp"
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
-set yrange [ 1 : 2 ] noreverse nowriteback
+set yrange [ 1 : * ] noreverse nowriteback
 set y2range [ * : * ] noreverse nowriteback
 set zlabel "" 
 set zlabel  font "" textcolor lt -1 norotate

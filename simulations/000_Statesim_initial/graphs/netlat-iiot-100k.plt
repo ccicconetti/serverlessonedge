@@ -106,6 +106,7 @@ set xtics border in scale 1,0.5 mirror norotate  autojustify
 set xtics  norangelimit autofreq 
 set ytics border in scale 1,0.5 mirror norotate  autojustify
 set ytics  norangelimit autofreq 
+set ytics 100
 set ztics border in scale 1,0.5 nomirror norotate  autojustify
 set ztics  norangelimit autofreq 
 unset x2tics
@@ -133,7 +134,7 @@ set ylabel "Network latency (ms)"
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
-set yrange [ * : * ] noreverse nowriteback
+set yrange [ * : 600 ] noreverse nowriteback
 set y2range [ * : * ] noreverse nowriteback
 set zlabel "" 
 set zlabel  font "" textcolor lt -1 norotate
