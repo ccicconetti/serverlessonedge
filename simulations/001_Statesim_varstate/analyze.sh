@@ -45,9 +45,9 @@ for net in $net_values ; do
         for (( col = 1 ; col <= 3 ; col++ )) ; do
           ret=$(percentile.py --col $col --quantiles $quantile_values --mean < $filename)
           for quantile in $quantile_values ; do
-            echo "$jobs $(grep ^"$quantile " <<< $ret | cut -f 2 -d ' ')" >> data/tmp.$col.q=$quantile.$seed
+            echo "$state $(grep ^"$quantile " <<< $ret | cut -f 2 -d ' ')" >> data/tmp.$col.q=$quantile.$seed
           done
-          echo "$jobs $(grep "+-" <<< $ret | cut -f 1 -d ' ')" >> data/tmp.$col.mean.$seed
+          echo "$state $(grep "+-" <<< $ret | cut -f 1 -d ' ')" >> data/tmp.$col.mean.$seed
         done
       done
     done
