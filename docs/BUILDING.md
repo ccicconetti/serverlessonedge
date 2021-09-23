@@ -13,7 +13,7 @@ git submodule update --init --recursive
 3. Compile (assuming `g++` is your preferred compiler):
 
 ```
-cd etsimec/build/debug
+cd build/debug
 ../build.sh g++
 make
 ```
