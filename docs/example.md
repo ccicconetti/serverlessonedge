@@ -17,7 +17,7 @@ First, launch the controller, which will listen to `6475`:
 Then launch the two edge computers (with default characteristics, which creates two lambda functions `clambda0` and `glambda0` executed on containers with different CPU speed) and connect them to the controller:
 
 ```
-./edgecomputer --server 127.0.0.1:10000 \
+./edgecomputer --server-endpoint 127.0.0.1:10000 \
                --utilization 127.0.0.1:20000 \
                --controller 127.0.0.1:6475
 ```
@@ -25,7 +25,7 @@ Then launch the two edge computers (with default characteristics, which creates 
 and
 
 ```
-./edgecomputer --server 127.0.0.1:10001 \
+./edgecomputer --server-endpoint 127.0.0.1:10001 \
                --utilization 127.0.0.1:20001 \
                --controller 127.0.0.1:6475
 ```
@@ -33,18 +33,18 @@ and
 Then launch the edge router and connect it to the controller, as well:
 
 ```
-./edgerouter --server 127.0.0.1:6473 \
-			   --configuration 127.0.0.1:6474 \
-			   --controller 127.0.0.1:6475
+./edgerouter --server-endpoint 127.0.0.1:6473 \
+             --configuration 127.0.0.1:6474 \
+             --controller 127.0.0.1:6475
 ```
 
 At this point the system is up and ready and accepts execution of lambda functions both directly on the edge computer (if issues to end-points on port 10000 or 10001) and on the edge router (at port 6473). We then launch a client and ask to execute 10 tymes the same function `clambda0` with size 10000 bytes every second:
 
 ```
 ./edgeclient --lambda clambda0 \
-		      --server 127.0.0.1:6473 \
-		      --inter-request-time 1 \
-		      --max-requests 5
+             --server 127.0.0.1:6473 \
+             --inter-request-time 1 \
+             --max-requests 5
 ```
 
 An example of output is the following:
