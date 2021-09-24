@@ -51,6 +51,7 @@ set key fixed left top horizontal Left noreverse enhanced autotitle nobox
 set key noinvert samplen 4 spacing 1 width 0 height 0 
 set key maxcolumns 3 maxrows 0
 set key noopaque
+set key width -3
 unset label
 unset arrow
 set style increment default
