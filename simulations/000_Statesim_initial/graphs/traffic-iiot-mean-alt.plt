@@ -49,7 +49,7 @@ set style parallel front  lt black linewidth 2.000 dashtype solid
 set key title "" center
 set key fixed left top horizontal Left noreverse enhanced autotitle nobox
 set key noinvert samplen 4 spacing 1 width 0 height 0 
-set key maxcolumns 2 maxrows 0
+set key maxcolumns 3 maxrows 0
 set key noopaque
 unset label
 unset arrow
@@ -129,11 +129,11 @@ set x2label ""
 set x2label  font "" textcolor lt -1 norotate
 set xrange [ * : * ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback
-set ylabel "Average network traffic: PureFaaS/StateLocal"
+set ylabel "Average network traffic (MB)"
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
-set yrange [ * : * ] noreverse nowriteback
+set yrange [ 0 : 30 ] noreverse nowriteback
 set y2range [ * : * ] noreverse nowriteback
 set zlabel "" 
 set zlabel  font "" textcolor lt -1 norotate
@@ -167,10 +167,17 @@ set psdir
 set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap v5
 GNUTERM = "wxt"
 plot \
- '< paste ../results/traffic-net=iiot.opts=10000.policy=PureFaaS.mean.dat ../results/traffic-net=iiot.opts=10000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 4 lt 1 lc 1 title "Light/StateLocal",\
- '< paste ../results/traffic-net=iiot.opts=100000.policy=PureFaaS.mean.dat ../results/traffic-net=iiot.opts=100000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 6 lt 1 lc 1 title "Medium/StateLocal",\
- '< paste ../results/traffic-net=iiot.opts=1000000.policy=PureFaaS.mean.dat ../results/traffic-net=iiot.opts=1000000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 8 lt 1 lc 1 title "High/StateLocal",\
- '< paste ../results/traffic-net=iiot.opts=10000.policy=PureFaaS.mean.dat ../results/traffic-net=iiot.opts=10000.policy=StatePropagate.mean.dat' u 1:($2/$6) w lp pt 5 lt 1 lc 1 title "Light/StateProp",\
- '< paste ../results/traffic-net=iiot.opts=100000.policy=PureFaaS.mean.dat ../results/traffic-net=iiot.opts=100000.policy=StatePropagate.mean.dat' u 1:($2/$6) w lp pt 7 lt 1 lc 1 title "Medium/StateProp",\
- '< paste ../results/traffic-net=iiot.opts=1000000.policy=PureFaaS.mean.dat ../results/traffic-net=iiot.opts=1000000.policy=StatePropagate.mean.dat' u 1:($2/$6) w lp pt 9 lt 1 lc 1 title "High/StateProp"
+ '../results/traffic-net=iiot.opts=10000.policy=PureFaaS.mean.dat' u 1:($2*1e-6) w l notitle lt 1 lc 1,\
+ '../results/traffic-net=iiot.opts=1000000.policy=PureFaaS.mean.dat' u 1:($2*1e-6) w l notitle lt 1 lc 1,\
+ '../results/traffic-net=iiot.opts=10000.policy=StatePropagate.mean.dat' u 1:($2*1e-6) w l notitle lt 1 lc 1,\
+ '../results/traffic-net=iiot.opts=1000000.policy=StatePropagate.mean.dat' u 1:($2*1e-6) w l notitle lt 1 lc 1,\
+ '../results/traffic-net=iiot.opts=10000.policy=StateLocal.mean.dat' u 1:($2*1e-6) w l notitle lt 1 lc 1,\
+ '../results/traffic-net=iiot.opts=1000000.policy=StateLocal.mean.dat' u 1:($2*1e-6) w l notitle lt 1 lc 1,\
+ \
+ '../results/traffic-net=iiot.opts=10000.policy=PureFaaS.mean.dat' u 1:($2*1e-6):($3*1e-6):($4*1e-6) w yerrorbars title "Light/PureFaaS" lt 1 pt 4,\
+ '../results/traffic-net=iiot.opts=1000000.policy=PureFaaS.mean.dat' u 1:($2*1e-6):($3*1e-6):($4*1e-6) w yerrorbars title "High/PureFaaS" lt 1 pt 5,\
+ '../results/traffic-net=iiot.opts=10000.policy=StatePropagate.mean.dat' u 1:($2*1e-6):($3*1e-6):($4*1e-6) w yerrorbars title "Light/StateProp" lt 1 pt 6,\
+ '../results/traffic-net=iiot.opts=1000000.policy=StatePropagate.mean.dat' u 1:($2*1e-6):($3*1e-6):($4*1e-6) w yerrorbars title "High/StateProp" lt 1 pt 7,\
+ '../results/traffic-net=iiot.opts=10000.policy=StateLocal.mean.dat' u 1:($2*1e-6):($3*1e-6):($4*1e-6) w yerrorbars title "Light/StateLocal" lt 1 pt 8,\
+ '../results/traffic-net=iiot.opts=1000000.policy=StateLocal.mean.dat' u 1:($2*1e-6):($3*1e-6):($4*1e-6) w yerrorbars title "High/StateLocal" lt 1 pt 9
 #    EOF

@@ -49,7 +49,7 @@ set style parallel front  lt black linewidth 2.000 dashtype solid
 set key title "" center
 set key fixed left top horizontal Left noreverse enhanced autotitle nobox
 set key noinvert samplen 4 spacing 1 width 0 height 0 
-set key maxcolumns 3 maxrows 0
+set key maxcolumns 2 maxrows 0
 set key noopaque
 unset label
 unset arrow
@@ -133,7 +133,7 @@ set ylabel "Average network traffic: PureFaaS/StateLocal"
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
-set yrange [ 1.5 : 3 ] noreverse nowriteback
+set yrange [ * : * ] noreverse nowriteback
 set y2range [ * : * ] noreverse nowriteback
 set zlabel "" 
 set zlabel  font "" textcolor lt -1 norotate
@@ -167,7 +167,10 @@ set psdir
 set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap v5
 GNUTERM = "wxt"
 plot \
- '< paste ../results/traffic-net=urban_sensing.opts=10000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=10000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 4 lt 1 lc 1 title "Light",\
- '< paste ../results/traffic-net=urban_sensing.opts=100000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=100000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 6 lt 1 lc 1 title "Medium",\
- '< paste ../results/traffic-net=urban_sensing.opts=1000000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=1000000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 8 lt 1 lc 1 title "High"
+ '< paste ../results/traffic-net=urban_sensing.opts=10000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=10000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 4 lt 1 lc 1 title "Light/StateLocal",\
+ '< paste ../results/traffic-net=urban_sensing.opts=100000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=100000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 6 lt 1 lc 1 title "Medium/StateLocal",\
+ '< paste ../results/traffic-net=urban_sensing.opts=1000000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=1000000.policy=StateLocal.mean.dat' u 1:($2/$6) w lp pt 8 lt 1 lc 1 title "High/StateLocal",\
+ '< paste ../results/traffic-net=urban_sensing.opts=10000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=10000.policy=StatePropagate.mean.dat' u 1:($2/$6) w lp pt 5 lt 1 lc 1 title "Light/StateProp",\
+ '< paste ../results/traffic-net=urban_sensing.opts=100000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=100000.policy=StatePropagate.mean.dat' u 1:($2/$6) w lp pt 7 lt 1 lc 1 title "Medium/StateProp",\
+ '< paste ../results/traffic-net=urban_sensing.opts=1000000.policy=PureFaaS.mean.dat ../results/traffic-net=urban_sensing.opts=1000000.policy=StatePropagate.mean.dat' u 1:($2/$6) w lp pt 9 lt 1 lc 1 title "High/StateProp"
 #    EOF
