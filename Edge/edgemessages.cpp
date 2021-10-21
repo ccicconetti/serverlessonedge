@@ -37,18 +37,39 @@ namespace uiiit {
 namespace edge {
 
 ////////////////////////////////////////////////////////////////////////////////
+// State
+////////////////////////////////////////////////////////////////////////////////
+
+State::State(const rpc::State& aState)
+    : theContent(aState.content()) {
+  // noop
+}
+
+rpc::State State::toProtobuf() const {
+  rpc::State ret;
+  ret.set_content(theContent);
+  return ret;
+}
+
+bool State::operator==(const State& aOther) const {
+  return theContent == aOther.theContent;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // LambdaRequest
 ////////////////////////////////////////////////////////////////////////////////
 
 LambdaRequest::LambdaRequest(const std::string& aName,
                              const std::string& aInput)
     : LambdaRequest(aName, aInput, std::string(), false, 0) {
+  // noop
 }
 
 LambdaRequest::LambdaRequest(const std::string& aName,
                              const std::string& aInput,
                              const std::string& aDataIn)
     : LambdaRequest(aName, aInput, aDataIn, false, 0) {
+  // noop
 }
 
 LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
@@ -56,7 +77,15 @@ LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
     , theInput(aMsg.input())
     , theDataIn(aMsg.datain())
     , theForward(true)
-    , theHops(aMsg.hops()) {
+    , theHops(aMsg.hops())
+    , theStates(deserializeStates(aMsg)) {
+  // noop
+}
+
+bool LambdaRequest::operator==(const LambdaRequest& aOther) const {
+  return theName == aOther.theName and theInput == aOther.theInput and
+         theDataIn == aOther.theDataIn /* and theForward == aOther.theForward */
+         and theHops == aOther.theHops and theStates == aOther.theStates;
 }
 
 rpc::LambdaRequest LambdaRequest::toProtobuf() const {
@@ -66,6 +95,7 @@ rpc::LambdaRequest LambdaRequest::toProtobuf() const {
   myRet.set_datain(theDataIn);
   myRet.set_forward(theForward);
   myRet.set_hops(theHops);
+  serializeStates(*myRet.mutable_states(), theStates);
   return myRet;
 }
 
@@ -78,7 +108,8 @@ LambdaRequest::LambdaRequest(const std::string& aName,
     , theInput(aInput)
     , theDataIn(aDataIn)
     , theForward(aForward)
-    , theHops(aHops) {
+    , theHops(aHops)
+    , theStates() {
 }
 
 LambdaRequest LambdaRequest::makeOneMoreHop() const {
@@ -91,6 +122,17 @@ std::string LambdaRequest::toString() const {
            << (theForward ? "from edge node" : "from edge client")
            << ", hops: " << theHops << ", input: " << theInput
            << ", datain size: " << theDataIn.size();
+  if (not theStates.empty()) {
+    myStream << ", states: [";
+    for (auto it = theStates.cbegin(); it != theStates.end(); ++it) {
+      if (it != theStates.cbegin()) {
+        myStream << ", ";
+      }
+      myStream << it->first << " (" << it->second.theContent.size()
+               << " bytes)";
+    }
+    myStream << "]";
+  }
   return myStream.str();
 }
 
@@ -101,6 +143,7 @@ std::string LambdaRequest::toString() const {
 LambdaResponse::LambdaResponse(const std::string& aRetCode,
                                const std::string& aOutput)
     : LambdaResponse(aRetCode, aOutput, {{0.0, 0.0, 0.0}}) {
+  // noop
 }
 
 LambdaResponse::LambdaResponse(const std::string&           aRetCode,
@@ -114,7 +157,9 @@ LambdaResponse::LambdaResponse(const std::string&           aRetCode,
     , theLoad1(0.5 + aLoads[0] * 100)
     , theLoad10(0.5 + aLoads[1] * 100)
     , theLoad30(0.5 + aLoads[2] * 100)
-    , theHops(0) {
+    , theHops(0)
+    , theStates() {
+  // noop
 }
 
 LambdaResponse::LambdaResponse(const rpc::LambdaResponse& aMsg)
@@ -126,7 +171,18 @@ LambdaResponse::LambdaResponse(const rpc::LambdaResponse& aMsg)
     , theLoad1(aMsg.load1())
     , theLoad10(aMsg.load10())
     , theLoad30(aMsg.load30())
-    , theHops(aMsg.hops()) {
+    , theHops(aMsg.hops())
+    , theStates(deserializeStates(aMsg)) {
+  // noop
+}
+
+bool LambdaResponse::operator==(const LambdaResponse& aOther) const {
+  return theRetCode == aOther.theRetCode and theOutput == aOther.theOutput and
+         theResponder == aOther.theResponder and
+         theProcessingTime == aOther.theProcessingTime and
+         theDataOut == aOther.theDataOut and theLoad1 == aOther.theLoad1 and
+         theLoad10 == aOther.theLoad10 and theLoad30 == aOther.theLoad30 and
+         theHops == aOther.theHops and theStates == aOther.theStates;
 }
 
 rpc::LambdaResponse LambdaResponse::toProtobuf() const {
@@ -140,6 +196,7 @@ rpc::LambdaResponse LambdaResponse::toProtobuf() const {
   myRet.set_load10(theLoad10);
   myRet.set_load30(theLoad30);
   myRet.set_hops(theHops);
+  serializeStates(*myRet.mutable_states(), theStates);
   return myRet;
 }
 
@@ -150,6 +207,17 @@ std::string LambdaResponse::toString() const {
            << ", hops: " << theHops << ", load: " << theLoad1 << "/"
            << theLoad10 << "/" << theLoad30 << ", output: " << theOutput
            << ", dataout size: " << theDataOut.size();
+  if (not theStates.empty()) {
+    myStream << ", states: [";
+    for (auto it = theStates.cbegin(); it != theStates.end(); ++it) {
+      if (it != theStates.cbegin()) {
+        myStream << ", ";
+      }
+      myStream << it->first << " (" << it->second.theContent.size()
+               << " bytes)";
+    }
+    myStream << "]";
+  }
   return myStream.str();
 }
 

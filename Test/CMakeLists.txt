@@ -48,6 +48,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrolleretsibalanced.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrollerflat.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrollerhier.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testedgemessages.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testetsitransaction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testforwardingtable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambda.cpp

@@ -7,6 +7,11 @@ service EdgeServer {
   rpc RunLambda (LambdaRequest) returns (LambdaResponse) {}
 }
 
+// application's state
+message State {
+  bytes content = 1;
+}
+
 message LambdaRequest {
   // name of the remote procedure to be executed
   // should never be empty
@@ -29,6 +34,9 @@ message LambdaRequest {
 
   // number of edge nodes traversed so far
   uint32 hops    = 6;
+
+  // map of application's states, accessed by their names
+  map<string, State> states = 7;
 }
 
 message LambdaResponse {
@@ -65,4 +73,7 @@ message LambdaResponse {
 
   // number of edge nodes traversed so far
   uint32 hops      = 9;
+
+  // map of application's states, accessed by their names
+  map<string, State> states = 10;
 }

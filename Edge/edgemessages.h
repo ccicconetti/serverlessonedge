@@ -40,9 +40,31 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
+//! An application's state.
+struct State {
+  //! Create with given content.
+  explicit State(const std::string& aContent)
+      : theContent(aContent) {
+    // noop
+  }
+
+  //! Create from protobuf.
+  explicit State(const rpc::State& aState);
+
+  //! \return a serialized protobuf message.
+  rpc::State toProtobuf() const;
+
+  //! \return true if the states are identical.
+  bool operator==(const State& aOther) const;
+
+  //! The content of this state.
+  std::string theContent;
+};
+
+//! A function request, with arguments and possibly also embeddeding states.
 struct LambdaRequest {
   /**
-   * Create a lambda request with text input only.
+   * Create a lambda request with text input only and no states.
    *
    * \param aName lambda function name.
    * \param aInput function input (text).
@@ -51,7 +73,7 @@ struct LambdaRequest {
    */
   explicit LambdaRequest(const std::string& aName, const std::string& aInput);
   /**
-   * Create a lambda request with text and data input only.
+   * Create a lambda request with text and data input only and no states.
    *
    * \param aName lambda function name.
    * \param aInput function input (text); can be empty.
@@ -69,17 +91,28 @@ struct LambdaRequest {
    */
   explicit LambdaRequest(const rpc::LambdaRequest& aMsg);
 
-  //! Create a lambda request identical to the input with +1 hops.
+  //! \return true if the messages are identical except for the forward flag.
+  bool operator==(const LambdaRequest& aOther) const;
+
+  //! \return a lambda request identical to the input with +1 hops.
   LambdaRequest makeOneMoreHop() const;
 
-  rpc::LambdaRequest toProtobuf() const;
-  std::string        toString() const;
+  //! \return the application' states.
+  std::map<std::string, State>& states() {
+    return theStates;
+  }
 
-  const std::string  theName;
-  const std::string  theInput;
-  const std::string  theDataIn;
-  const bool         theForward;
-  const unsigned int theHops;
+  //! \return the protobuf-encoded message.
+  rpc::LambdaRequest toProtobuf() const;
+  //! \return a human-readable representation of the request.
+  std::string toString() const;
+
+  const std::string            theName;
+  const std::string            theInput;
+  const std::string            theDataIn;
+  const bool                   theForward;
+  const unsigned int           theHops;
+  std::map<std::string, State> theStates;
 
  private:
   explicit LambdaRequest(const std::string& aName,
@@ -89,6 +122,7 @@ struct LambdaRequest {
                          const unsigned int aHops);
 };
 
+//! A function return, possibly also embeddeding states.
 struct LambdaResponse {
   explicit LambdaResponse(const std::string& aRetCode,
                           const std::string& aOutput);
@@ -97,21 +131,50 @@ struct LambdaResponse {
                           const std::array<double, 3>& aLoads);
   explicit LambdaResponse(const rpc::LambdaResponse& aMsg);
 
-  rpc::LambdaResponse toProtobuf() const;
-  std::string         toString() const;
+  //! \return true if the messages are identical.
+  bool operator==(const LambdaResponse& aOther) const;
 
+  //! \return the processing time, in fractional seconds.
   double processingTimeSeconds() const noexcept;
 
-  const std::string theRetCode;
-  const std::string theOutput;
-  std::string       theResponder;
-  unsigned int      theProcessingTime;
-  std::string       theDataOut;
-  unsigned short    theLoad1;
-  unsigned short    theLoad10;
-  unsigned short    theLoad30;
-  unsigned int      theHops;
+  //! \return the application' states.
+  std::map<std::string, State>& states() {
+    return theStates;
+  }
+
+  //! \return the protobuf-encoded message.
+  rpc::LambdaResponse toProtobuf() const;
+  //! \return a human-readable representation of the request.
+  std::string toString() const;
+
+  const std::string            theRetCode;
+  const std::string            theOutput;
+  std::string                  theResponder;
+  unsigned int                 theProcessingTime;
+  std::string                  theDataOut;
+  unsigned short               theLoad1;
+  unsigned short               theLoad10;
+  unsigned short               theLoad30;
+  unsigned int                 theHops;
+  std::map<std::string, State> theStates;
 };
+
+// free functions
+template <class Message>
+std::map<std::string, State> deserializeStates(const Message& aMessage) {
+  std::map<std::string, State> ret;
+  for (const auto& elem : aMessage.states()) {
+    ret.emplace(elem.first, State(elem.second));
+  }
+  return ret;
+}
+
+template <class Map>
+void serializeStates(Map& aMap, const std::map<std::string, State>& aStates) {
+  for (const auto& elem : aStates) {
+    aMap.insert({elem.first, elem.second.toProtobuf()});
+  }
+}
 
 } // namespace edge
 } // namespace uiiit
