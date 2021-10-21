@@ -39,6 +39,7 @@ endif()
 
 add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/trivialedgecontrollerinstaller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testchain.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomputer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomposer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcontainer.cpp
