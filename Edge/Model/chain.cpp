@@ -33,7 +33,6 @@ SOFTWARE.
 
 #include <nlohmann/json.hpp>
 
-#include <set>
 #include <stdexcept>
 
 using json = nlohmann::json;
@@ -66,6 +65,32 @@ bool Chain::operator==(const Chain& aOther) const {
          theDependencies == aOther.theDependencies;
 }
 
+std::set<std::string> Chain::uniqueFunctions() const {
+  std::set<std::string> ret;
+  for (const auto& myFunction : theFunctions) {
+    ret.insert(myFunction);
+  }
+  return ret;
+}
+
+Chain::Functions Chain::functions() const {
+  return theFunctions;
+}
+
+Chain::Dependencies Chain::dependencies() const {
+  return theDependencies;
+}
+
+std::set<std::string> Chain::states(const bool aIncludeFreeStates) const {
+  std::set<std::string> ret;
+  for (const auto& elem : theDependencies) {
+    if (aIncludeFreeStates or not elem.second.empty()) {
+      ret.insert(elem.first);
+    }
+  }
+  return ret;
+}
+
 Chain Chain::fromJson(const std::string& aJson) {
   const auto   myJson = json::parse(aJson);
   Functions    myFunctions(myJson["functions"]);
@@ -95,6 +120,28 @@ std::string Chain::toJson() const {
   }
   return ret.dump(2);
 }
+
+Chain exampleChain() {
+  return Chain({"f1", "f2", "f1"},
+               {
+                   {
+                       "s0",
+                       {"f1"},
+                   },
+                   {
+                       "s1",
+                       {"f1", "f2"},
+                   },
+                   {
+                       "s2",
+                       {"f2"},
+                   },
+                   {
+                       "s3",
+                       {},
+                   },
+               });
+};
 
 } // namespace model
 } // namespace edge

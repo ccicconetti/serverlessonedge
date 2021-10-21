@@ -34,6 +34,7 @@ SOFTWARE.
 #include "Support/macros.h"
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -68,6 +69,25 @@ class Chain final
   //! @return true if the chains are the same.
   bool operator==(const Chain& aOther) const;
 
+  //! @return the set of unique function names in the chain.
+  std::set<std::string> uniqueFunctions() const;
+
+  //! @return the chain of functions.
+  Functions functions() const;
+
+  //! @return the state dependencies.
+  Dependencies dependencies() const;
+
+  /**
+   * @brief Return the states.
+   *
+   * @param aIncludeFreeStates if true then also include the states with no
+   * dependencies
+   *
+   * @return the states
+   */
+  std::set<std::string> states(const bool aIncludeFreeStates) const;
+
   /**
    * @brief Create a chain from a JSON-encoded string.
    *
@@ -86,6 +106,11 @@ class Chain final
   const Functions    theFunctions;
   const Dependencies theDependencies;
 };
+
+// free functions
+
+//! @return an example chain.
+Chain exampleChain();
 
 } // namespace model
 } // namespace edge
