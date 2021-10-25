@@ -50,7 +50,10 @@ namespace model {
 class Chain final
 {
  public:
-  using Functions    = std::vector<std::string>;
+  using Functions = std::vector<std::string>;
+
+  // key: state name
+  // value: vector of the names of function that depend on the state
   using Dependencies = std::map<std::string, std::vector<std::string>>;
 
   /**
@@ -69,31 +72,37 @@ class Chain final
   //! @return true if the chains are the same.
   bool operator==(const Chain& aOther) const;
 
+  //! @return the chain name obtained as a mangle of the functions.
+  std::string name() const;
+
   //! @return the set of unique function names in the chain.
   std::set<std::string> uniqueFunctions() const;
 
   //! @return the chain of functions.
-  Functions functions() const;
+  const Functions& functions() const;
 
   //! @return the state dependencies.
-  Dependencies dependencies() const;
+  const Dependencies& dependencies() const;
 
   /**
    * @brief Return the states.
    *
    * @param aIncludeFreeStates if true then also include the states with no
-   * dependencies
+   * dependencies.
    *
-   * @return the states
+   * @return the states of the chain.
    */
-  std::set<std::string> states(const bool aIncludeFreeStates) const;
+  std::set<std::string> allStates(const bool aIncludeFreeStates) const;
+
+  //! @return the states that this function requires.
+  std::set<std::string> states(const std::string& aFunction) const;
 
   /**
    * @brief Create a chain from a JSON-encoded string.
    *
-   * @param aJson The JSON-encoded string
+   * @param aJson The JSON-encoded string.
    *
-   * @return the newly created Chain
+   * @return the newly created Chain.
    *
    * @throw std::runtime_error if the JSON has invalid or inconsistent text.
    */

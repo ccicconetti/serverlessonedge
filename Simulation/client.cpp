@@ -36,6 +36,7 @@ SOFTWARE.
 #include "Edge/edgemessages.h"
 #include "Support/saver.h"
 #include "Support/stat.h"
+#include "Support/tostring.h"
 
 #include <glog/logging.h>
 
@@ -59,6 +60,7 @@ Client::Client(const size_t                 aSeedUser,
     , theExitCondition()
     , theStopFlag(false)
     , theFinishedFlag(false)
+    , theNotStartedFlag(true)
     , theLambdaChrono(false)
     , theClient(edge::EdgeClientFactory::make(aServers, aClientConf))
     , theNumRequests(aNumRequests)
@@ -69,7 +71,16 @@ Client::Client(const size_t                 aSeedUser,
     , theDry(aDry)
     , theSizeDist()
     , theSizes()
+    , theChain(nullptr)
+    , theStates()
     , theContent() {
+  LOG(INFO) << "created a client with seed (" << aSeedUser << "," << aSeedInc
+            << "), which will send max " << aNumRequests << " requests to "
+            << toString(aServers, ",") << ", "
+            << (aLambda.empty() ?
+                    std::string("function chain mode") :
+                    (std::string("single function mode (") + aLambda + ")"))
+            << (aDry ? ", dry run" : "");
 }
 
 Client::~Client() {
@@ -77,6 +88,10 @@ Client::~Client() {
 }
 
 void Client::operator()() {
+  if (theNotStartedFlag == false) {
+    throw std::runtime_error("client started multiple times");
+  }
+  theNotStartedFlag = false;
   try {
     for (size_t myCounter = 0; myCounter < theNumRequests; /* incr in body */) {
       {
@@ -103,8 +118,78 @@ void Client::finish() {
   theExitCondition.notify_one();
 }
 
+std::unique_ptr<edge::LambdaResponse>
+Client::singleExecution(const std::string& aInput) {
+  assert(theChain.get() == nullptr);
+
+  edge::LambdaRequest myReq(theLambda, aInput);
+  auto                myResp = theClient->RunLambda(myReq, theDry);
+  return std::make_unique<edge::LambdaResponse>(std::move(myResp));
+}
+
+std::unique_ptr<edge::LambdaResponse>
+Client::functionChain(const std::string& aInput) {
+  assert(theLambda.empty());
+  if (theChain.get() == nullptr) {
+    throw std::runtime_error("uninitialized function chain");
+  }
+
+  std::string                           myInput = aInput;
+  std::string                           myDataIn;
+  std::unique_ptr<edge::LambdaResponse> myResp(nullptr);
+  unsigned int                          myHops  = 0;
+  unsigned int                          myPtime = 0;
+  for (const auto& myFunction : theChain->functions()) {
+    // create a request and fill it with the states needed by the function
+    edge::LambdaRequest myReq(myFunction, myInput, myDataIn);
+    for (const auto& myState : theChain->states(myFunction)) {
+      const auto it = theStates.find(myState);
+      assert(it != theStates.end());
+      myReq.states().emplace(myState, edge::State(it->second));
+    }
+
+    // run the lambda function
+    myResp = std::make_unique<edge::LambdaResponse>(
+        theClient->RunLambda(myReq, theDry));
+
+    // return immediately upon failure
+    assert(myResp.get() != nullptr);
+    VLOG(2) << *myResp;
+    if (myResp->theRetCode != "OK") {
+      break;
+    }
+
+    // use the return value to fill the next input
+    myInput  = myResp->theOutput;
+    myDataIn = myResp->theDataOut;
+
+    // sum the hops and processing time
+    myHops += myResp->theHops;
+    myPtime += myResp->theProcessingTime;
+  }
+
+  // remove the states (if any) from the return to the caller
+  myResp->states().clear();
+
+  // if the number of functions is greater than 2, remove some
+  // fields that are not meaningful
+  if (theChain->functions().size() > 1) {
+    myResp->theResponder.clear();
+    myResp->theLoad1          = 0;
+    myResp->theLoad10         = 0;
+    myResp->theLoad30         = 0;
+    myResp->theHops           = myHops;
+    myResp->theProcessingTime = myPtime;
+  }
+
+  return myResp;
+}
+
 void Client::stop() {
   std::unique_lock<std::mutex> myLock(theMutex);
+  if (theNotStartedFlag) {
+    return;
+  }
   theStopFlag = true;
   theSleepCondition.notify_one();
   theExitCondition.wait(myLock, [this]() { return theFinishedFlag; });
@@ -128,37 +213,45 @@ void Client::sendRequest(const size_t aSize) {
             theContent;
   }
 
-  edge::LambdaRequest myReq(theLambda, myContent);
-
+  // execute the main loop depending on the operating mode
   theLambdaChrono.start();
-  const auto myResp    = theClient->RunLambda(myReq, theDry);
+  std::unique_ptr<edge::LambdaResponse> myResp(nullptr);
+  if (not theLambda.empty()) {
+    myResp = singleExecution(myContent);
+  } else {
+    myResp = functionChain(myContent);
+  }
   const auto myElapsed = theLambdaChrono.stop();
 
-  if (myResp.theRetCode != "OK") {
-    // do not update the output and internal statistics in case of failure
-    VLOG(1) << "invalid response to " << theLambda << ": " << myResp.theRetCode;
+  // name to be used for logging and statistics
+  const auto myName = theLambda.empty() ? theChain->name() : theLambda;
+
+  // do not update the output and internal statistics in case of failure
+  assert(myResp.get() != nullptr);
+  if (myResp->theRetCode != "OK") {
+    VLOG(1) << "invalid response to " << myName << ": " << myResp->theRetCode;
     return;
   }
 
-  VLOG(1) << theLambda << ", took " << (myElapsed * 1e3 + 0.5) << " ms, return "
-          << myResp;
+  VLOG(1) << myName << ", took " << (myElapsed * 1e3 + 0.5) << " ms, return "
+          << *myResp;
 
   if (theDry) {
-    theSaver(myResp.processingTimeSeconds(),
-             myResp.theLoad1,
-             myResp.theResponder,
-             theLambda,
-             myResp.theHops);
+    theSaver(myResp->processingTimeSeconds(),
+             myResp->theLoad1,
+             myResp->theResponder,
+             myName,
+             myResp->theHops);
   } else {
     theSaver(myElapsed,
-             myResp.theLoad1,
-             myResp.theResponder,
-             theLambda,
-             myResp.theHops);
+             myResp->theLoad1,
+             myResp->theResponder,
+             myName,
+             myResp->theHops);
   }
 
   theLatencyStat(myElapsed);
-  theProcessingStat(myResp.processingTimeSeconds());
+  theProcessingStat(myResp->processingTimeSeconds());
 }
 
 void Client::sleep(const double aTime) {
@@ -172,6 +265,31 @@ void Client::sleep(const double aTime) {
 void Client::setContent(const std::string& aContent) {
   const std::lock_guard<std::mutex> myLock(theMutex);
   theContent = aContent;
+}
+
+void Client::setChain(const edge::model::Chain&            aChain,
+                      const std::map<std::string, size_t>& aStateSizes) {
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  if (not theLambda.empty()) {
+    throw std::runtime_error("cannot set chain info on a client operating in "
+                             "single function execution mode");
+  }
+
+  LOG_IF(WARNING, theChain.get() != nullptr) << "overwriting an existing chain";
+
+  // save the chain
+  theChain = std::make_unique<edge::model::Chain>(aChain);
+
+  // create the states without including free states (= those no functions
+  // depend upon)
+  theStates.clear();
+  for (const auto& myState : aChain.allStates(false)) {
+    const auto it = aStateSizes.find(myState);
+    if (it == aStateSizes.end()) {
+      throw std::runtime_error("the size of the state is missing: " + myState);
+    }
+    theStates[myState] = std::string(it->second, 'A');
+  }
 }
 
 void Client::setSizeDist(const size_t aSizeMin, const size_t aSizeMax) {
