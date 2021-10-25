@@ -66,12 +66,14 @@ ProportionalRequirements::operator()(const Processor&     aProc,
 
 Lambda::Lambda(const std::string& aName, const Converter& aConverter) noexcept
     : Lambda(aName, true, std::string(), aConverter) {
+  // noop
 }
 
 Lambda::Lambda(const std::string& aName,
                const std::string& aOutput,
                const Converter&   aConverter) noexcept
     : Lambda(aName, false, aOutput, aConverter) {
+  // noop
 }
 
 Lambda::Lambda(const std::string& aName,
@@ -80,8 +82,10 @@ Lambda::Lambda(const std::string& aName,
                const Converter&   aConverter) noexcept
     : theName(aName)
     , theCopyInput(aCopyInput)
+    , theCopyStates(true) // currently this is the only possible value
     , theOutput(aOutput)
     , theConverter(aConverter) {
+  // noop
 }
 
 LambdaRequirements Lambda::requirements(const Processor&     aProc,
@@ -92,8 +96,12 @@ LambdaRequirements Lambda::requirements(const Processor&     aProc,
 std::shared_ptr<const LambdaResponse>
 Lambda::execute(const LambdaRequest&         aReq,
                 const std::array<double, 3>& aLoads) const {
-  return std::make_shared<const LambdaResponse>(
+  auto ret = std::make_shared<LambdaResponse>(
       "OK", theCopyInput ? aReq.theInput : theOutput, aLoads);
+  if (theCopyStates) {
+    ret->theStates = aReq.theStates;
+  }
+  return std::const_pointer_cast<const LambdaResponse>(ret);
 }
 
 } // namespace edge
