@@ -209,7 +209,7 @@ LambdaResponse EdgeClientMulti::RunLambda(const LambdaRequest& aReq,
 
   // create a local copy of the lambda request, which may not survive
   // when this function returns (but some threads may still use it)
-  thePendingRequest = std::make_unique<LambdaRequest>(aReq);
+  thePendingRequest = std::make_unique<LambdaRequest>(aReq.copy());
 
   // unblock the selected clients
   assert(not myPending.empty());

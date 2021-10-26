@@ -29,6 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "Edge/Model/chain.h"
 #include "Edge/edgemessages.h"
 
 #include "gtest/gtest.h"
@@ -52,6 +53,21 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize) {
   myRequest.states().emplace("state0", State("content"));
   myRequest.states().emplace("state1", State("another_content"));
   myRequest.theCallback = "1.2.3.4:6666";
+  LOG(INFO) << myRequest.toString();
+
+  const auto    myReqSerialized = myRequest.toProtobuf();
+  LambdaRequest myReqDeserialized(myReqSerialized);
+  ASSERT_EQ(myRequest, myReqDeserialized) << "\n"
+                                          << myRequest.toString() << "\nvs.\n"
+                                          << myReqDeserialized.toString();
+}
+
+TEST_F(TestEdgeMessages, test_request_serialize_deserialize_chain) {
+  LambdaRequest myRequest("", "input", "datain");
+  myRequest.states().emplace("state0", State("content"));
+  myRequest.states().emplace("state1", State("another_content"));
+  myRequest.theCallback = "1.2.3.4:6666";
+  myRequest.theChain    = std::make_unique<model::Chain>(model::exampleChain());
   LOG(INFO) << myRequest.toString();
 
   const auto    myReqSerialized = myRequest.toProtobuf();

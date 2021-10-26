@@ -46,7 +46,7 @@ struct TestLambda : public ::testing::Test {
 };
 
 TEST_F(TestLambda, test_ctor) {
-  ASSERT_NO_THROW(Lambda(theName, [](const Processor&, const LambdaRequest) {
+  ASSERT_NO_THROW(Lambda(theName, [](const Processor&, const auto&) {
     return LambdaRequirements{0, 0};
   }));
 }

@@ -35,10 +35,15 @@ SOFTWARE.
 
 #include <array>
 #include <iostream>
+#include <memory>
 #include <string>
 
 namespace uiiit {
 namespace edge {
+
+namespace model {
+class Chain;
+};
 
 //! An application's state.
 struct State {
@@ -62,7 +67,7 @@ struct State {
 };
 
 //! A function request, with arguments and possibly also embeddeding states.
-struct LambdaRequest {
+struct LambdaRequest final {
   /**
    * Create a lambda request with text input only and no states.
    *
@@ -91,11 +96,28 @@ struct LambdaRequest {
    */
   explicit LambdaRequest(const rpc::LambdaRequest& aMsg);
 
+  LambdaRequest(LambdaRequest&& aOther);
+
+  LambdaRequest(LambdaRequest&) = delete;
+
+  ~LambdaRequest();
+
   //! \return true if the messages are identical except for the forward flag.
   bool operator==(const LambdaRequest& aOther) const;
 
   //! \return a lambda request identical to the input with +1 hops.
   LambdaRequest makeOneMoreHop() const;
+
+  //! \return a lambda request identical to this one.
+  LambdaRequest copy() const;
+
+  /**
+   * @brief Return the request name
+   *
+   * @return lambda if the is no function chain, otherwise a mangle of the
+   * functions to be invoked.
+   */
+  std::string name() const;
 
   //! \return the application' states.
   std::map<std::string, State>& states() {
@@ -112,13 +134,14 @@ struct LambdaRequest {
   //! \return a human-readable representation of the request.
   std::string toString() const;
 
-  const std::string            theName;
-  const std::string            theInput;
-  const std::string            theDataIn;
-  const bool                   theForward;
-  const unsigned int           theHops;
-  std::map<std::string, State> theStates;
-  std::string                  theCallback;
+  const std::string             theName;
+  const std::string             theInput;
+  const std::string             theDataIn;
+  const bool                    theForward;
+  unsigned int                  theHops;
+  std::map<std::string, State>  theStates;
+  std::string                   theCallback;
+  std::unique_ptr<model::Chain> theChain;
 
  private:
   explicit LambdaRequest(const std::string& aName,
@@ -129,7 +152,7 @@ struct LambdaRequest {
 };
 
 //! A function return, possibly also embeddeding states.
-struct LambdaResponse {
+struct LambdaResponse final {
   //! Create an asynchronous response (without output).
   explicit LambdaResponse();
 

@@ -29,7 +29,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgemessages.h"
+#include "Edge/edgemessages.h"
+
+#include "Edge/Model/chain.h"
 
 #include <sstream>
 
@@ -72,36 +74,6 @@ LambdaRequest::LambdaRequest(const std::string& aName,
   // noop
 }
 
-LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
-    : theName(aMsg.name())
-    , theInput(aMsg.input())
-    , theDataIn(aMsg.datain())
-    , theForward(true)
-    , theHops(aMsg.hops())
-    , theStates(deserializeStates(aMsg))
-    , theCallback(aMsg.callback()) {
-  // noop
-}
-
-bool LambdaRequest::operator==(const LambdaRequest& aOther) const {
-  return theName == aOther.theName and theInput == aOther.theInput and
-         theDataIn == aOther.theDataIn /* and theForward == aOther.theForward */
-         and theHops == aOther.theHops and theStates == aOther.theStates and
-         theCallback == aOther.theCallback;
-}
-
-rpc::LambdaRequest LambdaRequest::toProtobuf() const {
-  rpc::LambdaRequest myRet;
-  myRet.set_name(theName);
-  myRet.set_input(theInput);
-  myRet.set_datain(theDataIn);
-  myRet.set_forward(theForward);
-  myRet.set_hops(theHops);
-  serializeStates(*myRet.mutable_states(), theStates);
-  myRet.set_callback(theCallback);
-  return myRet;
-}
-
 LambdaRequest::LambdaRequest(const std::string& aName,
                              const std::string& aInput,
                              const std::string& aDataIn,
@@ -113,20 +85,112 @@ LambdaRequest::LambdaRequest(const std::string& aName,
     , theForward(aForward)
     , theHops(aHops)
     , theStates()
-    , theCallback() {
+    , theCallback()
+    , theChain(nullptr) {
   // noop
 }
 
+LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
+    : theName(aMsg.name())
+    , theInput(aMsg.input())
+    , theDataIn(aMsg.datain())
+    , theForward(true)
+    , theHops(aMsg.hops())
+    , theStates(deserializeStates(aMsg))
+    , theCallback(aMsg.callback())
+    , theChain(nullptr) {
+  if (aMsg.chain_size() > 0) {
+    model::Chain::Functions myFunctions;
+    for (ssize_t i = 0; i < aMsg.chain_size(); i++) {
+      myFunctions.emplace_back(aMsg.chain(i));
+    }
+    model::Chain::Dependencies myDependencies;
+    for (const auto& elem : aMsg.dependencies()) {
+      model::Chain::Dependencies::mapped_type myFunctionList;
+      for (ssize_t i = 0; i < elem.second.functions_size(); i++) {
+        myFunctionList.emplace_back(elem.second.functions(i));
+      }
+      myDependencies.emplace(elem.first, myFunctionList);
+    }
+    theChain = std::make_unique<model::Chain>(myFunctions, myDependencies);
+  }
+}
+
+LambdaRequest::LambdaRequest(LambdaRequest&& aOther)
+    : theName(aOther.theName)
+    , theInput(aOther.theInput)
+    , theDataIn(aOther.theDataIn)
+    , theForward(aOther.theForward)
+    , theHops(aOther.theHops)
+    , theStates(std::move(aOther.theStates))
+    , theCallback(std::move(aOther.theCallback))
+    , theChain(std::move(aOther.theChain)) {
+  // noop
+}
+
+LambdaRequest::~LambdaRequest() {
+  // noop
+}
+
+rpc::LambdaRequest LambdaRequest::toProtobuf() const {
+  rpc::LambdaRequest myRet;
+  myRet.set_name(theName);
+  myRet.set_input(theInput);
+  myRet.set_datain(theDataIn);
+  myRet.set_forward(theForward);
+  myRet.set_hops(theHops);
+  serializeStates(*myRet.mutable_states(), theStates);
+  myRet.set_callback(theCallback);
+  if (theChain.get() != nullptr) {
+    for (const auto& myFunction : theChain->functions()) {
+      myRet.add_chain(myFunction);
+    }
+    for (const auto& elem : theChain->dependencies()) {
+      rpc::FunctionList myList;
+      for (const auto& myFunction : elem.second) {
+        myList.add_functions(myFunction);
+      }
+      myRet.mutable_dependencies()->insert({elem.first, myList});
+    }
+  }
+  return myRet;
+}
+
+bool LambdaRequest::operator==(const LambdaRequest& aOther) const {
+  return theName == aOther.theName and theInput == aOther.theInput and
+         theDataIn == aOther.theDataIn /* and theForward == aOther.theForward */
+         and theHops == aOther.theHops and theStates == aOther.theStates and
+         theCallback == aOther.theCallback and
+         ((theChain.get() == nullptr) == (aOther.theChain.get() == nullptr)) and
+         (theChain.get() == nullptr or *theChain == *aOther.theChain);
+}
+
 LambdaRequest LambdaRequest::makeOneMoreHop() const {
-  LambdaRequest ret(theName, theInput, theDataIn, theForward, theHops + 1);
+  auto ret = copy();
+  ret.theHops++;
+  return ret;
+}
+
+LambdaRequest LambdaRequest::copy() const {
+  LambdaRequest ret(theName, theInput, theDataIn, theForward, theHops);
   ret.theStates   = theStates;
   ret.theCallback = theCallback;
+  if (theChain.get() != nullptr) {
+    ret.theChain = std::make_unique<model::Chain>(*theChain);
+  }
   return ret;
+}
+
+std::string LambdaRequest::name() const {
+  if (theChain.get() == nullptr) {
+    return theName;
+  }
+  return theChain->name();
 }
 
 std::string LambdaRequest::toString() const {
   std::stringstream myStream;
-  myStream << "name: " << theName << ", "
+  myStream << "name: " << name() << ", "
            << (theForward ? "from edge node" : "from edge client")
            << (theCallback.empty() ? std::string() :
                                      (std::string(", callback ") + theCallback))

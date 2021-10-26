@@ -19,9 +19,13 @@ message State {
   bytes content = 1;
 }
 
+message FunctionList {
+  repeated string functions = 1;
+}
+
 message LambdaRequest {
   // name of the remote procedure to be executed
-  // should never be empty
+  // can be empty if chain is given
   string name     = 1;
 
   // function input, encoded as a string (may be empty)
@@ -43,10 +47,20 @@ message LambdaRequest {
   uint32 hops     = 6;
 
   // map of application's states, accessed by their names
+  // key:   name of the state
+  // value: state content
   map<string, State> states = 7;
 
   // endpoint where to send the response for asynchronous invocations
   string callback = 8;
+
+  // chain of functions to be executed (overrides name)
+  repeated string chain = 9;
+
+  // dependencies of functions upon the application's states
+  // key:   name of the state
+  // value: list of functions that depend on this
+  map<string, FunctionList> dependencies = 10;
 }
 
 message LambdaResponse {
