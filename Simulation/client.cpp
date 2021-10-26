@@ -124,7 +124,8 @@ Client::singleExecution(const std::string& aInput) {
   assert(theChain.get() == nullptr);
 
   edge::LambdaRequest myReq(theLambda, aInput);
-  auto                myResp = theClient->RunLambda(myReq, theDry);
+  myReq.theCallback = theCallback;
+  auto myResp       = theClient->RunLambda(myReq, theDry);
   return std::make_unique<edge::LambdaResponse>(std::move(myResp));
 }
 

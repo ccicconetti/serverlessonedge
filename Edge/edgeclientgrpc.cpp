@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include "RpcSupport/utils.h"
 
+#include <glog/logging.h>
 #include <grpc++/grpc++.h>
 
 namespace uiiit {
@@ -49,6 +50,8 @@ EdgeClientGrpc::~EdgeClientGrpc() {
 
 LambdaResponse EdgeClientGrpc::RunLambda(const LambdaRequest& aReq,
                                          const bool           aDry) {
+  VLOG(3) << aReq;
+
   rpc::LambdaResponse myRep;
   grpc::ClientContext myContext;
   auto                myReq = aReq.toProtobuf();

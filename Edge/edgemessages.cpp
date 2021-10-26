@@ -78,14 +78,16 @@ LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
     , theDataIn(aMsg.datain())
     , theForward(true)
     , theHops(aMsg.hops())
-    , theStates(deserializeStates(aMsg)) {
+    , theStates(deserializeStates(aMsg))
+    , theCallback(aMsg.callback()) {
   // noop
 }
 
 bool LambdaRequest::operator==(const LambdaRequest& aOther) const {
   return theName == aOther.theName and theInput == aOther.theInput and
          theDataIn == aOther.theDataIn /* and theForward == aOther.theForward */
-         and theHops == aOther.theHops and theStates == aOther.theStates;
+         and theHops == aOther.theHops and theStates == aOther.theStates and
+         theCallback == aOther.theCallback;
 }
 
 rpc::LambdaRequest LambdaRequest::toProtobuf() const {
@@ -96,6 +98,7 @@ rpc::LambdaRequest LambdaRequest::toProtobuf() const {
   myRet.set_forward(theForward);
   myRet.set_hops(theHops);
   serializeStates(*myRet.mutable_states(), theStates);
+  myRet.set_callback(theCallback);
   return myRet;
 }
 
@@ -109,7 +112,9 @@ LambdaRequest::LambdaRequest(const std::string& aName,
     , theDataIn(aDataIn)
     , theForward(aForward)
     , theHops(aHops)
-    , theStates() {
+    , theStates()
+    , theCallback() {
+  // noop
 }
 
 LambdaRequest LambdaRequest::makeOneMoreHop() const {
