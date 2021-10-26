@@ -102,6 +102,11 @@ struct LambdaRequest {
     return theStates;
   }
 
+  //! \return the application' states.
+  const std::map<std::string, State>& states() const {
+    return theStates;
+  }
+
   //! \return the protobuf-encoded message.
   rpc::LambdaRequest toProtobuf() const;
   //! \return a human-readable representation of the request.
@@ -148,6 +153,11 @@ struct LambdaResponse {
 
   //! \return the application' states.
   std::map<std::string, State>& states() {
+    return theStates;
+  }
+
+  //! \return the application' states.
+  const std::map<std::string, State>& states() const {
     return theStates;
   }
 
