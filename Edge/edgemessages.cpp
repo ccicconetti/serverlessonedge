@@ -114,7 +114,8 @@ LambdaRequest::LambdaRequest(const std::string& aName,
 
 LambdaRequest LambdaRequest::makeOneMoreHop() const {
   LambdaRequest ret(theName, theInput, theDataIn, theForward, theHops + 1);
-  ret.theStates = theStates;
+  ret.theStates   = theStates;
+  ret.theCallback = theCallback;
   return ret;
 }
 
