@@ -121,6 +121,9 @@ class Client
   void setChain(const edge::model::Chain&            aChain,
                 const std::map<std::string, size_t>& aStateSizes);
 
+  //! Set the callback endpoint in outgoing requests.
+  void setCallback(const std::string& aCallback);
+
   //! Draw size from a uniform r.v.
   void setSizeDist(const size_t aSizeMin, const size_t aSizeMax);
 
@@ -152,6 +155,9 @@ class Client
   const support::SummaryStat& processingStat() const noexcept {
     return theProcessingStat;
   }
+
+  //! Record the statistics for a lambda response.
+  void recordStat(const edge::LambdaResponse& aResponse);
 
  protected:
   /**
@@ -227,6 +233,9 @@ class Client
   // set in setChain()
   std::unique_ptr<edge::model::Chain> theChain;
   std::map<std::string, std::string>  theStates;
+
+  // set in setCallback()
+  std::string theCallback;
 
   // set in setContent()
   std::string theContent;

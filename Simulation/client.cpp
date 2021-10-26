@@ -73,6 +73,7 @@ Client::Client(const size_t                 aSeedUser,
     , theSizes()
     , theChain(nullptr)
     , theStates()
+    , theCallback()
     , theContent() {
   LOG(INFO) << "created a client with seed (" << aSeedUser << "," << aSeedInc
             << "), which will send max " << aNumRequests << " requests to "
@@ -133,6 +134,9 @@ Client::functionChain(const std::string& aInput) {
   if (theChain.get() == nullptr) {
     throw std::runtime_error("uninitialized function chain");
   }
+  if (theCallback.empty()) {
+    throw std::runtime_error("uninitialized callback end-point");
+  }
 
   std::string                           myInput = aInput;
   std::string                           myDataIn;
@@ -147,6 +151,7 @@ Client::functionChain(const std::string& aInput) {
       assert(it != theStates.end());
       myReq.states().emplace(myState, edge::State(it->second));
     }
+    myReq.theCallback = theCallback;
 
     // run the lambda function
     myResp = std::make_unique<edge::LambdaResponse>(
@@ -221,37 +226,43 @@ void Client::sendRequest(const size_t aSize) {
   } else {
     myResp = functionChain(myContent);
   }
+  assert(myResp.get() != nullptr);
+  recordStat(*myResp);
+}
+
+void Client::recordStat(const edge::LambdaResponse& aResponse) {
+  // measure the application latency
   const auto myElapsed = theLambdaChrono.stop();
 
   // name to be used for logging and statistics
   const auto myName = theLambda.empty() ? theChain->name() : theLambda;
 
-  // do not update the output and internal statistics in case of failure
-  assert(myResp.get() != nullptr);
-  if (myResp->theRetCode != "OK") {
-    VLOG(1) << "invalid response to " << myName << ": " << myResp->theRetCode;
+  if (aResponse.theRetCode != "OK") {
+    VLOG(1) << "invalid response to " << myName << ": " << aResponse.theRetCode;
+
+    // do not update the output and internal statistics in case of failure
     return;
+  } else {
+    VLOG(1) << myName << ", took " << (myElapsed * 1e3 + 0.5) << " ms, return "
+            << aResponse;
   }
 
-  VLOG(1) << myName << ", took " << (myElapsed * 1e3 + 0.5) << " ms, return "
-          << *myResp;
-
   if (theDry) {
-    theSaver(myResp->processingTimeSeconds(),
-             myResp->theLoad1,
-             myResp->theResponder,
+    theSaver(aResponse.processingTimeSeconds(),
+             aResponse.theLoad1,
+             aResponse.theResponder,
              myName,
-             myResp->theHops);
+             aResponse.theHops);
   } else {
     theSaver(myElapsed,
-             myResp->theLoad1,
-             myResp->theResponder,
+             aResponse.theLoad1,
+             aResponse.theResponder,
              myName,
-             myResp->theHops);
+             aResponse.theHops);
   }
 
   theLatencyStat(myElapsed);
-  theProcessingStat(myResp->processingTimeSeconds());
+  theProcessingStat(aResponse.processingTimeSeconds());
 }
 
 void Client::sleep(const double aTime) {
@@ -290,6 +301,20 @@ void Client::setChain(const edge::model::Chain&            aChain,
     }
     theStates[myState] = std::string(it->second, 'A');
   }
+}
+
+void Client::setCallback(const std::string& aCallback) {
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  if (aCallback.empty()) {
+    throw std::runtime_error("cannot set an empty callback endpoint");
+  }
+  if (theCallback.empty()) {
+    LOG(INFO) << "setting the callback end-point to " << aCallback;
+  } else {
+    LOG(WARNING) << "updating the callback end-point: " << theCallback << " -> "
+                 << aCallback;
+  }
+  theCallback = aCallback;
 }
 
 void Client::setSizeDist(const size_t aSizeMin, const size_t aSizeMax) {
