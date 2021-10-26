@@ -57,9 +57,10 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize) {
 
   const auto    myReqSerialized = myRequest.toProtobuf();
   LambdaRequest myReqDeserialized(myReqSerialized);
-  ASSERT_EQ(myRequest, myReqDeserialized) << "\n"
-                                          << myRequest.toString() << "\nvs.\n"
-                                          << myReqDeserialized.toString();
+  ASSERT_TRUE(myRequest == myReqDeserialized)
+      << "\n"
+      << myRequest.toString() << "\nvs.\n"
+      << myReqDeserialized.toString();
 }
 
 TEST_F(TestEdgeMessages, test_request_serialize_deserialize_chain) {
@@ -72,9 +73,10 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize_chain) {
 
   const auto    myReqSerialized = myRequest.toProtobuf();
   LambdaRequest myReqDeserialized(myReqSerialized);
-  ASSERT_EQ(myRequest, myReqDeserialized) << "\n"
-                                          << myRequest.toString() << "\nvs.\n"
-                                          << myReqDeserialized.toString();
+  ASSERT_TRUE(myRequest == myReqDeserialized)
+      << "\n"
+      << myRequest.toString() << "\nvs.\n"
+      << myReqDeserialized.toString();
 }
 
 TEST_F(TestEdgeMessages, test_response_serialize_deserialize_sync) {
@@ -85,9 +87,10 @@ TEST_F(TestEdgeMessages, test_response_serialize_deserialize_sync) {
 
   const auto     myResSerialized = myResponse.toProtobuf();
   LambdaResponse myResDeserialized(myResSerialized);
-  ASSERT_EQ(myResponse, myResDeserialized) << "\n"
-                                           << myResponse.toString() << "\nvs.\n"
-                                           << myResDeserialized.toString();
+  ASSERT_TRUE(myResponse == myResDeserialized)
+      << "\n"
+      << myResponse.toString() << "\nvs.\n"
+      << myResDeserialized.toString();
 }
 
 TEST_F(TestEdgeMessages, test_response_serialize_deserialize_async) {
@@ -96,9 +99,10 @@ TEST_F(TestEdgeMessages, test_response_serialize_deserialize_async) {
 
   const auto     myResSerialized = myResponse.toProtobuf();
   LambdaResponse myResDeserialized(myResSerialized);
-  ASSERT_EQ(myResponse, myResDeserialized) << "\n"
-                                           << myResponse.toString() << "\nvs.\n"
-                                           << myResDeserialized.toString();
+  ASSERT_TRUE(myResponse == myResDeserialized)
+      << "\n"
+      << myResponse.toString() << "\nvs.\n"
+      << myResDeserialized.toString();
 }
 
 } // namespace edge
