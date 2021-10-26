@@ -1,4 +1,8 @@
-# Step-by-step example
+# Function chain examples
+
+
+
+## Client-based invocations
 
 After having built the framework, you may start by deploying the following example (the numbers represent the listening TCP ports).
 

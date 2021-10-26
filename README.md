@@ -57,9 +57,11 @@ If interested check out more details and instructions [here](docs/openwhisk_inte
 
 See [building instructions](docs/BUILDING.md).
 
-### Example
+### Examples
 
-See [a full example](docs/example.md).
+You can find [here](docs/example.md) a step-by-step example of the execution of all the main system components (edgecomputer, edgerouter, edgecontroller) with stateless single function invocations.
+
+Examples with stateful function chains can be found [here](docs/example-chain.md).
 
 ### Performance evaluation
 
