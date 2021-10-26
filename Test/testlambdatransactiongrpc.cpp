@@ -29,6 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "Edge/callbackserver.h"
 #include "Edge/composer.h"
 #include "Edge/computer.h"
 #include "Edge/edgeclientgrpc.h"
@@ -47,6 +48,7 @@ SOFTWARE.
 #include "Edge/ptimeestimatorfactory.h"
 #include "Support/chrono.h"
 #include "Support/conf.h"
+#include "Support/wait.h"
 
 #include "gtest/gtest.h"
 
@@ -58,6 +60,7 @@ namespace uiiit {
 namespace edge {
 
 struct TestLambdaTransactionGrpc : public ::testing::Test {
+  const size_t N = 50;
 
   struct System {
     enum Type { ROUTER = 0, DISPATCHER = 1 };
@@ -71,7 +74,8 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
         , theNumThreads(5)
         , theController(theControllerEndpoint)
         , theUtilServer(theUtilEndpoint)
-        , theComputer(theComputerEndpoint,
+        , theComputer(5,
+                      theComputerEndpoint,
                       [this](const std::map<std::string, double>& aUtil) {
                         theUtilServer.add(aUtil);
                       })
@@ -187,9 +191,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
   };
 };
 
-TEST_F(TestLambdaTransactionGrpc, test_grpc_endtoend) {
-  const size_t N = 50;
-
+TEST_F(TestLambdaTransactionGrpc, test_router_dispatcher) {
   const std::list<System::Type> myTypes({System::ROUTER, System::DISPATCHER});
 
   const std::map<System::Type, std::set<std::string>> mySubtypes({
@@ -226,6 +228,44 @@ TEST_F(TestLambdaTransactionGrpc, test_grpc_endtoend) {
         ASSERT_NEAR(0.05, myUtil, 0.01);
       }
     }
+  }
+}
+
+TEST_F(TestLambdaTransactionGrpc, test_asynchronous) {
+  const std::string myCallbackEndpoint = "127.0.0.1:6480";
+  System            mySystem(System::ROUTER, "");
+
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  LambdaRequest  myReq("clambda0", std::string(10, 'A'));
+  myReq.theCallback = myCallbackEndpoint;
+  myReq.states().emplace("s0", "content-state-0");
+  myReq.states().emplace("s1", "content-state-1");
+  CallbackServer::Queue myResponses;
+  CallbackServer        myCallbackServer(myCallbackEndpoint, myResponses);
+  myCallbackServer.run(false);
+
+  for (size_t i = 0; i < N; i++) {
+    const auto myResp = myClient.RunLambda(myReq, false);
+    ASSERT_EQ("OK", myResp.theRetCode);
+    ASSERT_TRUE(myResp.theAsynchronous);
+  }
+
+  ASSERT_TRUE(support::waitFor<size_t>(
+      [&myResponses]() { return myResponses.size(); }, N, 10));
+
+  for (size_t i = 0; i < N; i++) {
+    const auto myResp = myResponses.pop();
+    ASSERT_EQ("OK", myResp.theRetCode);
+    ASSERT_FALSE(myResp.theAsynchronous);
+    ASSERT_EQ(2, myResp.theHops);
+    ASSERT_EQ(mySystem.theComputerEndpoint, myResp.theResponder);
+    ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
+    ASSERT_EQ(0u, myResp.theDataOut.size());
+    ASSERT_EQ((std::map<std::string, State>({
+                  {"s0", State("content-state-0")},
+                  {"s1", State("content-state-1")},
+              })),
+              myResp.states());
   }
 }
 
