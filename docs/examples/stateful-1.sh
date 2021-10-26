@@ -2,15 +2,15 @@
 
 pids=""
 
-# prepare configuration files
+echo "prepare configuration files"
 ./edgecomputer --json-example | sed -e "s/clambda@1/f1/" > computer-1.json
 ./edgecomputer --json-example | sed -e "s/clambda@1/f2/" > computer-2.json
 
-# start the e-controller
+echo "start the e-controller"
 ./edgecontroller >& edgecontroller.log &
 pids="$pids $!"
 
-# start the e-computers
+echo "start the e-computers"
 for (( i = 1 ; i <= 2 ; i++ )) ; do
   ./edgecomputer \
     --conf type=file,path=computer-$i.json \
@@ -20,7 +20,7 @@ for (( i = 1 ; i <= 2 ; i++ )) ; do
   pids="$pids $!"
 done
 
-# start the e-router
+echo "start the e-router"
 ./edgerouter \
   --server-endpoint 127.0.0.1:6473 \
     --controller 127.0.0.1:6475 \
