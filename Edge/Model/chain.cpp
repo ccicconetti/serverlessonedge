@@ -64,6 +64,10 @@ Chain::Chain(const Functions& aFunctions, const Dependencies& aDependencies)
   }
 }
 
+Chain::~Chain() {
+  // noop
+}
+
 bool Chain::operator==(const Chain& aOther) const {
   return theFunctions == aOther.theFunctions and
          theDependencies == aOther.theDependencies;

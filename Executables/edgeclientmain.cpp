@@ -204,11 +204,6 @@ int main(int argc, char* argv[]) {
       }
     }
 
-    if (myChain.get() != nullptr and myCallback.empty()) {
-      throw std::runtime_error("With function chain mode you must enable "
-                               "asynchronous responses with --callback");
-    }
-
     if (not myCallback.empty() and myNumThreads > 1) {
       throw std::runtime_error(
           "With asynchronous responses it is currently not "

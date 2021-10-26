@@ -69,6 +69,8 @@ class Chain final
   explicit Chain(const Functions&    aFunctions,
                  const Dependencies& aDependencies);
 
+  ~Chain();
+
   //! @return true if the chains are the same.
   bool operator==(const Chain& aOther) const;
 

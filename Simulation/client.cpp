@@ -122,22 +122,41 @@ void Client::finish() {
 
 std::unique_ptr<edge::LambdaResponse>
 Client::singleExecution(const std::string& aInput) {
-  assert(theChain.get() == nullptr);
+  assert(not theLambda.empty() or not theCallback.empty());
+  if (theChain.get() != nullptr and theCallback.empty()) {
+    throw std::runtime_error("uninitialized callback end-point");
+  }
 
-  edge::LambdaRequest myReq(theLambda, aInput);
+  // create a new lambda request and copy in it the states and chain (if any)
+  const auto myName =
+      (theChain.get() != nullptr and theChain->functions().size() > 0) ?
+          theChain->functions().front() :
+          theLambda;
+  edge::LambdaRequest myReq(myName, aInput);
+  for (const auto& myState : theChain->allStates(false)) {
+    const auto it = theStates.find(myState);
+    assert(it != theStates.end());
+    myReq.states().emplace(myState, edge::State(it->second));
+  }
+  if (theChain) {
+    myReq.theChain = std::make_unique<edge::model::Chain>(*theChain);
+  }
+  myReq.theNextFunctionIndex = 0;
+
+  // set the callback: if empty then this is a sync call for a single function
   myReq.theCallback = theCallback;
-  auto myResp       = theClient->RunLambda(myReq, theDry);
+
+  // execute the function and return the response
+  auto myResp = theClient->RunLambda(myReq, theDry);
   return std::make_unique<edge::LambdaResponse>(std::move(myResp));
 }
 
 std::unique_ptr<edge::LambdaResponse>
 Client::functionChain(const std::string& aInput) {
   assert(theLambda.empty());
+  assert(theCallback.empty());
   if (theChain.get() == nullptr) {
     throw std::runtime_error("uninitialized function chain");
-  }
-  if (theCallback.empty()) {
-    throw std::runtime_error("uninitialized callback end-point");
   }
 
   std::string                           myInput = aInput;
@@ -153,7 +172,6 @@ Client::functionChain(const std::string& aInput) {
       assert(it != theStates.end());
       myReq.states().emplace(myState, edge::State(it->second));
     }
-    myReq.theCallback = theCallback;
 
     // run the lambda function
     myResp = std::make_unique<edge::LambdaResponse>(
@@ -224,10 +242,10 @@ void Client::sendRequest(const size_t aSize) {
   // execute the main loop depending on the operating mode
   theLambdaChrono.start();
   std::unique_ptr<edge::LambdaResponse> myResp(nullptr);
-  if (not theLambda.empty()) {
-    myResp = singleExecution(myContent);
-  } else {
+  if (theLambda.empty() and theCallback.empty()) {
     myResp = functionChain(myContent);
+  } else {
+    myResp = singleExecution(myContent);
   }
   assert(myResp.get() != nullptr);
   if (not myResp->theAsynchronous) {

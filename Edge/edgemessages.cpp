@@ -196,7 +196,7 @@ std::string LambdaRequest::name() const {
 
 std::string LambdaRequest::toString() const {
   std::stringstream myStream;
-  myStream << "name: " << name() << ", "
+  myStream << "name: " << theName << ", "
            << (theForward ? "from edge node" : "from edge client")
            << (theCallback.empty() ? std::string() :
                                      (std::string(", callback ") + theCallback))

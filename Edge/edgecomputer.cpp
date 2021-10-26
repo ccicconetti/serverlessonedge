@@ -31,7 +31,9 @@ SOFTWARE.
 
 #include "Edge/edgecomputer.h"
 
+#include "Edge/Model/chain.h"
 #include "Edge/callbackclient.h"
+#include "Edge/edgeclientgrpc.h"
 #include "Edge/edgemessages.h"
 #include "Support/threadpool.h"
 
@@ -54,20 +56,68 @@ void EdgeComputer::AsyncWorker::operator()() {
   while (true) {
     try {
       // retrieve one of the pending function requests
-      const auto myRequest = theQueue.pop();
+      auto myRequest = theQueue.pop();
 
       // executes the lambda function (blocks)
       auto myResp = theParent.blockingExecution(myRequest);
-      myResp.set_responder(theParent.serverEndpoint());
-      myResp.set_hops(myRequest.hops() + 1);
-      myResp.set_retcode("OK");
 
-      // send the response to the callback server indicated in the request
-      CallbackClient myClient(myRequest.callback());
-      LambdaResponse myResponse(myResp);
-      VLOG(3) << "sending response to " << myRequest.callback() << ", "
-              << myResponse;
-      myClient.ReceiveResponse(myResponse);
+      // what follows depends on whether this is the last function
+      // to be executed in the chain or not
+      //
+      // last function: send final response to callback
+      // non-last function: invoke the next function in the chain via companion
+
+      if (myRequest.chain_size() == 0 or
+          (int) myRequest.nextfunctionindex() == (myRequest.chain_size() - 1)) {
+        myResp.set_responder(theParent.serverEndpoint());
+        myResp.set_hops(myRequest.hops() + 1);
+        myResp.set_retcode("OK");
+
+        // send the response to the callback server indicated in the request
+        CallbackClient myClient(myRequest.callback());
+        LambdaResponse myResponse(myResp);
+        VLOG(3) << "sending response to " << myRequest.callback() << ", "
+                << myResponse;
+        myClient.ReceiveResponse(myResponse);
+
+      } else {
+        std::string myCompanionEndpoint;
+        {
+          const std::lock_guard<std::mutex> myLock(theParent.theMutex);
+          myCompanionEndpoint = theParent.theCompanionEndpoint;
+        }
+
+        EdgeClientGrpc myClient(myCompanionEndpoint);
+
+        // prepare the new request
+        const auto myName =
+            (((int)myRequest.nextfunctionindex() + 1) <
+             myRequest.chain_size()) ?
+                myRequest.chain(myRequest.nextfunctionindex() + 1) :
+                std::string(); // empty name will result in an error
+        LambdaRequest myNewRequest(myName, myResp.output(), myResp.dataout());
+        myNewRequest.theHops = myResp.hops() + 1;
+
+        LambdaRequest myOldRequest(myRequest);
+        myNewRequest.theStates   = myOldRequest.theStates;
+        myNewRequest.theCallback = myOldRequest.theCallback;
+        myNewRequest.theChain    = std::move(myOldRequest.theChain);
+        myNewRequest.theNextFunctionIndex =
+            myOldRequest.theNextFunctionIndex + 1;
+
+        VLOG(3) << "invoking next function on " << myCompanionEndpoint << ", "
+                << myNewRequest;
+
+        // send the next request, for which we expect immediate async response
+        const auto myImmediateResp = myClient.RunLambda(myNewRequest, false);
+        LOG_IF(ERROR, myImmediateResp.theRetCode != "OK")
+            << "error when executing the next function in the chain via "
+            << myCompanionEndpoint << ": " << myImmediateResp.theRetCode;
+        LOG_IF(ERROR, not myImmediateResp.theAsynchronous)
+            << "received a synchronous response when executing the next "
+               "function in the chain via "
+            << myCompanionEndpoint << ": result ignored";
+      }
 
     } catch (const support::QueueClosed&) {
       break;
@@ -157,9 +207,32 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
 
   std::string myRetCode = "OK";
   try {
+    // it is an error not have the callback with a function chain
+    if (aReq.chain_size() > 0 and aReq.callback().empty()) {
+      throw std::runtime_error(
+          "Cannot handle a function chain without a callback in the request");
+    }
+
+    // it is an error to request the execution of a function beyond the chain
+    if (aReq.chain_size() > 0 and
+        (int) aReq.nextfunctionindex() >= aReq.chain_size()) {
+      throw std::runtime_error(
+          "Out-of-range function execution requested in a chain");
+    }
+
+    // it is an error to request the execution of a function chain without
+    // having set the companion beforehand, if needed
+    if (aReq.chain_size() > 0 and
+        (int) aReq.nextfunctionindex() < (aReq.chain_size() - 1) and
+        theCompanionEndpoint.empty()) {
+      throw std::runtime_error(
+          "Cannot invoke the next function in the chain without a companion");
+    }
+
     if (aReq.dry()) {
       // dry run: just give an estimate of the time required to run the lambda
-      // unlike the actual execution of a lambda, this operation is synchronous
+      // unlike the actual execution of a lambda, this operation is
+      // synchronous
 
       // convert seconds to milliseconds
       std::array<double, 3> myLastUtils;
@@ -182,7 +255,6 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
       // actual execution of the lambda function
       myResp = blockingExecution(aReq);
     }
-
   } catch (const std::exception& aErr) {
     myRetCode = aErr.what();
   } catch (...) {
