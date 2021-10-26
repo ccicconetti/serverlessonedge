@@ -142,6 +142,7 @@ struct LambdaRequest final {
   std::map<std::string, State>  theStates;
   std::string                   theCallback;
   std::unique_ptr<model::Chain> theChain;
+  unsigned int                  theNextFunctionIndex;
 
  private:
   explicit LambdaRequest(const std::string& aName,

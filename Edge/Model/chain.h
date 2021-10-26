@@ -97,6 +97,9 @@ class Chain final
   //! @return the states that this function requires.
   std::set<std::string> states(const std::string& aFunction) const;
 
+  //! @return a human-readable single-line string.
+  std::string toString() const;
+
   /**
    * @brief Create a chain from a JSON-encoded string.
    *

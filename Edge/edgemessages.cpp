@@ -86,7 +86,8 @@ LambdaRequest::LambdaRequest(const std::string& aName,
     , theHops(aHops)
     , theStates()
     , theCallback()
-    , theChain(nullptr) {
+    , theChain(nullptr)
+    , theNextFunctionIndex(0) {
   // noop
 }
 
@@ -98,7 +99,8 @@ LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
     , theHops(aMsg.hops())
     , theStates(deserializeStates(aMsg))
     , theCallback(aMsg.callback())
-    , theChain(nullptr) {
+    , theChain(nullptr)
+    , theNextFunctionIndex(aMsg.nextfunctionindex()) {
   if (aMsg.chain_size() > 0) {
     model::Chain::Functions myFunctions;
     for (ssize_t i = 0; i < aMsg.chain_size(); i++) {
@@ -124,7 +126,8 @@ LambdaRequest::LambdaRequest(LambdaRequest&& aOther)
     , theHops(aOther.theHops)
     , theStates(std::move(aOther.theStates))
     , theCallback(std::move(aOther.theCallback))
-    , theChain(std::move(aOther.theChain)) {
+    , theChain(std::move(aOther.theChain))
+    , theNextFunctionIndex(aOther.theNextFunctionIndex) {
   // noop
 }
 
@@ -153,6 +156,7 @@ rpc::LambdaRequest LambdaRequest::toProtobuf() const {
       myRet.mutable_dependencies()->insert({elem.first, myList});
     }
   }
+  myRet.set_nextfunctionindex(theNextFunctionIndex);
   return myRet;
 }
 
@@ -162,7 +166,8 @@ bool LambdaRequest::operator==(const LambdaRequest& aOther) const {
          and theHops == aOther.theHops and theStates == aOther.theStates and
          theCallback == aOther.theCallback and
          ((theChain.get() == nullptr) == (aOther.theChain.get() == nullptr)) and
-         (theChain.get() == nullptr or *theChain == *aOther.theChain);
+         (theChain.get() == nullptr or *theChain == *aOther.theChain) and
+         theNextFunctionIndex == aOther.theNextFunctionIndex;
 }
 
 LambdaRequest LambdaRequest::makeOneMoreHop() const {
@@ -178,6 +183,7 @@ LambdaRequest LambdaRequest::copy() const {
   if (theChain.get() != nullptr) {
     ret.theChain = std::make_unique<model::Chain>(*theChain);
   }
+  ret.theNextFunctionIndex = theNextFunctionIndex;
   return ret;
 }
 
@@ -206,6 +212,13 @@ std::string LambdaRequest::toString() const {
                << " bytes)";
     }
     myStream << "]";
+  }
+  if (theChain.get() != nullptr) {
+    myStream << ", " << theChain->toString() << ", next function index "
+             << theNextFunctionIndex;
+    if (theNextFunctionIndex < theChain->functions().size()) {
+      myStream << " (" << theChain->functions()[theNextFunctionIndex] << ")";
+    }
   }
   return myStream.str();
 }

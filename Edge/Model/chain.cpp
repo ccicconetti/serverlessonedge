@@ -36,6 +36,7 @@ SOFTWARE.
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <sstream>
 #include <stdexcept>
 
 using json = nlohmann::json;
@@ -69,7 +70,7 @@ bool Chain::operator==(const Chain& aOther) const {
 }
 
 std::string Chain::name() const {
-  return toString(theFunctions, "-");
+  return ::toString(theFunctions, "-");
 }
 
 std::set<std::string> Chain::uniqueFunctions() const {
@@ -107,6 +108,16 @@ std::set<std::string> Chain::states(const std::string& aFunction) const {
     }
   }
   return ret;
+}
+
+std::string Chain::toString() const {
+  std::stringstream ret;
+  ret << "[ " << ::toString(theFunctions, " -> ") << " ], { ";
+  for (const auto& elem : theDependencies) {
+    ret << "(" << elem.first << ": " << ::toString(elem.second, ",") << ") ";
+  }
+  ret << "}";
+  return ret.str();
 }
 
 Chain Chain::fromJson(const std::string& aJson) {
