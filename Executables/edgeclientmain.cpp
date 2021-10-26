@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Edge/Model/chainfactory.h"
+#include "Edge/callbackserver.h"
 #include "Simulation/unifclient.h"
 #include "Support/chrono.h"
 #include "Support/glograii.h"
@@ -42,14 +43,69 @@ SOFTWARE.
 
 #include <boost/program_options.hpp>
 
+#include <atomic>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <thread>
 #include <vector>
 
 namespace po = boost::program_options;
 namespace ec = uiiit::edge;
 namespace es = uiiit::simulation;
+
+class ResponseSaver final
+{
+ public:
+  ResponseSaver(const std::string& aCallback)
+      : theQueue()
+      , theCallbackServer(aCallback, theQueue)
+      , theTerminating(false)
+      , theThread()
+      , theClient(nullptr) {
+    // noop
+  }
+
+  ~ResponseSaver() {
+    theTerminating = true;
+    theQueue.close();
+    theThread.join();
+  }
+
+  void client(es::Client* aClient) {
+    assert(theClient == nullptr);
+    assert(aClient != nullptr);
+    theClient = aClient;
+    theThread = std::thread([this]() { run(); });
+  }
+
+ private:
+  void run() {
+    while (true) {
+      try {
+        if (theTerminating) {
+          return;
+        }
+        const auto myResponse = theQueue.pop();
+        assert(theClient != nullptr);
+        theClient->recordStat(myResponse);
+      } catch (const uiiit::support::QueueClosed&) {
+        // graceful termination
+      } catch (const std::exception& aErr) {
+        LOG(ERROR) << "exception thrown: " << aErr.what();
+      } catch (...) {
+        LOG(ERROR) << "unknown exception thrown";
+      }
+    }
+  }
+
+ private:
+  ec::CallbackServer::Queue theQueue;
+  ec::CallbackServer        theCallbackServer;
+  std::atomic<bool>         theTerminating;
+  std::thread               theThread;
+  es::Client*               theClient;
+};
 
 int main(int argc, char* argv[]) {
   uiiit::support::GlogRaii myGlogRaii(argv[0]);
@@ -61,6 +117,7 @@ int main(int argc, char* argv[]) {
   std::string myContent;
   std::string myOutputFile;
   std::string myChainConf;
+  std::string myCallback;
   size_t      myDuration;
   size_t      myMaxRequests;
   size_t      myNumThreads;
@@ -112,6 +169,9 @@ int main(int argc, char* argv[]) {
     ("chain-conf",
      po::value<std::string>(&myChainConf)->default_value(""),
      "Function chain configuration. Load from file with file=filename.json. Use file=make-template to generated an example. If present override --lambda.")
+    ("callback-endpoint",
+     po::value<std::string>(&myCallback)->default_value(""),
+     "Callback to receive the return of the function/chain in an asynchronous manner. Mandatory with function chains.")
     ("dry", "Do not execute the lambda requests, just ask for an estimate of the time required.")
     ("seed",
      po::value<size_t>(&mySeedUser)->default_value(0),
@@ -143,9 +203,25 @@ int main(int argc, char* argv[]) {
       }
     }
 
+    if (myChain.get() != nullptr and myCallback.empty()) {
+      throw std::runtime_error("With function chain mode you must enable "
+                               "asynchronous responses with --callback");
+    }
+
+    if (myChain.get() != nullptr and myNumThreads > 1) {
+      throw std::runtime_error(
+          "With asynchronous responses it is currently not "
+          "possible to have > 1 thread");
+    }
+
     LOG_IF(INFO, myChain.get() != nullptr)
         << "operating in function chain mode, overriding the lambda name: "
         << myLambda;
+
+    std::unique_ptr<ResponseSaver> myResponseSaver;
+    if (not myCallback.empty()) {
+      myResponseSaver = std::make_unique<ResponseSaver>(myCallback);
+    }
 
     const auto myEdgeClientConf = uiiit::support::Conf(myClientConf);
 
@@ -180,11 +256,20 @@ int main(int argc, char* argv[]) {
           mySaver,
           myVarMap.count("dry") > 0));
       myNewClient->setContent(myContent);
+      if (not myCallback.empty()) {
+        myNewClient->setCallback(myCallback);
+      }
       if (myChain.get() != nullptr) {
         myNewClient->setChain(*myChain, myStateSizes);
       }
       myClients.push_back(myNewClient.get());
       myPool.add(std::move(myNewClient));
+    }
+
+    if (not myCallback.empty()) {
+      assert(myNumThreads == 1);
+      assert(myClients.size() == 1);
+      myResponseSaver->client(myClients.back());
     }
 
     std::thread myTerminationThread;
