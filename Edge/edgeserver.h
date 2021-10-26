@@ -58,6 +58,11 @@ class EdgeServer
 
   virtual ~EdgeServer(){};
 
+  //! @return the server endpoint.
+  const std::string& serverEndpoint() const {
+    return theServerEndpoint;
+  }
+
   //! Perform actual processing of a lambda request.
   virtual rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) = 0;
 

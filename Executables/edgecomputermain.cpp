@@ -102,7 +102,8 @@ int main(int argc, char* argv[]) {
       myUtilServer->run(false); // non-blocking
     }
 
-    ec::EdgeComputer myServer(myCli.serverEndpoint(), myUtilCallback);
+    ec::EdgeComputer myServer(
+        myCli.numThreads(), myCli.serverEndpoint(), myUtilCallback);
 
     const auto myServerImpl =
         ec::EdgeServerImplFactory::make(myServer,

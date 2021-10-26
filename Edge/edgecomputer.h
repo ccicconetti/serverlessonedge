@@ -31,11 +31,18 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/computer.h"
+#include "Edge/edgeserver.h"
 #include "Support/chrono.h"
-#include "computer.h"
-#include "edgeserver.h"
+#include "Support/queue.h"
 
 namespace uiiit {
+
+namespace support {
+template <class OBJECT>
+class ThreadPool;
+}
+
 namespace edge {
 
 class EdgeComputer final : public EdgeServer
@@ -62,15 +69,38 @@ class EdgeComputer final : public EdgeServer
 
   using UtilCallback = Computer::UtilCallback;
 
+  class AsyncWorker final
+  {
+   public:
+    explicit AsyncWorker(EdgeComputer&                       aParent,
+                         support::Queue<rpc::LambdaRequest>& aQueue);
+    void operator()();
+    void stop();
+
+   private:
+    EdgeComputer&                       theParent;
+    support::Queue<rpc::LambdaRequest>& theQueue;
+  };
+
  public:
   /**
-   * Create an edge server with a given number of threads.
+   * Create an edge computer that support asynchronous calls.
+   *
+   * \param aNumThreads the number of threads needed for asynchronous responses.
    *
    * \param aServerEndpoint the listening end-point of this server.
+   *
    * \param aCallback the function called as new load values are available.
    */
+  explicit EdgeComputer(const size_t        aNumThreads,
+                        const std::string&  aServerEndpoint,
+                        const UtilCallback& aCallback);
+
+  //! Create an edge computer that only supports synchronous calls.
   explicit EdgeComputer(const std::string&  aServerEndpoint,
                         const UtilCallback& aCallback);
+
+  ~EdgeComputer() override;
 
   //! \return The computer inside this edge server.
   Computer& computer() {
@@ -85,10 +115,18 @@ class EdgeComputer final : public EdgeServer
   //! Perform actual processing of a lambda request.
   rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
 
+  //! Execute a lambda function (blocks until done).
+  rpc::LambdaResponse blockingExecution(const rpc::LambdaRequest& aReq);
+
  private:
   Computer                                        theComputer;
   std::condition_variable                         theDescriptorsCv;
   std::map<uint64_t, std::unique_ptr<Descriptor>> theDescriptors;
+
+  // only for asynchronous responses (if num threads > 1)
+  using WorkersPool = support::ThreadPool<std::unique_ptr<AsyncWorker>>;
+  const std::unique_ptr<WorkersPool>                        theAsyncWorkers;
+  const std::unique_ptr<support::Queue<rpc::LambdaRequest>> theAsyncQueue;
 };
 
 } // end namespace edge

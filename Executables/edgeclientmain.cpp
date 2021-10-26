@@ -63,7 +63,7 @@ class ResponseSaver final
       , theTerminating(false)
       , theThread()
       , theClient(nullptr) {
-    // noop
+    theCallbackServer.run(false);
   }
 
   ~ResponseSaver() {
@@ -87,6 +87,7 @@ class ResponseSaver final
           return;
         }
         const auto myResponse = theQueue.pop();
+        VLOG(3) << "async response received, " << myResponse;
         assert(theClient != nullptr);
         theClient->recordStat(myResponse);
       } catch (const uiiit::support::QueueClosed&) {
@@ -208,7 +209,7 @@ int main(int argc, char* argv[]) {
                                "asynchronous responses with --callback");
     }
 
-    if (myChain.get() != nullptr and myNumThreads > 1) {
+    if (not myCallback.empty() and myNumThreads > 1) {
       throw std::runtime_error(
           "With asynchronous responses it is currently not "
           "possible to have > 1 thread");

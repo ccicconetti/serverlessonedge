@@ -69,6 +69,7 @@ Client::Client(const size_t                 aSeedUser,
     , theLatencyStat()
     , theProcessingStat()
     , theDry(aDry)
+    , theSendRequestQueue()
     , theSizeDist()
     , theSizes()
     , theChain(nullptr)
@@ -196,6 +197,7 @@ void Client::stop() {
   if (theNotStartedFlag) {
     return;
   }
+  theSendRequestQueue.close();
   theStopFlag = true;
   theSleepCondition.notify_one();
   theExitCondition.wait(myLock, [this]() { return theFinishedFlag; });
@@ -228,7 +230,12 @@ void Client::sendRequest(const size_t aSize) {
     myResp = functionChain(myContent);
   }
   assert(myResp.get() != nullptr);
-  recordStat(*myResp);
+  if (not myResp->theAsynchronous) {
+    recordStat(*myResp);
+  }
+
+  // wait until the stat has been recorded
+  theSendRequestQueue.pop();
 }
 
 void Client::recordStat(const edge::LambdaResponse& aResponse) {
@@ -264,6 +271,9 @@ void Client::recordStat(const edge::LambdaResponse& aResponse) {
 
   theLatencyStat(myElapsed);
   theProcessingStat(aResponse.processingTimeSeconds());
+
+  // stat recorded, sendRequest() may proceed
+  theSendRequestQueue.push(0);
 }
 
 void Client::sleep(const double aTime) {

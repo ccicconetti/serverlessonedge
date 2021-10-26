@@ -29,9 +29,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "edgecomputer.h"
+#include "Edge/edgecomputer.h"
 
-#include "edgemessages.h"
+#include "Edge/callbackclient.h"
+#include "Edge/edgemessages.h"
+#include "Support/threadpool.h"
 
 #include <glog/logging.h>
 #include <grpc++/grpc++.h>
@@ -39,7 +41,54 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
+EdgeComputer::AsyncWorker::AsyncWorker(
+    EdgeComputer& aParent, support::Queue<rpc::LambdaRequest>& aQueue)
+    : theParent(aParent)
+    , theQueue(aQueue) {
+  // noop
+}
+
+void EdgeComputer::AsyncWorker::operator()() {
+  while (true) {
+    try {
+      // retrieve one of the pending function requests
+      const auto myRequest = theQueue.pop();
+
+      // executes the lambda function (blocks)
+      auto myResp = theParent.blockingExecution(myRequest);
+      myResp.set_responder(theParent.serverEndpoint());
+      myResp.set_hops(myRequest.hops() + 1);
+      myResp.set_retcode("OK");
+
+      // send the response to the callback server indicated in the request
+      CallbackClient myClient(myRequest.callback());
+      LambdaResponse myResponse(myResp);
+      VLOG(3) << "sending response to " << myRequest.callback() << ", "
+              << myResponse;
+      myClient.ReceiveResponse(myResponse);
+
+    } catch (const support::QueueClosed&) {
+      break;
+    } catch (const std::exception& aErr) {
+      LOG(ERROR) << "exception thrown: " << aErr.what();
+    } catch (...) {
+      LOG(ERROR) << "unknown exception thrown";
+    }
+  }
+}
+
+void EdgeComputer::AsyncWorker::stop() {
+  // noop
+}
+
 EdgeComputer::EdgeComputer(const std::string&  aServerEndpoint,
+                           const UtilCallback& aUtilCallback)
+    : EdgeComputer(0, aServerEndpoint, aUtilCallback) {
+  // noop
+}
+
+EdgeComputer::EdgeComputer(const size_t        aNumThreads,
+                           const std::string&  aServerEndpoint,
                            const UtilCallback& aUtilCallback)
     : EdgeServer(aServerEndpoint)
     , theComputer(
@@ -50,7 +99,36 @@ EdgeComputer::EdgeComputer(const std::string&  aServerEndpoint,
           },
           aUtilCallback)
     , theDescriptorsCv()
-    , theDescriptors() {
+    , theDescriptors()
+    , theAsyncWorkers(aNumThreads == 0 ? nullptr :
+                                         std::make_unique<WorkersPool>())
+    , theAsyncQueue(
+          aNumThreads == 0 ?
+              nullptr :
+              std::make_unique<support::Queue<rpc::LambdaRequest>>()) {
+  if (aNumThreads > 0) {
+    assert(theAsyncWorkers.get() != nullptr);
+    assert(theAsyncQueue.get() != nullptr);
+    LOG(INFO) << "Creating an asynchronous edge computer at end-point "
+              << aServerEndpoint << ", with " << aNumThreads << " threads";
+    for (size_t i = 0; i < aNumThreads; i++) {
+      theAsyncWorkers->add(
+          std::make_unique<AsyncWorker>(*this, *theAsyncQueue));
+    }
+    theAsyncWorkers->start();
+  } else {
+    LOG(INFO) << "Creating a sync-only edge computer at end-point "
+              << aServerEndpoint;
+  }
+}
+
+EdgeComputer::~EdgeComputer() {
+  if (theAsyncWorkers.get() != nullptr) {
+    assert(theAsyncQueue.get() != nullptr);
+    theAsyncQueue->close();
+    theAsyncWorkers->stop();
+    theAsyncWorkers->wait();
+  }
 }
 
 rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
@@ -61,10 +139,8 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
   std::string myRetCode = "OK";
   try {
     if (aReq.dry()) {
-      //
       // dry run: just give an estimate of the time required to run the lambda
       // unlike the actual execution of a lambda, this operation is synchronous
-      //
 
       // convert seconds to milliseconds
       std::array<double, 3> myLastUtils;
@@ -74,37 +150,18 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
       myResp.set_load10(0.5 + myLastUtils[1] * 100);
       myResp.set_load30(0.5 + myLastUtils[2] * 100);
 
+    } else if (not aReq.callback().empty()) {
+      // asynchronous function request
+      if (theAsyncWorkers.get() == nullptr) {
+        myRetCode = "Cannot handle an asynchronous function invocation";
+      } else {
+        myResp.set_asynchronous(true);
+        theAsyncQueue->push(aReq);
+      }
+
     } else {
-      //
       // actual execution of the lambda function
-      //
-
-      // the task must be added out of the critical section below
-      // to avoid deadlock due to a race condition on tasks
-      // that are very short (and become completed before
-      // a new descriptor is added to theDescriptors)
-      const auto myId = theComputer.addTask(LambdaRequest(aReq));
-
-      std::unique_lock<std::mutex> myLock(theMutex);
-
-      auto myNewDesc = std::make_unique<Descriptor>();
-
-      const auto myIt = theDescriptors.insert(std::make_pair(myId, nullptr));
-      assert(myIt.second);
-      myIt.first->second = std::move(myNewDesc);
-      theDescriptorsCv.notify_one();
-      auto& myDescriptor = *myIt.first->second;
-
-      // wait until we get a response
-      myDescriptor.theCondition.wait(
-          myLock, [&myDescriptor]() { return myDescriptor.theDone; });
-
-      assert(myDescriptor.theResponse);
-      myResp = myDescriptor.theResponse->toProtobuf();
-      myResp.set_ptime(myDescriptor.theChrono.stop() * 1e3 + 0.5); // to ms
-
-      VLOG(2) << "number of busy descriptors " << theDescriptors.size();
-      theDescriptors.erase(myIt.first);
+      myResp = blockingExecution(aReq);
     }
 
   } catch (const std::exception& aErr) {
@@ -115,6 +172,38 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
 
   myResp.set_hops(aReq.hops() + 1);
   myResp.set_retcode(myRetCode);
+  return myResp;
+}
+
+rpc::LambdaResponse
+EdgeComputer::blockingExecution(const rpc::LambdaRequest& aReq) {
+  // the task must be added outside the critical section below
+  // to avoid deadlock due to a race condition on tasks
+  // that are very short (and become completed before
+  // a new descriptor is added to theDescriptors)
+  const auto myId = theComputer.addTask(LambdaRequest(aReq));
+
+  std::unique_lock<std::mutex> myLock(theMutex);
+
+  auto myNewDesc = std::make_unique<Descriptor>();
+
+  const auto myIt = theDescriptors.insert(std::make_pair(myId, nullptr));
+  assert(myIt.second);
+  myIt.first->second = std::move(myNewDesc);
+  theDescriptorsCv.notify_one();
+  auto& myDescriptor = *myIt.first->second;
+
+  // wait until we get a response
+  myDescriptor.theCondition.wait(
+      myLock, [&myDescriptor]() { return myDescriptor.theDone; });
+
+  assert(myDescriptor.theResponse);
+  auto myResp = myDescriptor.theResponse->toProtobuf();
+  myResp.set_ptime(myDescriptor.theChrono.stop() * 1e3 + 0.5); // to ms
+
+  VLOG(2) << "number of busy descriptors " << theDescriptors.size();
+  theDescriptors.erase(myIt.first);
+
   return myResp;
 }
 

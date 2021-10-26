@@ -35,6 +35,7 @@ SOFTWARE.
 #include "Support/chrono.h"
 #include "Support/conf.h"
 #include "Support/macros.h"
+#include "Support/queue.h"
 #include "Support/random.h"
 #include "Support/stat.h"
 
@@ -225,6 +226,7 @@ class Client
   support::SummaryStat                       theLatencyStat;
   support::SummaryStat                       theProcessingStat;
   const bool                                 theDry;
+  support::Queue<int>                        theSendRequestQueue;
 
   // set in setSizeDist()
   std::unique_ptr<support::UniformIntRv<size_t>> theSizeDist;
