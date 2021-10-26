@@ -122,6 +122,8 @@ std::string LambdaRequest::toString() const {
   std::stringstream myStream;
   myStream << "name: " << theName << ", "
            << (theForward ? "from edge node" : "from edge client")
+           << (theCallback.empty() ? std::string() :
+                                     (std::string(", callback ") + theCallback))
            << ", hops: " << theHops << ", input: " << theInput
            << ", datain size: " << theDataIn.size();
   if (not theStates.empty()) {
@@ -142,15 +144,28 @@ std::string LambdaRequest::toString() const {
 // LambdaResponse
 ////////////////////////////////////////////////////////////////////////////////
 
+LambdaResponse::LambdaResponse()
+    : LambdaResponse("OK", "", {{0.0, 0.0, 0.0}}, true) {
+  // noop
+}
+
 LambdaResponse::LambdaResponse(const std::string& aRetCode,
                                const std::string& aOutput)
-    : LambdaResponse(aRetCode, aOutput, {{0.0, 0.0, 0.0}}) {
+    : LambdaResponse(aRetCode, aOutput, {{0.0, 0.0, 0.0}}, false) {
   // noop
 }
 
 LambdaResponse::LambdaResponse(const std::string&           aRetCode,
                                const std::string&           aOutput,
                                const std::array<double, 3>& aLoads)
+    : LambdaResponse(aRetCode, aOutput, aLoads, false) {
+  // noop
+}
+
+LambdaResponse::LambdaResponse(const std::string&           aRetCode,
+                               const std::string&           aOutput,
+                               const std::array<double, 3>& aLoads,
+                               const bool                   aAsynchronous)
     : theRetCode(aRetCode)
     , theOutput(aOutput)
     , theResponder()
@@ -160,7 +175,8 @@ LambdaResponse::LambdaResponse(const std::string&           aRetCode,
     , theLoad10(0.5 + aLoads[1] * 100)
     , theLoad30(0.5 + aLoads[2] * 100)
     , theHops(0)
-    , theStates() {
+    , theStates()
+    , theAsynchronous(aAsynchronous) {
   // noop
 }
 
@@ -174,7 +190,8 @@ LambdaResponse::LambdaResponse(const rpc::LambdaResponse& aMsg)
     , theLoad10(aMsg.load10())
     , theLoad30(aMsg.load30())
     , theHops(aMsg.hops())
-    , theStates(deserializeStates(aMsg)) {
+    , theStates(deserializeStates(aMsg))
+    , theAsynchronous(aMsg.asynchronous()) {
   // noop
 }
 
@@ -184,7 +201,8 @@ bool LambdaResponse::operator==(const LambdaResponse& aOther) const {
          theProcessingTime == aOther.theProcessingTime and
          theDataOut == aOther.theDataOut and theLoad1 == aOther.theLoad1 and
          theLoad10 == aOther.theLoad10 and theLoad30 == aOther.theLoad30 and
-         theHops == aOther.theHops and theStates == aOther.theStates;
+         theHops == aOther.theHops and theStates == aOther.theStates and
+         theAsynchronous == aOther.theAsynchronous;
 }
 
 rpc::LambdaResponse LambdaResponse::toProtobuf() const {
@@ -199,26 +217,32 @@ rpc::LambdaResponse LambdaResponse::toProtobuf() const {
   myRet.set_load30(theLoad30);
   myRet.set_hops(theHops);
   serializeStates(*myRet.mutable_states(), theStates);
+  myRet.set_asynchronous(theAsynchronous);
   return myRet;
 }
 
 std::string LambdaResponse::toString() const {
   std::stringstream myStream;
-  myStream << "retcode: " << theRetCode << ", from: " << theResponder
-           << ", ptime: " << theProcessingTime << " ms"
-           << ", hops: " << theHops << ", load: " << theLoad1 << "/"
-           << theLoad10 << "/" << theLoad30 << ", output: " << theOutput
-           << ", dataout size: " << theDataOut.size();
-  if (not theStates.empty()) {
-    myStream << ", states: [";
-    for (auto it = theStates.cbegin(); it != theStates.end(); ++it) {
-      if (it != theStates.cbegin()) {
-        myStream << ", ";
+  myStream << "retcode: " << theRetCode;
+  if (theAsynchronous) {
+    myStream << ", asynchronous";
+  } else {
+    myStream << ", from: " << theResponder << ", ptime: " << theProcessingTime
+             << " ms"
+             << ", hops: " << theHops << ", load: " << theLoad1 << "/"
+             << theLoad10 << "/" << theLoad30 << ", output: " << theOutput
+             << ", dataout size: " << theDataOut.size();
+    if (not theStates.empty()) {
+      myStream << ", states: [";
+      for (auto it = theStates.cbegin(); it != theStates.end(); ++it) {
+        if (it != theStates.cbegin()) {
+          myStream << ", ";
+        }
+        myStream << it->first << " (" << it->second.theContent.size()
+                 << " bytes)";
       }
-      myStream << it->first << " (" << it->second.theContent.size()
-               << " bytes)";
+      myStream << "]";
     }
-    myStream << "]";
   }
   return myStream.str();
 }

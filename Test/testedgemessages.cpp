@@ -51,6 +51,7 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize) {
   LambdaRequest myRequest("name", "input", "datain");
   myRequest.states().emplace("state0", State("content"));
   myRequest.states().emplace("state1", State("another_content"));
+  myRequest.theCallback = "1.2.3.4:6666";
   LOG(INFO) << myRequest.toString();
 
   const auto    myReqSerialized = myRequest.toProtobuf();
@@ -60,10 +61,21 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize) {
                                           << myReqDeserialized.toString();
 }
 
-TEST_F(TestEdgeMessages, test_response_serialize_deserialize) {
+TEST_F(TestEdgeMessages, test_response_serialize_deserialize_sync) {
   LambdaResponse myResponse("name", "output", {0.1, 0.2, 0.3});
   myResponse.states().emplace("state0", State("content"));
   myResponse.states().emplace("state1", State("another_content"));
+  LOG(INFO) << myResponse.toString();
+
+  const auto     myResSerialized = myResponse.toProtobuf();
+  LambdaResponse myResDeserialized(myResSerialized);
+  ASSERT_EQ(myResponse, myResDeserialized) << "\n"
+                                           << myResponse.toString() << "\nvs.\n"
+                                           << myResDeserialized.toString();
+}
+
+TEST_F(TestEdgeMessages, test_response_serialize_deserialize_async) {
+  LambdaResponse myResponse;
   LOG(INFO) << myResponse.toString();
 
   const auto     myResSerialized = myResponse.toProtobuf();

@@ -113,6 +113,7 @@ struct LambdaRequest {
   const bool                   theForward;
   const unsigned int           theHops;
   std::map<std::string, State> theStates;
+  std::string                  theCallback;
 
  private:
   explicit LambdaRequest(const std::string& aName,
@@ -124,11 +125,19 @@ struct LambdaRequest {
 
 //! A function return, possibly also embeddeding states.
 struct LambdaResponse {
+  //! Create an asynchronous response (without output).
+  explicit LambdaResponse();
+
+  //! Create a synchronous response (with output).
   explicit LambdaResponse(const std::string& aRetCode,
                           const std::string& aOutput);
+
+  //! Create a synchronous response (with output), with load indications.
   explicit LambdaResponse(const std::string&           aRetCode,
                           const std::string&           aOutput,
                           const std::array<double, 3>& aLoads);
+
+  //! Deserialize from protobuf.
   explicit LambdaResponse(const rpc::LambdaResponse& aMsg);
 
   //! \return true if the messages are identical.
@@ -157,6 +166,13 @@ struct LambdaResponse {
   unsigned short               theLoad30;
   unsigned int                 theHops;
   std::map<std::string, State> theStates;
+  const bool                   theAsynchronous;
+
+ private:
+  explicit LambdaResponse(const std::string&           aRetCode,
+                          const std::string&           aOutput,
+                          const std::array<double, 3>& aLoads,
+                          const bool                   aAsynchronous);
 };
 
 // free functions

@@ -22,28 +22,31 @@ message State {
 message LambdaRequest {
   // name of the remote procedure to be executed
   // should never be empty
-  string name    = 1;
+  string name     = 1;
 
   // function input, encoded as a string (may be empty)
-  string input   = 2;
+  string input    = 2;
 
   // function input, encoded as a binary object (may be empty)
-  bytes  datain  = 3;
+  bytes  datain   = 3;
 
   // if true then instead of actually executing the function the edge server
   // gives an estimate of the time required to run it in response
-  bool   dry     = 4;
+  bool   dry      = 4;
 
   // if true this means that this request has been issued from a router or
   // dispatcher and, hence, should not be forwarded further but rather
   // addressed to a computer
-  bool   forward = 5;
+  bool   forward  = 5;
 
   // number of edge nodes traversed so far
-  uint32 hops    = 6;
+  uint32 hops     = 6;
 
   // map of application's states, accessed by their names
   map<string, State> states = 7;
+
+  // endpoint where to send the response for asynchronous invocations
+  string callback = 8;
 }
 
 message LambdaResponse {
@@ -51,36 +54,40 @@ message LambdaResponse {
   // - OK: the function was executed with success
   // - else: string encoding the type of error encountered
   // should never be empty
-  string retcode   = 1;
+  string retcode    = 1;
 
   // execution output, encoded as a string (may be empty)
-  string output    = 2;
+  string output     = 2;
 
   // identifier of the edge computer that carried out the procedure
-  string responder = 3;
+  string responder  = 3;
 
   // time required for the execution of the lambda on the computer, in ms
   // (does not include queueing in the gRPC server)
-  uint32 ptime     = 4;
+  uint32 ptime      = 4;
   
   // execution output, encoded as a binary object (may be empty)
-  bytes  dataout   = 5;
+  bytes  dataout    = 5;
 
   // utilization of the edge computer before the execution
   // of this procedure, scaled in 0-100
-  uint32 load1     = 6;
+  uint32 load1      = 6;
 
   // average utilization of the edge computer in the last 10 seconds,
   // scaled in 0-100
-  uint32 load10    = 7;
+  uint32 load10     = 7;
 
   // average utilization of the edge computer in the last 30 seconds,
   // scaled in 0-100
-  uint32 load30    = 8;
+  uint32 load30     = 8;
 
   // number of edge nodes traversed so far
-  uint32 hops      = 9;
+  uint32 hops       = 9;
 
   // map of application's states, accessed by their names
   map<string, State> states = 10;
+
+  // if true then this response does not contain the output
+  // this is used with asynchronous function invocations
+  bool asynchronous = 11;
 }
