@@ -29,6 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "Edge/Model/chainfactory.h"
 #include "Simulation/unifclient.h"
 #include "Support/chrono.h"
 #include "Support/glograii.h"
@@ -59,6 +60,7 @@ int main(int argc, char* argv[]) {
   std::string mySizes;
   std::string myContent;
   std::string myOutputFile;
+  std::string myChainConf;
   size_t      myDuration;
   size_t      myMaxRequests;
   size_t      myNumThreads;
@@ -107,6 +109,9 @@ int main(int argc, char* argv[]) {
     ("inter-request-type",
      po::value<std::string>(&myInterRequestType)->default_value("constant"),
      "One of: constant, uniform, poisson.")
+    ("chain-conf",
+     po::value<std::string>(&myChainConf)->default_value(""),
+     "Function chain configuration. Load from file with file=filename.json. Use file=make-template to generated an example. If present override --lambda.")
     ("dry", "Do not execute the lambda requests, just ask for an estimate of the time required.")
     ("seed",
      po::value<size_t>(&mySeedUser)->default_value(0),
@@ -127,6 +132,20 @@ int main(int argc, char* argv[]) {
     if (myServerEndpoints.empty()) {
       throw std::runtime_error("Empty end-points: " + myServerEndpoints);
     }
+
+    std::unique_ptr<ec::model::Chain> myChain;
+    std::map<std::string, size_t>     myStateSizes;
+    if (not myChainConf.empty()) {
+      ec::model::ChainFactory::make(
+          uiiit::support::Conf(myChainConf), myChain, myStateSizes);
+      if (myChain.get() == nullptr) {
+        return EXIT_SUCCESS;
+      }
+    }
+
+    LOG_IF(INFO, myChain.get() != nullptr)
+        << "operating in function chain mode, overriding the lambda name: "
+        << myLambda;
 
     const auto myEdgeClientConf = uiiit::support::Conf(myClientConf);
 
@@ -157,10 +176,13 @@ int main(int argc, char* argv[]) {
           myMaxRequests,
           uiiit::support::split<std::set<std::string>>(myServerEndpoints, ","),
           myEdgeClientConf,
-          myLambda,
+          myChain.get() == nullptr ? myLambda : "",
           mySaver,
           myVarMap.count("dry") > 0));
       myNewClient->setContent(myContent);
+      if (myChain.get() != nullptr) {
+        myNewClient->setChain(*myChain, myStateSizes);
+      }
       myClients.push_back(myNewClient.get());
       myPool.add(std::move(myNewClient));
     }

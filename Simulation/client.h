@@ -31,6 +31,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "Edge/Model/chain.h"
 #include "Support/chrono.h"
 #include "Support/conf.h"
 #include "Support/macros.h"
@@ -38,9 +39,11 @@ SOFTWARE.
 #include "Support/stat.h"
 
 #include <condition_variable>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace uiiit {
@@ -52,7 +55,8 @@ class SummaryStat;
 
 namespace edge {
 class EdgeClientInterface;
-}
+struct LambdaResponse;
+} // namespace edge
 
 namespace simulation {
 
@@ -68,6 +72,17 @@ struct Stats {};
  *
  * The lambda request can be overridden after construction and set to a custom
  * content.
+ *
+ * The client can operate in the following modes:
+ *
+ * - single function execution: in this case the lambda name must be non-empty
+ *   and the client invokes at each loop iteraiont a single function call,
+ *   measuring the response time;
+ * - chain of functions: the lambda name is empty and the client invokes
+ *   one function another another, also embedding the functions' states
+ *   in each call depending on the state dependencies; in this mode the info
+ *   about the chain is provided by a dedicated method setChain() which must
+ *   be called before the client is started.
  */
 class Client
 {
@@ -90,6 +105,21 @@ class Client
    * Set to an empty string to revert to the previous behavior.
    */
   void setContent(const std::string& aContent);
+
+  /**
+   * @brief Set the chain info for a client operating in function chain mode.
+   *
+   * @param aChain The chain of functions to be invoked and the state
+   * dependencies.
+   *
+   * @param aStateSizes The size, in bytes, of the states.
+   *
+   * @throw std::runtime_error if aStateSizes does not include all the states
+   * in aChain or if the client has been configured in the ctor to operate
+   * in single function call mode
+   */
+  void setChain(const edge::model::Chain&            aChain,
+                const std::map<std::string, size_t>& aStateSizes);
 
   //! Draw size from a uniform r.v.
   void setSizeDist(const size_t aSizeMin, const size_t aSizeMax);
@@ -153,6 +183,23 @@ class Client
   //! Set the finish flag.
   void finish();
 
+  /**
+   * @brief Run a single function
+   *
+   * @return the function response
+   */
+  std::unique_ptr<edge::LambdaResponse>
+  singleExecution(const std::string& aInput);
+
+  /**
+   * @brief Run a chain of function executions.
+   *
+   * @return the last function response
+   * of the whole chain.
+   */
+  std::unique_ptr<edge::LambdaResponse>
+  functionChain(const std::string& aInput);
+
  protected:
   const size_t theSeedUser;
   const size_t theSeedInc;
@@ -163,6 +210,7 @@ class Client
   std::condition_variable                    theExitCondition;
   bool                                       theStopFlag;
   bool                                       theFinishedFlag;
+  bool                                       theNotStartedFlag;
   support::Chrono                            theLambdaChrono;
   std::unique_ptr<edge::EdgeClientInterface> theClient;
   const size_t                               theNumRequests;
@@ -175,6 +223,10 @@ class Client
   // set in setSizeDist()
   std::unique_ptr<support::UniformIntRv<size_t>> theSizeDist;
   std::vector<size_t>                            theSizes;
+
+  // set in setChain()
+  std::unique_ptr<edge::model::Chain> theChain;
+  std::map<std::string, std::string>  theStates;
 
   // set in setContent()
   std::string theContent;

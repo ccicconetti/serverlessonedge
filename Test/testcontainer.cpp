@@ -36,8 +36,6 @@ SOFTWARE.
 
 #include "gtest/gtest.h"
 
-#include <glog/logging.h> // XXX
-
 namespace uiiit {
 namespace edge {
 

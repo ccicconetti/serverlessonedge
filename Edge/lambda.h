@@ -154,6 +154,7 @@ class Lambda final
  private:
   const std::string theName;
   const bool        theCopyInput;
+  const bool        theCopyStates;
   const std::string theOutput;
   const Converter   theConverter;
 };

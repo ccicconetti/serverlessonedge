@@ -31,9 +31,11 @@ SOFTWARE.
 
 #include "Edge/Model/chain.h"
 
+#include "Support/tostring.h"
+
 #include <nlohmann/json.hpp>
 
-#include <set>
+#include <algorithm>
 #include <stdexcept>
 
 using json = nlohmann::json;
@@ -66,6 +68,47 @@ bool Chain::operator==(const Chain& aOther) const {
          theDependencies == aOther.theDependencies;
 }
 
+std::string Chain::name() const {
+  return toString(theFunctions, "-");
+}
+
+std::set<std::string> Chain::uniqueFunctions() const {
+  std::set<std::string> ret;
+  for (const auto& myFunction : theFunctions) {
+    ret.insert(myFunction);
+  }
+  return ret;
+}
+
+const Chain::Functions& Chain::functions() const {
+  return theFunctions;
+}
+
+const Chain::Dependencies& Chain::dependencies() const {
+  return theDependencies;
+}
+
+std::set<std::string> Chain::allStates(const bool aIncludeFreeStates) const {
+  std::set<std::string> ret;
+  for (const auto& elem : theDependencies) {
+    if (aIncludeFreeStates or not elem.second.empty()) {
+      ret.insert(elem.first);
+    }
+  }
+  return ret;
+}
+
+std::set<std::string> Chain::states(const std::string& aFunction) const {
+  std::set<std::string> ret;
+  for (const auto& elem : theDependencies) {
+    if (std::find(elem.second.begin(), elem.second.end(), aFunction) !=
+        elem.second.end()) {
+      ret.insert(elem.first);
+    }
+  }
+  return ret;
+}
+
 Chain Chain::fromJson(const std::string& aJson) {
   const auto   myJson = json::parse(aJson);
   Functions    myFunctions(myJson["functions"]);
@@ -95,6 +138,28 @@ std::string Chain::toJson() const {
   }
   return ret.dump(2);
 }
+
+Chain exampleChain() {
+  return Chain({"f1", "f2", "f1"},
+               {
+                   {
+                       "s0",
+                       {"f1"},
+                   },
+                   {
+                       "s1",
+                       {"f1", "f2"},
+                   },
+                   {
+                       "s2",
+                       {"f2"},
+                   },
+                   {
+                       "s3",
+                       {},
+                   },
+               });
+};
 
 } // namespace model
 } // namespace edge

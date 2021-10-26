@@ -54,6 +54,8 @@ EdgeComputer::EdgeComputer(const std::string&  aServerEndpoint,
 }
 
 rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
+  VLOG(3) << LambdaRequest(aReq);
+
   rpc::LambdaResponse myResp;
 
   std::string myRetCode = "OK";

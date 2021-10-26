@@ -113,7 +113,9 @@ LambdaRequest::LambdaRequest(const std::string& aName,
 }
 
 LambdaRequest LambdaRequest::makeOneMoreHop() const {
-  return LambdaRequest(theName, theInput, theDataIn, theForward, theHops + 1);
+  LambdaRequest ret(theName, theInput, theDataIn, theForward, theHops + 1);
+  ret.theStates = theStates;
+  return ret;
 }
 
 std::string LambdaRequest::toString() const {

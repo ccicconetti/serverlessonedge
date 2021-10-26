@@ -1,10 +1,17 @@
 syntax = "proto3";
 
+import "void.proto";
+
 package uiiit.rpc;
 
 service EdgeServer {
   // request the execution of a remote procedure on an edge computer
   rpc RunLambda (LambdaRequest) returns (LambdaResponse) {}
+}
+
+service CallbackServer {
+  // receive a response to a previously issued lambda request
+  rpc ReceiveResponse (LambdaResponse) returns (Void) {}
 }
 
 // application's state
