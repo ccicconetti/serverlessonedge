@@ -41,7 +41,7 @@ This mode operates by embedding the states needed in each function call. Note th
 
 The sequence diagram is the following:
 
-![](docs/example-chain-2.png)
+![](example-chain-2.png)
 
 Before running `edgeclient` we need to set up the environment, i.e., to launch the e-computers, e-router, and e-controller. This can be done by the running script `stateful-1.sh` (assuming we are in `build/debug/Executables`):
 
