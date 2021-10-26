@@ -38,6 +38,8 @@ SOFTWARE.
 #include <glog/logging.h>
 #include <grpc++/grpc++.h>
 
+#include <mutex>
+
 namespace uiiit {
 namespace edge {
 
@@ -129,6 +131,23 @@ EdgeComputer::~EdgeComputer() {
     theAsyncWorkers->stop();
     theAsyncWorkers->wait();
   }
+}
+
+void EdgeComputer::companion(const std::string& aCompanionEndpoint) {
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  if (theAsyncWorkers.get() == nullptr) {
+    throw std::runtime_error(
+        "cannot set the companion end-point of a synchronous edge computer");
+  }
+  if (theCompanionEndpoint.empty()) {
+    LOG(INFO) << "setting the companion end-point of " << serverEndpoint()
+              << " to " << aCompanionEndpoint;
+  } else {
+    LOG(WARNING) << "changing the companion end-point of " << serverEndpoint()
+                 << " from " << theCompanionEndpoint << " to "
+                 << aCompanionEndpoint;
+  }
+  theCompanionEndpoint = aCompanionEndpoint;
 }
 
 rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {

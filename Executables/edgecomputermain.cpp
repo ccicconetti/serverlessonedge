@@ -57,6 +57,7 @@ int main(int argc, char* argv[]) {
   std::string myUtilServerEndpoint;
   std::string myConf;
   std::string myServerConf;
+  std::string myCompanionEndpoint;
 
   po::options_description myDesc("Allowed options");
   // clang-format off
@@ -67,6 +68,11 @@ int main(int argc, char* argv[]) {
   ("utilization-endpoint",
    po::value<std::string>(&myUtilServerEndpoint)->default_value("0.0.0.0:6476"),
    "Utilization server end-point. If empty utilization is not computed.")
+  ("asynchronous",
+   "If used makes the edge computer asynchronous.")
+  ("companion-endpoint",
+   po::value<std::string>(&myCompanionEndpoint)->default_value(""),
+   "Companion server end-point, required to serve function chains. Makes the computer asynchronous.")
   ("conf",
    po::value<std::string>(&myConf)->default_value(
      "type=raspberry,"
@@ -102,8 +108,15 @@ int main(int argc, char* argv[]) {
       myUtilServer->run(false); // non-blocking
     }
 
-    ec::EdgeComputer myServer(
-        myCli.numThreads(), myCli.serverEndpoint(), myUtilCallback);
+    const auto myAsynchronous = myCli.varMap().count("asynchronous") > 0 ||
+                                not myCompanionEndpoint.empty();
+
+    ec::EdgeComputer myServer(myAsynchronous ? myCli.numThreads() : 0,
+                              myCli.serverEndpoint(),
+                              myUtilCallback);
+    if (not myCompanionEndpoint.empty()) {
+      myServer.companion(myCompanionEndpoint);
+    }
 
     const auto myServerImpl =
         ec::EdgeServerImplFactory::make(myServer,
