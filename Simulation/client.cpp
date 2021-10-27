@@ -133,12 +133,12 @@ Client::singleExecution(const std::string& aInput) {
           theChain->functions().front() :
           theLambda;
   edge::LambdaRequest myReq(myName, aInput);
-  for (const auto& myState : theChain->allStates(false)) {
-    const auto it = theStates.find(myState);
-    assert(it != theStates.end());
-    myReq.states().emplace(myState, edge::State(it->second));
-  }
-  if (theChain) {
+  if (theChain.get() != nullptr) {
+    for (const auto& myState : theChain->allStates(false)) {
+      const auto it = theStates.find(myState);
+      assert(it != theStates.end());
+      myReq.states().emplace(myState, edge::State(it->second));
+    }
     myReq.theChain = std::make_unique<edge::model::Chain>(*theChain);
   }
   myReq.theNextFunctionIndex = 0;
@@ -250,6 +250,8 @@ void Client::sendRequest(const size_t aSize) {
   assert(myResp.get() != nullptr);
   if (not myResp->theAsynchronous) {
     recordStat(*myResp);
+  } else {
+    VLOG(3) << "postponed response indication received, " << *myResp;
   }
 
   // wait until the stat has been recorded
