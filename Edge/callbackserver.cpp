@@ -51,7 +51,6 @@ grpc::Status CallbackServer::CallbackServerImpl::ReceiveResponse(
   assert(aResponse);
 
   LambdaResponse myResponse(*aResponse);
-  VLOG(3) << myResponse;
   theQueue.push(std::move(myResponse));
 
   return grpc::Status::OK;
