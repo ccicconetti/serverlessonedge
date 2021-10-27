@@ -88,10 +88,10 @@ void EdgeComputer::AsyncWorker::operator()() {
              myRequest.chain_size()) ?
                 myRequest.chain(myRequest.nextfunctionindex() + 1) :
                 std::string(); // empty name will result in an error
-        LambdaRequest myNewRequest(myName, myResp.output(), myResp.dataout());
-        myNewRequest.theHops = myResp.hops() + 1;
 
         LambdaRequest myOldRequest(myRequest);
+        LambdaRequest myNewRequest(myName, myResp.output(), myResp.dataout());
+        myNewRequest.theHops     = myOldRequest.theHops + 1;
         myNewRequest.theStates   = myOldRequest.theStates;
         myNewRequest.theCallback = myOldRequest.theCallback;
         myNewRequest.theChain    = std::move(myOldRequest.theChain);
