@@ -173,6 +173,7 @@ int main(int argc, char* argv[]) {
     ("callback-endpoint",
      po::value<std::string>(&myCallback)->default_value(""),
      "Callback to receive the return of the function/chain in an asynchronous manner. Mandatory with function chains.")
+    ("append", "Append to the output file instead of overwriting results.")
     ("dry", "Do not execute the lambda requests, just ask for an estimate of the time required.")
     ("seed",
      po::value<size_t>(&mySeedUser)->default_value(0),
@@ -234,7 +235,7 @@ int main(int argc, char* argv[]) {
         std::chrono::nanoseconds(static_cast<int64_t>(myInitialDelay * 1e9)));
 
     const uiiit::support::Saver mySaver(
-        myOutputFile, true, myDuration == 0, false);
+        myOutputFile, true, myDuration == 0, myVarMap.count("append") == 1);
     using ClientPtr = std::unique_ptr<es::UnifClient>;
     uiiit::support::ThreadPool<ClientPtr> myPool;
     std::list<es::Client*>                myClients;
