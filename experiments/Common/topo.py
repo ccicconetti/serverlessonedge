@@ -114,8 +114,8 @@ class NestedCircularTopo(Topo):
     "One ring of inner switches, each connected point-to-point to a number of outer switches"
 
     def __init__(self, n_inner, n_outer, linkargs, hostargs):
-        assert n_outer >= 1
         assert n_inner >= 1
+        assert n_outer >= 0
 
         # Initialize topology
         Topo.__init__(self)
