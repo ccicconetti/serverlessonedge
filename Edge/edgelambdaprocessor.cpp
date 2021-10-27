@@ -119,6 +119,8 @@ EdgeLambdaProcessor::process(const rpc::LambdaRequest& aReq) {
       if (myRetCode == "OK") {
         processSuccess(aReq, myDestination, ret.first, ret.second);
         return ret.first.toProtobuf();
+      } else {
+        VLOG(3) << "error received, " << ret.first;
       }
 
     } catch (const std::exception& aErr) {
