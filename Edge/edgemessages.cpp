@@ -288,6 +288,13 @@ bool LambdaResponse::operator==(const LambdaResponse& aOther) const {
          theAsynchronous == aOther.theAsynchronous;
 }
 
+void LambdaResponse::removePtimeLoad() {
+  theProcessingTime = 0;
+  theLoad1          = 0;
+  theLoad10         = 0;
+  theLoad30         = 0;
+}
+
 rpc::LambdaResponse LambdaResponse::toProtobuf() const {
   rpc::LambdaResponse myRet;
   myRet.set_retcode(theRetCode);

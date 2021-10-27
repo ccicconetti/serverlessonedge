@@ -185,6 +185,9 @@ struct LambdaResponse final {
     return theStates;
   }
 
+  //! Remove the processing time and load info.
+  void removePtimeLoad();
+
   //! \return the protobuf-encoded message.
   rpc::LambdaResponse toProtobuf() const;
   //! \return a human-readable representation of the request.

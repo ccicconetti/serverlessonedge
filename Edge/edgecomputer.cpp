@@ -76,6 +76,7 @@ void EdgeComputer::AsyncWorker::operator()() {
         // send the response to the callback server indicated in the request
         CallbackClient myClient(myRequest.callback());
         LambdaResponse myResponse(myResp);
+        myResponse.removePtimeLoad();
         VLOG(3) << "sending response to " << myRequest.callback() << ", "
                 << myResponse;
         myClient.ReceiveResponse(myResponse);
