@@ -45,6 +45,8 @@ class ThreadPool;
 
 namespace edge {
 
+class EdgeClientGrpc;
+
 /**
  * @brief Simulator of an edge server responding to lambda function invocations.
  *
@@ -139,7 +141,9 @@ class EdgeComputer final : public EdgeServer
    * @brief Set the companion end-point, which is needed for function chains.
    *
    * @param aCompanionEndpoint the end-point of the destination to which to
-   * send the next function invocation.
+   * send the next function invocation. If an empty string is passed then
+   * the companion is cleared, i.e., the edge computer becomes synchronous
+   * only again.
    *
    * Can be called multiple times, each time overring the previous value.
    *
@@ -169,7 +173,7 @@ class EdgeComputer final : public EdgeServer
   const std::unique_ptr<support::Queue<rpc::LambdaRequest>> theAsyncQueue;
 
   // only for function chains, which are asynchronous by default
-  std::string theCompanionEndpoint;
+  std::unique_ptr<EdgeClientGrpc> theCompanionClient;
 };
 
 } // end namespace edge

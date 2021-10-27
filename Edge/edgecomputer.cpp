@@ -82,14 +82,6 @@ void EdgeComputer::AsyncWorker::operator()() {
         myClient.ReceiveResponse(myResponse);
 
       } else {
-        std::string myCompanionEndpoint;
-        {
-          const std::lock_guard<std::mutex> myLock(theParent.theMutex);
-          myCompanionEndpoint = theParent.theCompanionEndpoint;
-        }
-
-        EdgeClientGrpc myClient(myCompanionEndpoint);
-
         // prepare the new request
         const auto myName =
             (((int)myRequest.nextfunctionindex() + 1) <
@@ -106,18 +98,28 @@ void EdgeComputer::AsyncWorker::operator()() {
         myNewRequest.theNextFunctionIndex =
             myOldRequest.theNextFunctionIndex + 1;
 
-        VLOG(3) << "invoking next function on " << myCompanionEndpoint << ", "
-                << myNewRequest;
-
-        // send the next request, for which we expect immediate async response
-        const auto myImmediateResp = myClient.RunLambda(myNewRequest, false);
-        LOG_IF(ERROR, myImmediateResp.theRetCode != "OK")
-            << "error when executing the next function in the chain via "
-            << myCompanionEndpoint << ": " << myImmediateResp.theRetCode;
-        LOG_IF(ERROR, not myImmediateResp.theAsynchronous)
-            << "received a synchronous response when executing the next "
-               "function in the chain via "
-            << myCompanionEndpoint << ": result ignored";
+        {
+          const std::lock_guard<std::mutex> myLock(theParent.theMutex);
+          if (theParent.theCompanionClient.get() == nullptr) {
+            LOG(ERROR) << "companion not set for "
+                       << theParent.serverEndpoint();
+          } else {
+            // send the next request, we expect immediate async response
+            const auto myCompanionEndpoint =
+                theParent.theCompanionClient->serverEndpoint();
+            VLOG(3) << "invoking next function on " << myCompanionEndpoint
+                    << ", " << myNewRequest;
+            const auto myImmediateResp =
+                theParent.theCompanionClient->RunLambda(myNewRequest, false);
+            LOG_IF(ERROR, myImmediateResp.theRetCode != "OK")
+                << "error when executing the next function in the chain via "
+                << myCompanionEndpoint << ": " << myImmediateResp.theRetCode;
+            LOG_IF(ERROR, not myImmediateResp.theAsynchronous)
+                << "received a synchronous response when executing the next "
+                   "function in the chain via "
+                << myCompanionEndpoint << ": result ignored";
+          }
+        }
       }
 
     } catch (const support::QueueClosed&) {
@@ -155,10 +157,10 @@ EdgeComputer::EdgeComputer(const size_t        aNumThreads,
     , theDescriptors()
     , theAsyncWorkers(aNumThreads == 0 ? nullptr :
                                          std::make_unique<WorkersPool>())
-    , theAsyncQueue(
-          aNumThreads == 0 ?
-              nullptr :
-              std::make_unique<support::Queue<rpc::LambdaRequest>>()) {
+    , theAsyncQueue(aNumThreads == 0 ?
+                        nullptr :
+                        std::make_unique<support::Queue<rpc::LambdaRequest>>())
+    , theCompanionClient() {
   if (aNumThreads > 0) {
     assert(theAsyncWorkers.get() != nullptr);
     assert(theAsyncQueue.get() != nullptr);
@@ -190,15 +192,21 @@ void EdgeComputer::companion(const std::string& aCompanionEndpoint) {
     throw std::runtime_error(
         "cannot set the companion end-point of a synchronous edge computer");
   }
-  if (theCompanionEndpoint.empty()) {
+  if (aCompanionEndpoint.empty()) {
+    LOG(WARNING) << "clearing the companion end-point of " << serverEndpoint();
+    theCompanionClient.reset();
+    return;
+  }
+  if (theCompanionClient.get() == nullptr) {
     LOG(INFO) << "setting the companion end-point of " << serverEndpoint()
               << " to " << aCompanionEndpoint;
+
   } else {
     LOG(WARNING) << "changing the companion end-point of " << serverEndpoint()
-                 << " from " << theCompanionEndpoint << " to "
+                 << " from " << theCompanionClient->serverEndpoint() << " to "
                  << aCompanionEndpoint;
   }
-  theCompanionEndpoint = aCompanionEndpoint;
+  theCompanionClient = std::make_unique<EdgeClientGrpc>(aCompanionEndpoint);
 }
 
 rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
@@ -225,7 +233,7 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
     // having set the companion beforehand, if needed
     if (aReq.chain_size() > 0 and
         (int) aReq.nextfunctionindex() < (aReq.chain_size() - 1) and
-        theCompanionEndpoint.empty()) {
+        theCompanionClient.get() == nullptr) {
       throw std::runtime_error(
           "Cannot invoke the next function in the chain without a companion");
     }
