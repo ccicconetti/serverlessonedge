@@ -9,6 +9,7 @@ echo "prepare configuration files"
 echo "start the e-controller"
 env $LOG ./edgecontroller >& edgecontroller.log &
 pids="$pids $!"
+sleep 0.5
 
 echo "start the e-computers"
 for (( i = 1 ; i <= 2 ; i++ )) ; do
@@ -29,6 +30,18 @@ env $LOG ./edgerouter \
     >& edgerouter.log &
 pids="$pids $!"
 
+echo "print e-router table"
+while (true) ; do
+  ret=$(./forwardingtableclient \
+    --server-endpoint 127.0.0.1:6474 2> /dev/null)
+  echo $ret | grep 'f1' >& /dev/null
+  if [ $? -eq 0 ] ; then
+    echo $ret
+    break
+  fi
+  sleep 0.5
+done
+
 # wait for the user to continue, then clean up everything
 read -n 1 -p "press any key to kill all the processes spawned"
 
@@ -36,3 +49,8 @@ for pid in $pids ; do
   kill $pid 2> /dev/null
 done
 rm -f computer-[12].json
+
+# print possible processes still around
+if [ "$(ps ax | grep edge | grep -v grep)" != "" ] ; then
+  echo "there might be still processes alive"
+fi
