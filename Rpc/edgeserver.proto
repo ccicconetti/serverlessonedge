@@ -20,6 +20,9 @@ service StateServer {
   
   // put a state, possibly overwriting existing content
   rpc Put (State) returns (StateResponse) {}
+
+  // delete a state, if available
+  rpc Del (State) returns (StateResponse) {}
 }
 
 // application's state

@@ -47,6 +47,8 @@ SOFTWARE.
 #include "Edge/forwardingtableserver.h"
 #include "Edge/lambda.h"
 #include "Edge/processortype.h"
+#include "Edge/stateclient.h"
+#include "Edge/stateserver.h"
 #include "Support/chrono.h"
 #include "Support/conf.h"
 #include "Support/wait.h"
@@ -70,9 +72,12 @@ struct TestChainTransactionGrpc : public ::testing::Test {
         : theControllerEndpoint("127.0.0.1:6475")
         , theRouterEndpoint("127.0.0.1:6473")
         , theRouterCommandEndpoint("127.0.0.1:6474")
+        , theStateServerEndpoint("127.0.0.1:6481")
         , theComputerEndpoints({"127.0.0.1:10001", "127.0.0.1:10002"})
         , theCompanionEndpoints({"127.0.0.1:10101", "127.0.0.1:10102"})
-        , theCompanionCommandEndpoints({"127.0.0.1:10201", "127.0.0.1:10202"})
+        , theComputerStateServerEndpoints(
+              {"127.0.0.1:10201", "127.0.0.1:10202"})
+        , theCompanionCommandEndpoints({"127.0.0.1:10301", "127.0.0.1:10302"})
         , theCallbackEndpoint("127.0.0.1:6480")
         , theNumThreads(5)
         , theController(theControllerEndpoint)
@@ -86,9 +91,12 @@ struct TestChainTransactionGrpc : public ::testing::Test {
         , theRouterImpl(theRouter, theRouterEndpoint, theNumThreads)
         , theRouterCommand(theRouterCommandEndpoint,
                            *theRouter.tables()[0],
-                           *theRouter.tables()[1]) {
+                           *theRouter.tables()[1])
+        , theStateServer(theStateServerEndpoint) {
       static const auto GB = uint64_t(1) << uint64_t(30);
       assert(theComputerEndpoints.size() == theCompanionEndpoints.size());
+      assert(theComputerEndpoints.size() ==
+             theComputerStateServerEndpoints.size());
       assert(theComputerEndpoints.size() ==
              theCompanionCommandEndpoints.size());
 
@@ -112,6 +120,8 @@ struct TestChainTransactionGrpc : public ::testing::Test {
             2);
         theComputerImpls.emplace_back(std::make_unique<EdgeServerGrpc>(
             *theComputers.back(), theComputerEndpoints[i], theNumThreads));
+        theComputerStateServers.emplace_back(
+            std::make_unique<StateServer>(theComputerStateServerEndpoints[i]));
         theCompanions.emplace_back(std::make_unique<EdgeRouter>(
             theCompanionEndpoints[i],
             theCompanionCommandEndpoints[i],
@@ -134,8 +144,10 @@ struct TestChainTransactionGrpc : public ::testing::Test {
       theController.run(false);
       theRouterImpl.run();
       theRouterCommand.run(false);
+      theStateServer.run(false);
       for (size_t i = 0; i < theComputerEndpoints.size(); i++) {
         theComputerImpls[i]->run();
+        theComputerStateServers[i]->run(false);
         theCompanionImpls[i]->run();
         theCompanionCommands[i]->run(false);
       }
@@ -158,8 +170,10 @@ struct TestChainTransactionGrpc : public ::testing::Test {
     const std::string              theControllerEndpoint;
     const std::string              theRouterEndpoint;
     const std::string              theRouterCommandEndpoint;
+    const std::string              theStateServerEndpoint;
     const std::vector<std::string> theComputerEndpoints;
     const std::vector<std::string> theCompanionEndpoints;
+    const std::vector<std::string> theComputerStateServerEndpoints;
     const std::vector<std::string> theCompanionCommandEndpoints;
     const std::string              theCallbackEndpoint;
     const size_t                   theNumThreads;
@@ -168,8 +182,10 @@ struct TestChainTransactionGrpc : public ::testing::Test {
     EdgeRouter                                          theRouter;
     EdgeServerGrpc                                      theRouterImpl;
     ForwardingTableServer                               theRouterCommand;
+    StateServer                                         theStateServer;
     std::vector<std::unique_ptr<EdgeComputer>>          theComputers;
     std::vector<std::unique_ptr<EdgeServerImpl>>        theComputerImpls;
+    std::vector<std::unique_ptr<StateServer>>           theComputerStateServers;
     std::vector<std::unique_ptr<EdgeRouter>>            theCompanions;
     std::vector<std::unique_ptr<EdgeServerImpl>>        theCompanionImpls;
     std::vector<std::unique_ptr<ForwardingTableServer>> theCompanionCommands;
@@ -182,8 +198,8 @@ TEST_F(TestChainTransactionGrpc, test_chain_correct) {
   EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
   LambdaRequest  myReq("f0", std::string(10, 'A'));
   myReq.theCallback = mySystem.theCallbackEndpoint;
-  myReq.states().emplace("s0", "content-state-0");
-  myReq.states().emplace("s1", "content-state-1");
+  myReq.states().emplace("s0", State::fromContent("content-state-0"));
+  myReq.states().emplace("s1", State::fromContent("content-state-1"));
   myReq.theChain = std::make_unique<model::Chain>(
       model::Chain::Functions({"f0", "f1", "f0"}),
       model::Chain::Dependencies({
@@ -212,8 +228,8 @@ TEST_F(TestChainTransactionGrpc, test_chain_correct) {
     ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
     ASSERT_EQ(0u, myResp.theDataOut.size());
     ASSERT_EQ((std::map<std::string, State>({
-                  {"s0", State("content-state-0")},
-                  {"s1", State("content-state-1")},
+                  {"s0", State::fromContent("content-state-0")},
+                  {"s1", State::fromContent("content-state-1")},
               })),
               myResp.states());
   }
@@ -243,8 +259,8 @@ TEST_F(TestChainTransactionGrpc, test_chain_correct) {
     ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
     ASSERT_EQ(0u, myResp.theDataOut.size());
     ASSERT_EQ((std::map<std::string, State>({
-                  {"s0", State("content-state-0")},
-                  {"s1", State("content-state-1")},
+                  {"s0", State::fromContent("content-state-0")},
+                  {"s1", State::fromContent("content-state-1")},
               })),
               myResp.states());
   }
@@ -281,6 +297,77 @@ TEST_F(TestChainTransactionGrpc, test_chain_incorrect) {
   ASSERT_TRUE(myResp.theAsynchronous);
   ASSERT_TRUE(support::waitFor<size_t>(
       [&myResponses]() { return myResponses.size(); }, 1, 1));
+}
+
+TEST_F(TestChainTransactionGrpc, test_chain_remote_states) {
+  System mySystem;
+
+  // create the async responses collector
+  CallbackServer::Queue myResponses;
+  CallbackServer myCallbackServer(mySystem.theCallbackEndpoint, myResponses);
+  myCallbackServer.run(false);
+
+  // upload the states to the server
+  StateClient myStateClient(mySystem.theStateServerEndpoint);
+  ASSERT_NO_THROW(myStateClient.Put("s0", "content-s0"));
+  ASSERT_NO_THROW(myStateClient.Put("s1", "content-s1"));
+
+  // create the request
+  LambdaRequest myReq("f0", std::string(10, 'A'));
+  myReq.theCallback = mySystem.theCallbackEndpoint;
+  myReq.states().emplace("s0",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.states().emplace("s1",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.theChain = std::make_unique<model::Chain>(
+      model::Chain::Functions({"f0", "f1", "f0"}),
+      model::Chain::Dependencies({
+          {"s0", {"f0", "f1"}},
+          {"s1", {"f1"}},
+      }));
+  myReq.theNextFunctionIndex = 0;
+
+  // invoke the functions
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  for (size_t i = 0; i < N; i++) {
+    const auto myResp = myClient.RunLambda(myReq, false);
+    ASSERT_EQ("OK", myResp.theRetCode);
+    ASSERT_TRUE(myResp.theAsynchronous);
+  }
+
+  // wait for all the responses to be received
+  ASSERT_TRUE(support::waitFor<size_t>(
+      [&myResponses]() { return myResponses.size(); }, N, 10));
+
+  // check the received responses
+  assert(mySystem.theComputerStateServerEndpoints.size() >= 2);
+  for (size_t i = 0; i < N; i++) {
+    const auto myResp = myResponses.pop();
+    ASSERT_EQ("OK", myResp.theRetCode);
+    ASSERT_FALSE(myResp.theAsynchronous);
+    ASSERT_EQ(6, myResp.theHops);
+    ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
+    ASSERT_EQ(0u, myResp.theDataOut.size());
+    ASSERT_EQ(
+        (std::map<std::string, State>({
+            {"s0",
+             State::fromLocation(mySystem.theComputerStateServerEndpoints[0])},
+            {"s1",
+             State::fromLocation(mySystem.theComputerStateServerEndpoints[1])},
+        })),
+        myResp.states());
+  }
+
+  // check states
+  StateClient myStateClient0(mySystem.theComputerStateServerEndpoints[0]);
+  StateClient myStateClient1(mySystem.theComputerStateServerEndpoints[1]);
+  std::string myContent;
+  ASSERT_TRUE(myStateClient0.Get("s0", myContent));
+  ASSERT_FALSE(myStateClient1.Get("s0", myContent));
+  ASSERT_EQ("content-s0", myContent);
+  ASSERT_FALSE(myStateClient0.Get("s1", myContent));
+  ASSERT_TRUE(myStateClient1.Get("s1", myContent));
+  ASSERT_EQ("content-s1", myContent);
 }
 
 } // namespace edge

@@ -58,6 +58,10 @@ class StateServer final : public rpc::SimpleServer
                      const rpc::State*    aState,
                      rpc::StateResponse*  aResponse) override;
 
+    grpc::Status Del(grpc::ServerContext* aContext,
+                     const rpc::State*    aState,
+                     rpc::StateResponse*  aResponse) override;
+
    private:
     std::mutex                         theMutex;
     std::map<std::string, std::string> theStateRepo;

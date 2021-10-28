@@ -35,6 +35,7 @@ SOFTWARE.
 #include "Edge/callbackclient.h"
 #include "Edge/edgeclientgrpc.h"
 #include "Edge/edgemessages.h"
+#include "Edge/stateclient.h"
 #include "Support/threadpool.h"
 
 #include <glog/logging.h>
@@ -160,7 +161,8 @@ EdgeComputer::EdgeComputer(const size_t        aNumThreads,
     , theAsyncQueue(aNumThreads == 0 ?
                         nullptr :
                         std::make_unique<support::Queue<rpc::LambdaRequest>>())
-    , theCompanionClient() {
+    , theCompanionClient()
+    , theStateClient() {
   if (aNumThreads > 0) {
     assert(theAsyncWorkers.get() != nullptr);
     assert(theAsyncQueue.get() != nullptr);
@@ -207,6 +209,25 @@ void EdgeComputer::companion(const std::string& aCompanionEndpoint) {
                  << aCompanionEndpoint;
   }
   theCompanionClient = std::make_unique<EdgeClientGrpc>(aCompanionEndpoint);
+}
+
+void EdgeComputer::state(const std::string& aStateEndpoint) {
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  if (aStateEndpoint.empty()) {
+    LOG(WARNING) << "clearing the state end-point of " << serverEndpoint();
+    theStateClient.reset();
+    return;
+  }
+  if (theStateClient.get() == nullptr) {
+    LOG(INFO) << "setting the state end-point of " << serverEndpoint() << " to "
+              << aStateEndpoint;
+
+  } else {
+    LOG(WARNING) << "changing the state end-point of " << serverEndpoint()
+                 << " from " << theStateClient->serverEndpoint() << " to "
+                 << aStateEndpoint;
+  }
+  theStateClient = std::make_unique<StateClient>(aStateEndpoint);
 }
 
 rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {

@@ -77,6 +77,22 @@ grpc::Status StateServer::StateServerImpl::Put(
   return grpc::Status::OK;
 }
 
+grpc::Status StateServer::StateServerImpl::Del(
+    [[maybe_unused]] grpc::ServerContext* aContext,
+    const rpc::State*                     aState,
+    rpc::StateResponse*                   aResponse) {
+  assert(aState);
+  assert(aResponse);
+
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  if (theStateRepo.erase(aState->name()) == 1) {
+    aResponse->set_retcode("OK");
+  } else {
+    aResponse->set_retcode("state not found: " + aState->name());
+  }
+  return grpc::Status::OK;
+}
+
 StateServer::StateServer(const std::string& aEndpoint)
     : SimpleServer(aEndpoint)
     , theServerImpl() {

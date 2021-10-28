@@ -37,6 +37,7 @@ SOFTWARE.
 #include "Edge/edgeserverimpl.h"
 #include "Edge/edgeserverimplfactory.h"
 #include "Edge/edgeserveroptions.h"
+#include "Edge/stateserver.h"
 #include "Support/conf.h"
 #include "Support/glograii.h"
 #include "Support/signalhandlerwait.h"
@@ -58,6 +59,7 @@ int main(int argc, char* argv[]) {
   std::string myConf;
   std::string myServerConf;
   std::string myCompanionEndpoint;
+  std::string myStateEndpoint;
 
   po::options_description myDesc("Allowed options");
   // clang-format off
@@ -73,6 +75,9 @@ int main(int argc, char* argv[]) {
   ("companion-endpoint",
    po::value<std::string>(&myCompanionEndpoint)->default_value(""),
    "Companion server end-point, required to serve function chains. Makes the computer asynchronous.")
+  ("state-endpoint",
+   po::value<std::string>(&myStateEndpoint)->default_value(""),
+   "If not empty create a state server listening to that end-point, which is required to serve function chains with remote states.")
   ("conf",
    po::value<std::string>(&myConf)->default_value(
      "type=raspberry,"
@@ -116,6 +121,12 @@ int main(int argc, char* argv[]) {
                               myUtilCallback);
     if (not myCompanionEndpoint.empty()) {
       myServer.companion(myCompanionEndpoint);
+    }
+
+    std::unique_ptr<ec::StateServer> myStateServer;
+    if (not myStateEndpoint.empty()) {
+      myStateServer = std::make_unique<ec::StateServer>(myStateEndpoint);
+      myServer.state(myStateEndpoint);
     }
 
     const auto myServerImpl =

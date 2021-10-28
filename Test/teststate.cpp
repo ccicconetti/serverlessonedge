@@ -61,9 +61,28 @@ TEST_F(TestState, test_client_server) {
     ASSERT_EQ("content-s" + std::to_string(i), myContent);
   }
 
+  // overwrite content
+  ASSERT_NO_THROW(myClient.Put("s0", "another-content-s0"));
+  ASSERT_TRUE(myClient.Get("s0", myContent));
+  ASSERT_EQ("another-content-s0", myContent);
+
   // read invalid states
   ASSERT_FALSE(myClient.Get("", myContent));
   ASSERT_FALSE(myClient.Get("sX", myContent));
+
+  // delete an invalid state
+  ASSERT_FALSE(myClient.Del(""));
+  ASSERT_FALSE(myClient.Del("sX"));
+
+  // delete a valid state
+  ASSERT_TRUE(myClient.Del("s0"));
+  EXPECT_FALSE(myClient.Get("s0", myContent));
+  ASSERT_FALSE(myClient.Del("s0"));
+
+  // write it again
+  ASSERT_NO_THROW(myClient.Put("s0", "new-content-s0"));
+  ASSERT_TRUE(myClient.Get("s0", myContent));
+  ASSERT_EQ("new-content-s0", myContent);
 }
 
 } // namespace edge

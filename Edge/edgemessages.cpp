@@ -43,18 +43,36 @@ namespace edge {
 ////////////////////////////////////////////////////////////////////////////////
 
 State::State(const rpc::State& aState)
-    : theContent(aState.content()) {
+    : theLocation(aState.location())
+    , theContent(aState.content()) {
   // noop
 }
 
 rpc::State State::toProtobuf() const {
   rpc::State ret;
+  ret.set_location(theLocation);
   ret.set_content(theContent);
   return ret;
 }
 
+std::string State::toString() const {
+  std::stringstream ret;
+  ret << "(";
+  if (not theLocation.empty()) {
+    ret << "location " << theLocation;
+  }
+  if (not theLocation.empty() and not theContent.empty()) {
+    ret << ", ";
+  }
+  if (not theContent.empty()) {
+    ret << theContent.size() << " bytes";
+  }
+  ret << ")";
+  return ret.str();
+}
+
 bool State::operator==(const State& aOther) const {
-  return theContent == aOther.theContent;
+  return theLocation == aOther.theLocation and theContent == aOther.theContent;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -208,8 +226,7 @@ std::string LambdaRequest::toString() const {
       if (it != theStates.cbegin()) {
         myStream << ", ";
       }
-      myStream << it->first << " (" << it->second.theContent.size()
-               << " bytes)";
+      myStream << it->first << " " << it->second.toString();
     }
     myStream << "]";
   }
@@ -328,8 +345,7 @@ std::string LambdaResponse::toString() const {
         if (it != theStates.cbegin()) {
           myStream << ", ";
         }
-        myStream << it->first << " (" << it->second.theContent.size()
-                 << " bytes)";
+        myStream << it->first << " " << it->second.toString();
       }
       myStream << "]";
     }

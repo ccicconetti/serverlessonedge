@@ -47,10 +47,21 @@ class Chain;
 
 //! An application's state.
 struct State {
-  //! Create with given content.
-  explicit State(const std::string& aContent)
-      : theContent(aContent) {
+  //! Create with given location and content.
+  explicit State(const std::string& aLocation, const std::string& aContent)
+      : theLocation(aLocation)
+      , theContent(aContent) {
     // noop
+  }
+
+  //! Create from location only.
+  static State fromLocation(const std::string& aLocation) {
+    return State(aLocation, "");
+  }
+
+  //! Create from content only.
+  static State fromContent(const std::string& aContent) {
+    return State("", aContent);
   }
 
   //! Create from protobuf.
@@ -61,6 +72,12 @@ struct State {
 
   //! \return true if the states are identical.
   bool operator==(const State& aOther) const;
+
+  //! \return a human-readable string for logs.
+  std::string toString() const;
+
+  //! The end-point of the server holding this state.
+  std::string theLocation;
 
   //! The content of this state.
   std::string theContent;

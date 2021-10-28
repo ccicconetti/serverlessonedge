@@ -46,6 +46,7 @@ class ThreadPool;
 namespace edge {
 
 class EdgeClientGrpc;
+class StateClient;
 
 /**
  * @brief Simulator of an edge server responding to lambda function invocations.
@@ -151,6 +152,18 @@ class EdgeComputer final : public EdgeServer
    */
   void companion(const std::string& aCompanionEndpoint);
 
+  /**
+   * @brief Set the state end-point, which is needed for remote states.
+   *
+   * @param aStateEndpoint the end-point of the server that keeps the states
+   * for this edge computer.
+
+   * Can be called multiple times, each time overring the previous value.
+   *
+   * @throw std::runtime_error to disconnect from the current state server.
+   */
+  void state(const std::string& aStateEndpoint);
+
  private:
   //! Callback invoked by the computer once a task is complete.
   void taskDone(const uint64_t                               aId,
@@ -174,6 +187,9 @@ class EdgeComputer final : public EdgeServer
 
   // only for function chains, which are asynchronous by default
   std::unique_ptr<EdgeClientGrpc> theCompanionClient;
+
+  // only for remote states
+  std::unique_ptr<StateClient> theStateClient;
 };
 
 } // end namespace edge

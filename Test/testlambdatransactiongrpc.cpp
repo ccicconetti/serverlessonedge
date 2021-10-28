@@ -238,8 +238,8 @@ TEST_F(TestLambdaTransactionGrpc, test_asynchronous) {
   EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
   LambdaRequest  myReq("clambda0", std::string(10, 'A'));
   myReq.theCallback = myCallbackEndpoint;
-  myReq.states().emplace("s0", "content-state-0");
-  myReq.states().emplace("s1", "content-state-1");
+  myReq.states().emplace("s0", State::fromContent("content-state-0"));
+  myReq.states().emplace("s1", State::fromContent("content-state-1"));
   CallbackServer::Queue myResponses;
   CallbackServer        myCallbackServer(myCallbackEndpoint, myResponses);
   myCallbackServer.run(false);
@@ -262,8 +262,8 @@ TEST_F(TestLambdaTransactionGrpc, test_asynchronous) {
     ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
     ASSERT_EQ(0u, myResp.theDataOut.size());
     ASSERT_EQ((std::map<std::string, State>({
-                  {"s0", State("content-state-0")},
-                  {"s1", State("content-state-1")},
+                  {"s0", State::fromContent("content-state-0")},
+                  {"s1", State::fromContent("content-state-1")},
               })),
               myResp.states());
   }

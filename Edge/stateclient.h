@@ -66,6 +66,16 @@ class StateClient final : public rpc::SimpleClient<rpc::StateServer>
    * @param aState the state.
    */
   void Put(const std::string& aName, const std::string& aState);
+
+  /**
+   * @brief Delete the state from a remote server.
+   *
+   * @param aName the state to be deleted.
+   *
+   * @return true if the state was deleted.
+   * @return false otherwise.
+   */
+  bool Del(const std::string& aName);
 };
 
 } // end namespace edge

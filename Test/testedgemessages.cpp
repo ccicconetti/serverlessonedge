@@ -50,8 +50,9 @@ TEST_F(TestEdgeMessages, test_ctor) {
 
 TEST_F(TestEdgeMessages, test_request_serialize_deserialize) {
   LambdaRequest myRequest("name", "input", "datain");
-  myRequest.states().emplace("state0", State("content"));
-  myRequest.states().emplace("state1", State("another_content"));
+  myRequest.states().emplace("state0", State::fromContent("content"));
+  myRequest.states().emplace("state1", State::fromContent("another_content"));
+  myRequest.states().emplace("state2", State::fromLocation("1.2.3.4:6666"));
   myRequest.theCallback = "1.2.3.4:6666";
   LOG(INFO) << myRequest.toString();
 
@@ -65,8 +66,9 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize) {
 
 TEST_F(TestEdgeMessages, test_request_serialize_deserialize_chain) {
   LambdaRequest myRequest("", "input", "datain");
-  myRequest.states().emplace("state0", State("content"));
-  myRequest.states().emplace("state1", State("another_content"));
+  myRequest.states().emplace("state0", State::fromContent("content"));
+  myRequest.states().emplace("state1", State::fromContent("another_content"));
+  myRequest.states().emplace("state2", State::fromLocation("1.2.3.4:6666"));
   myRequest.theCallback = "1.2.3.4:6666";
   myRequest.theChain    = std::make_unique<model::Chain>(model::exampleChain());
   LOG(INFO) << myRequest.toString();
@@ -81,8 +83,9 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize_chain) {
 
 TEST_F(TestEdgeMessages, test_response_serialize_deserialize_sync) {
   LambdaResponse myResponse("name", "output", {0.1, 0.2, 0.3});
-  myResponse.states().emplace("state0", State("content"));
-  myResponse.states().emplace("state1", State("another_content"));
+  myResponse.states().emplace("state0", State::fromContent("content"));
+  myResponse.states().emplace("state1", State::fromContent("another_content"));
+  myResponse.states().emplace("state2", State::fromLocation("1.2.3.4:6666"));
   LOG(INFO) << myResponse.toString();
 
   const auto     myResSerialized = myResponse.toProtobuf();

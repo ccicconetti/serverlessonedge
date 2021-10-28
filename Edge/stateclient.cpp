@@ -78,5 +78,21 @@ void StateClient::Put(const std::string& aName, const std::string& aState) {
   }
 }
 
+bool StateClient::Del(const std::string& aName) {
+  rpc::State myRequest;
+  myRequest.set_name(aName);
+  rpc::StateResponse                   myResponse;
+  [[maybe_unused]] grpc::ClientContext myContext;
+
+  rpc::checkStatus(theStub->Del(&myContext, myRequest, &myResponse));
+
+  if (myResponse.retcode() != "OK") {
+    LOG(ERROR) << "error when deleting state " << aName << " from "
+               << serverEndpoint() << ": " << myResponse.retcode();
+    return false;
+  }
+  return true;
+}
+
 } // namespace edge
 } // namespace uiiit

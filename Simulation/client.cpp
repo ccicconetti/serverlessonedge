@@ -137,7 +137,7 @@ Client::singleExecution(const std::string& aInput) {
     for (const auto& myState : theChain->allStates(false)) {
       const auto it = theStates.find(myState);
       assert(it != theStates.end());
-      myReq.states().emplace(myState, edge::State(it->second));
+      myReq.states().emplace(myState, edge::State::fromContent(it->second));
     }
     myReq.theChain = std::make_unique<edge::model::Chain>(*theChain);
   }
@@ -170,7 +170,7 @@ Client::functionChain(const std::string& aInput) {
     for (const auto& myState : theChain->states(myFunction)) {
       const auto it = theStates.find(myState);
       assert(it != theStates.end());
-      myReq.states().emplace(myState, edge::State(it->second));
+      myReq.states().emplace(myState, edge::State::fromContent(it->second));
     }
 
     // run the lambda function
