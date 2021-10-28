@@ -103,6 +103,15 @@ class Chain final
   std::string toString() const;
 
   /**
+   * @brief Return a new chain containing only the given function.
+   *
+   * @param aFunction The function to include.
+   *
+   * @return the new chain.
+   */
+  Chain singleFunctionChain(const std::string& aFunction);
+
+  /**
    * @brief Create a chain from a JSON-encoded string.
    *
    * @param aJson The JSON-encoded string.

@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "Edge/Model/chainfactory.h"
 #include "Edge/callbackserver.h"
+#include "Edge/stateserver.h"
 #include "Simulation/unifclient.h"
 #include "Support/chrono.h"
 #include "Support/glograii.h"
@@ -119,6 +120,7 @@ int main(int argc, char* argv[]) {
   std::string myOutputFile;
   std::string myChainConf;
   std::string myCallback;
+  std::string myStateEndpoint;
   size_t      myDuration;
   size_t      myMaxRequests;
   size_t      myNumThreads;
@@ -169,10 +171,13 @@ int main(int argc, char* argv[]) {
      "One of: constant, uniform, poisson.")
     ("chain-conf",
      po::value<std::string>(&myChainConf)->default_value(""),
-     "Function chain configuration. Load from file with file=filename.json. Use file=make-template to generated an example. If present override --lambda.")
+     "Function chain configuration. Load from file with type=file,filename=CHAINFILE.json. Use type=make-template to generated an example. If present override --lambda.")
     ("callback-endpoint",
      po::value<std::string>(&myCallback)->default_value(""),
      "Callback to receive the return of the function/chain in an asynchronous manner. Mandatory with function chains.")
+    ("state-endpoint",
+     po::value<std::string>(&myStateEndpoint)->default_value(""),
+     "Create a state server listening at the given end-point.")
     ("append", "Append to the output file instead of overwriting results.")
     ("dry", "Do not execute the lambda requests, just ask for an estimate of the time required.")
     ("seed",
@@ -231,6 +236,12 @@ int main(int argc, char* argv[]) {
     LOG_IF(INFO, not myContent.empty())
         << "Using a custom content for all lambda requests: " << myContent;
 
+    std::unique_ptr<ec::StateServer> myStateServer;
+    if (not myStateEndpoint.empty()) {
+      myStateServer = std::make_unique<ec::StateServer>(myStateEndpoint);
+      myStateServer->run(false);
+    }
+
     std::this_thread::sleep_for(
         std::chrono::nanoseconds(static_cast<int64_t>(myInitialDelay * 1e9)));
 
@@ -259,6 +270,7 @@ int main(int argc, char* argv[]) {
       if (myChain.get() != nullptr) {
         myNewClient->setChain(*myChain, myStateSizes);
       }
+      myNewClient->setStateServer(myStateEndpoint);
       myClients.push_back(myNewClient.get());
       myPool.add(std::move(myNewClient));
     }

@@ -126,6 +126,7 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<ec::StateServer> myStateServer;
     if (not myStateEndpoint.empty()) {
       myStateServer = std::make_unique<ec::StateServer>(myStateEndpoint);
+      myStateServer->run(false);
       myServer.state(myStateEndpoint);
     }
 

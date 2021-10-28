@@ -76,6 +76,11 @@ struct State {
   //! \return a human-readable string for logs.
   std::string toString() const;
 
+  //! \return true if the state is remote.
+  bool remote() const noexcept {
+    return not theLocation.empty();
+  }
+
   //! The end-point of the server holding this state.
   std::string theLocation;
 

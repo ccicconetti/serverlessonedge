@@ -56,6 +56,7 @@ class SummaryStat;
 
 namespace edge {
 class EdgeClientInterface;
+struct State;
 struct LambdaResponse;
 } // namespace edge
 
@@ -124,6 +125,16 @@ class Client
 
   //! Set the callback endpoint in outgoing requests.
   void setCallback(const std::string& aCallback);
+
+  /**
+   * @brief Set the end-point of the server to be used for remote states.
+   *
+   * Calling this method causes the state to be uploaded to the server
+   * specified and then remote states to be used afterwards.
+   *
+   * @param aStateEndpoint the end-point of the local state server to be used.
+   */
+  void setStateServer(const std::string& aStateEndpoint);
 
   //! Draw size from a uniform r.v.
   void setSizeDist(const size_t aSizeMin, const size_t aSizeMax);
@@ -207,6 +218,9 @@ class Client
   std::unique_ptr<edge::LambdaResponse>
   functionChain(const std::string& aInput);
 
+  //! Prepare the states if not valid.
+  void validateStates();
+
  protected:
   const size_t theSeedUser;
   const size_t theSeedInc;
@@ -227,6 +241,8 @@ class Client
   support::SummaryStat                       theProcessingStat;
   const bool                                 theDry;
   support::Queue<int>                        theSendRequestQueue;
+  std::map<std::string, edge::State>         theLastStates;
+  bool                                       theInvalidStates;
 
   // set in setSizeDist()
   std::unique_ptr<support::UniformIntRv<size_t>> theSizeDist;
@@ -234,13 +250,16 @@ class Client
 
   // set in setChain()
   std::unique_ptr<edge::model::Chain> theChain;
-  std::map<std::string, std::string>  theStates;
+  std::map<std::string, size_t>       theStateSizes;
 
   // set in setCallback()
   std::string theCallback;
 
   // set in setContent()
   std::string theContent;
+
+  // set in setStateServer()
+  std::string theStateEndpoint;
 };
 
 } // namespace simulation

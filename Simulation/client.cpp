@@ -34,6 +34,7 @@ SOFTWARE.
 #include "Edge/edgeclientfactory.h"
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
+#include "Edge/stateclient.h"
 #include "Support/saver.h"
 #include "Support/stat.h"
 #include "Support/tostring.h"
@@ -70,12 +71,15 @@ Client::Client(const size_t                 aSeedUser,
     , theProcessingStat()
     , theDry(aDry)
     , theSendRequestQueue()
+    , theLastStates()
+    , theInvalidStates(false)
     , theSizeDist()
     , theSizes()
     , theChain(nullptr)
-    , theStates()
+    , theStateSizes()
     , theCallback()
-    , theContent() {
+    , theContent()
+    , theStateEndpoint() {
   LOG(INFO) << "created a client with seed (" << aSeedUser << "," << aSeedInc
             << "), which will send max " << aNumRequests << " requests to "
             << toString(aServers, ",") << ", "
@@ -134,10 +138,11 @@ Client::singleExecution(const std::string& aInput) {
           theLambda;
   edge::LambdaRequest myReq(myName, aInput);
   if (theChain.get() != nullptr) {
+    validateStates();
     for (const auto& myState : theChain->allStates(false)) {
-      const auto it = theStates.find(myState);
-      assert(it != theStates.end());
-      myReq.states().emplace(myState, edge::State::fromContent(it->second));
+      const auto it = theLastStates.find(myState);
+      assert(it != theLastStates.end());
+      myReq.states().emplace(myState, it->second);
     }
     myReq.theChain = std::make_unique<edge::model::Chain>(*theChain);
   }
@@ -164,14 +169,18 @@ Client::functionChain(const std::string& aInput) {
   std::unique_ptr<edge::LambdaResponse> myResp(nullptr);
   unsigned int                          myHops  = 0;
   unsigned int                          myPtime = 0;
+  validateStates();
   for (const auto& myFunction : theChain->functions()) {
     // create a request and fill it with the states needed by the function
     edge::LambdaRequest myReq(myFunction, myInput, myDataIn);
     for (const auto& myState : theChain->states(myFunction)) {
-      const auto it = theStates.find(myState);
-      assert(it != theStates.end());
-      myReq.states().emplace(myState, edge::State::fromContent(it->second));
+      const auto it = theLastStates.find(myState);
+      assert(it != theLastStates.end());
+      myReq.states().emplace(myState, it->second);
     }
+
+    myReq.theChain = std::make_unique<edge::model::Chain>(
+        theChain->singleFunctionChain(myFunction));
 
     // run the lambda function
     myResp = std::make_unique<edge::LambdaResponse>(
@@ -184,6 +193,13 @@ Client::functionChain(const std::string& aInput) {
       break;
     }
 
+    // save the states returned
+    for (const auto& elem : myResp->states()) {
+      auto it = theLastStates.find(elem.first);
+      assert(it != theLastStates.end());
+      it->second = elem.second;
+    }
+
     // use the return value to fill the next input
     myInput  = myResp->theOutput;
     myDataIn = myResp->theDataOut;
@@ -193,8 +209,8 @@ Client::functionChain(const std::string& aInput) {
     myPtime += myResp->theProcessingTime;
   }
 
-  // remove the states (if any) from the return to the caller
-  myResp->states().clear();
+  // save all the states in the final response
+  myResp->states() = theLastStates;
 
   // if the number of functions is greater than 2, remove some
   // fields that are not meaningful
@@ -259,6 +275,13 @@ void Client::sendRequest(const size_t aSize) {
 }
 
 void Client::recordStat(const edge::LambdaResponse& aResponse) {
+  // save the states returned
+  for (const auto& elem : aResponse.states()) {
+    auto it = theLastStates.find(elem.first);
+    assert(it != theLastStates.end());
+    it->second = elem.second;
+  }
+
   // measure the application latency
   const auto myElapsed = theLambdaChrono.stop();
 
@@ -319,19 +342,10 @@ void Client::setChain(const edge::model::Chain&            aChain,
 
   LOG_IF(WARNING, theChain.get() != nullptr) << "overwriting an existing chain";
 
-  // save the chain
-  theChain = std::make_unique<edge::model::Chain>(aChain);
-
-  // create the states without including free states (= those no functions
-  // depend upon)
-  theStates.clear();
-  for (const auto& myState : aChain.allStates(false)) {
-    const auto it = aStateSizes.find(myState);
-    if (it == aStateSizes.end()) {
-      throw std::runtime_error("the size of the state is missing: " + myState);
-    }
-    theStates[myState] = std::string(it->second, 'A');
-  }
+  // save the chain and state sizes
+  theChain         = std::make_unique<edge::model::Chain>(aChain);
+  theStateSizes    = aStateSizes;
+  theInvalidStates = true;
 }
 
 void Client::setCallback(const std::string& aCallback) {
@@ -346,6 +360,27 @@ void Client::setCallback(const std::string& aCallback) {
                  << aCallback;
   }
   theCallback = aCallback;
+}
+
+void Client::setStateServer(const std::string& aStateEndpoint) {
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  if (aStateEndpoint.empty()) {
+    if (theStateEndpoint.empty()) {
+      LOG(WARNING)
+          << "clearing an already empty state server end-point: ignored";
+    } else {
+      LOG(WARNING) << "clearing the state server end-point: "
+                   << theStateEndpoint;
+    }
+  }
+  if (aStateEndpoint.empty()) {
+    LOG(INFO) << "setting the state server end-point to " << aStateEndpoint;
+  } else {
+    LOG(WARNING) << "updating the state server end-point: " << theStateEndpoint
+                 << " -> " << aStateEndpoint;
+  }
+  theStateEndpoint = aStateEndpoint;
+  theInvalidStates = true;
 }
 
 void Client::setSizeDist(const size_t aSizeMin, const size_t aSizeMax) {
@@ -373,6 +408,31 @@ size_t Client::nextSize() {
   }
   const auto myValue = (*theSizeDist)();
   return theSizes.empty() ? myValue : theSizes.at(myValue);
+}
+void Client::validateStates() {
+  if (not theInvalidStates) {
+    return;
+  }
+
+  theLastStates.clear();
+  std::unique_ptr<edge::StateClient> myStateClient;
+  for (const auto& elem : theStateSizes) {
+    if (theStateEndpoint.empty()) {
+      // local state
+      theLastStates.emplace(
+          elem.first, edge::State::fromContent(std::string('A', elem.second)));
+    } else {
+      // remote state
+      theLastStates.emplace(elem.first,
+                            edge::State::fromLocation(theStateEndpoint));
+      if (myStateClient.get() == nullptr) {
+        myStateClient = std::make_unique<edge::StateClient>(theStateEndpoint);
+      }
+      myStateClient->Put(elem.first, std::string('A', elem.second));
+    }
+  }
+
+  theInvalidStates = false;
 }
 
 } // namespace simulation
