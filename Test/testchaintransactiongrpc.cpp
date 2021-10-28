@@ -301,6 +301,133 @@ TEST_F(TestChainTransactionGrpc, test_chain_incorrect) {
       [&myResponses]() { return myResponses.size(); }, 1, 1));
 }
 
+TEST_F(TestChainTransactionGrpc, test_single_function_async_remote_states) {
+  System mySystem;
+  assert(not mySystem.theComputerStateServerEndpoints.empty());
+
+  // create the async responses collector
+  CallbackServer::Queue myResponses;
+  CallbackServer myCallbackServer(mySystem.theCallbackEndpoint, myResponses);
+  myCallbackServer.run(false);
+
+  // upload the states to the server
+  StateClient myStateClient(mySystem.theStateServerEndpoint);
+  ASSERT_NO_THROW(myStateClient.Put("s0", "content-s0"));
+  ASSERT_NO_THROW(myStateClient.Put("s1", "content-s1"));
+
+  // create the request
+  LambdaRequest myReq("f0", std::string(10, 'A'));
+  myReq.theCallback = mySystem.theCallbackEndpoint;
+  myReq.states().emplace("s0",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.states().emplace("s1",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.states().emplace("sX",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.theChain =
+      std::make_unique<model::Chain>(model::Chain::Functions({"f0"}),
+                                     model::Chain::Dependencies({
+                                         {"s0", {"f0"}},
+                                         {"s1", {"f0"}},
+                                     }));
+
+  // invoke the functions
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  for (size_t i = 0; i < N; i++) {
+    const auto myAck = myClient.RunLambda(myReq, false);
+    ASSERT_EQ("OK", myAck.theRetCode);
+    ASSERT_TRUE(myAck.theAsynchronous);
+
+    // wait for the response to be received
+    ASSERT_TRUE(support::waitFor<size_t>(
+        [&myResponses]() { return myResponses.size(); }, 1, 1));
+
+    // copy state location from response to the next request
+    const auto myResp = myResponses.pop();
+    myReq.theStates   = myResp.theStates;
+    ASSERT_EQ("OK", myResp.theRetCode);
+
+    // check the received response
+    ASSERT_FALSE(myResp.theAsynchronous);
+    ASSERT_EQ(2, myResp.theHops);
+    ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
+    ASSERT_EQ(0u, myResp.theDataOut.size());
+    ASSERT_EQ(
+        (std::map<std::string, State>({
+            {"s0",
+             State::fromLocation(mySystem.theComputerStateServerEndpoints[0])},
+            {"s1",
+             State::fromLocation(mySystem.theComputerStateServerEndpoints[0])},
+            {"sX", State::fromLocation(mySystem.theStateServerEndpoint)},
+        })),
+        myResp.states());
+  }
+
+  // check states
+  StateClient myStateClient0(mySystem.theComputerStateServerEndpoints[0]);
+  std::string myContent;
+  ASSERT_TRUE(myStateClient0.Get("s0", myContent));
+  ASSERT_EQ("content-s0", myContent);
+  ASSERT_TRUE(myStateClient0.Get("s1", myContent));
+  ASSERT_EQ("content-s1", myContent);
+}
+
+TEST_F(TestChainTransactionGrpc, test_single_function_sync_remote_states) {
+  System mySystem;
+  assert(not mySystem.theComputerStateServerEndpoints.empty());
+
+  // upload the states to the server
+  StateClient myStateClient(mySystem.theStateServerEndpoint);
+  ASSERT_NO_THROW(myStateClient.Put("s0", "content-s0"));
+  ASSERT_NO_THROW(myStateClient.Put("s1", "content-s1"));
+
+  // create the request
+  LambdaRequest myReq("f0", std::string(10, 'A'));
+  myReq.states().emplace("s0",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.states().emplace("s1",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.states().emplace("sX",
+                         State::fromLocation(mySystem.theStateServerEndpoint));
+  myReq.theChain =
+      std::make_unique<model::Chain>(model::Chain::Functions({"f0"}),
+                                     model::Chain::Dependencies({
+                                         {"s0", {"f0"}},
+                                         {"s1", {"f0"}},
+                                     }));
+
+  // invoke the functions
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  for (size_t i = 0; i < N; i++) {
+    const auto myResp = myClient.RunLambda(myReq, false);
+    ASSERT_EQ("OK", myResp.theRetCode);
+    ASSERT_FALSE(myResp.theAsynchronous);
+    ASSERT_EQ(2, myResp.theHops);
+    ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
+    ASSERT_EQ(0u, myResp.theDataOut.size());
+    ASSERT_EQ(
+        (std::map<std::string, State>({
+            {"s0",
+             State::fromLocation(mySystem.theComputerStateServerEndpoints[0])},
+            {"s1",
+             State::fromLocation(mySystem.theComputerStateServerEndpoints[0])},
+            {"sX", State::fromLocation(mySystem.theStateServerEndpoint)},
+        })),
+        myResp.states());
+
+    // copy state location from response to the next request
+    myReq.theStates = myResp.theStates;
+  }
+
+  // check states
+  StateClient myStateClient0(mySystem.theComputerStateServerEndpoints[0]);
+  std::string myContent;
+  ASSERT_TRUE(myStateClient0.Get("s0", myContent));
+  ASSERT_EQ("content-s0", myContent);
+  ASSERT_TRUE(myStateClient0.Get("s1", myContent));
+  ASSERT_EQ("content-s1", myContent);
+}
+
 TEST_F(TestChainTransactionGrpc, test_chain_remote_states) {
   System mySystem;
   assert(mySystem.theComputerStateServerEndpoints.size() >= 2);
@@ -337,7 +464,7 @@ TEST_F(TestChainTransactionGrpc, test_chain_remote_states) {
     ASSERT_EQ("OK", myAck.theRetCode);
     ASSERT_TRUE(myAck.theAsynchronous);
 
-    // wait for the responses to be received
+    // wait for the response to be received
     ASSERT_TRUE(support::waitFor<size_t>(
         [&myResponses]() { return myResponses.size(); }, 1, 1));
 
