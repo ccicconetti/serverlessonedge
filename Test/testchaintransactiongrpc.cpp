@@ -137,6 +137,8 @@ struct TestChainTransactionGrpc : public ::testing::Test {
                 theCompanionCommandEndpoints[i],
                 *theCompanions.back()->tables()[0],
                 *theCompanions.back()->tables()[0]));
+
+        theComputers.back()->state(theComputerStateServerEndpoints[i]);
         theComputers.back()->companion(theCompanionEndpoints[i]);
       }
 
@@ -301,6 +303,7 @@ TEST_F(TestChainTransactionGrpc, test_chain_incorrect) {
 
 TEST_F(TestChainTransactionGrpc, test_chain_remote_states) {
   System mySystem;
+  assert(mySystem.theComputerStateServerEndpoints.size() >= 2);
 
   // create the async responses collector
   CallbackServer::Queue myResponses;
@@ -330,20 +333,20 @@ TEST_F(TestChainTransactionGrpc, test_chain_remote_states) {
   // invoke the functions
   EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
   for (size_t i = 0; i < N; i++) {
-    const auto myResp = myClient.RunLambda(myReq, false);
-    ASSERT_EQ("OK", myResp.theRetCode);
-    ASSERT_TRUE(myResp.theAsynchronous);
-  }
+    const auto myAck = myClient.RunLambda(myReq, false);
+    ASSERT_EQ("OK", myAck.theRetCode);
+    ASSERT_TRUE(myAck.theAsynchronous);
 
-  // wait for all the responses to be received
-  ASSERT_TRUE(support::waitFor<size_t>(
-      [&myResponses]() { return myResponses.size(); }, N, 10));
+    // wait for the responses to be received
+    ASSERT_TRUE(support::waitFor<size_t>(
+        [&myResponses]() { return myResponses.size(); }, 1, 1));
 
-  // check the received responses
-  assert(mySystem.theComputerStateServerEndpoints.size() >= 2);
-  for (size_t i = 0; i < N; i++) {
+    // copy state location from response to the next request
     const auto myResp = myResponses.pop();
+    myReq.theStates   = myResp.theStates;
     ASSERT_EQ("OK", myResp.theRetCode);
+
+    // check the received response
     ASSERT_FALSE(myResp.theAsynchronous);
     ASSERT_EQ(6, myResp.theHops);
     ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);

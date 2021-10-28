@@ -40,9 +40,6 @@ function run {
 function analyze {
   meandir=derived
 
-  echo "not implemented"
-  return
-
   mkdir -p $meandir 2> /dev/null
 
   oldpwd=$PWD
@@ -50,28 +47,35 @@ function analyze {
 
   rm -f $oldpwd/$meandir/ 2> /dev/null
 
-  for t in $links ; do
+  for s in $states ; do
+  for l in $lengths ; do
+  for i in $inputsizes ; do
   for e in $experiments ; do
 
-    mangle_out="t=$t.e=$e"
+    if [[ $s -eq $l ]] ; then
+      continue
+    fi
+
+    mangle_out="e=$e.s=$s.l=$l.i=$i"
     echo $mangle_out
 
-    for l in $losses ; do
+    for b in $bw ; do
 
-      mangle_in="t=$t.l=$l.e=$e.1"
-
+      mangle_in="e=$e.b=$b.s=$s.l=$l.i=$i.1"
 
       ret=$($percentile --col 2 --mean --quantiles 0.90 0.95 0.99 < out.$mangle_in)
-      echo "$l $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-avg.dat
-      echo "$l $(grep ^"0.9 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-090.dat
-      echo "$l $(grep ^"0.95 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-095.dat
-      echo "$l $(grep ^"0.99 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-099.dat
+      echo "$b $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-avg.dat
+      echo "$b $(grep ^"0.9 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-090.dat
+      echo "$b $(grep ^"0.95 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-095.dat
+      echo "$b $(grep ^"0.99 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-099.dat
 
       ret=$($percentile --col -1 --mean < ovsstat.$mangle_in)
-      echo "$l $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/tpt-$mangle_out-avg.dat
+      echo "$b $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/tpt-$mangle_out-avg.dat
 
     done
 
+  done
+  done
   done
   done
 
@@ -119,13 +123,13 @@ dryrun=0 # set automatically if command 'enumerate' is given
 #
 seed="1"
 duration=120
-percentile="percentile.py --warmup_col 1 --warmup 10 --duration $duration"
+percentile="percentile.py --warmup_col 1 --warmup 0 --duration $duration"
 confidence="confidence.py --alpha 0.05"
 script_name="simple_function_chain.py"
 
 states="3 6"
 lengths="3 6"
-bw="1 2 5 10 20 50 100"
+bw="1.0 2.0 5.0 10.0 20.0 50.0 100.0"
 inputsizes="10000 100000"
 experiments="embedded hopbyhop"
 $1

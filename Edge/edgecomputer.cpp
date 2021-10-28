@@ -65,8 +65,9 @@ void EdgeComputer::AsyncWorker::operator()() {
       // what follows depends on whether this is the last function
       // to be executed in the chain or not
       //
-      // last function: send final response to callback
-      // non-last function: invoke the next function in the chain via companion
+      // - exception thrown: do not proceed with execution, ignore invocation
+      // - last function: send final response to callback
+      // - non-last function: invoke next function in the chain via companion
 
       if (myRequest.chain_size() == 0 or
           (int) myRequest.nextfunctionindex() == (myRequest.chain_size() - 1)) {
@@ -93,7 +94,7 @@ void EdgeComputer::AsyncWorker::operator()() {
         LambdaRequest myOldRequest(myRequest);
         LambdaRequest myNewRequest(myName, myResp.output(), myResp.dataout());
         myNewRequest.theHops     = myOldRequest.theHops + 1;
-        myNewRequest.theStates   = myOldRequest.theStates;
+        myNewRequest.theStates   = deserializeStates(myResp);
         myNewRequest.theCallback = myOldRequest.theCallback;
         myNewRequest.theChain    = std::move(myOldRequest.theChain);
         myNewRequest.theNextFunctionIndex =
@@ -322,10 +323,81 @@ EdgeComputer::blockingExecution(const rpc::LambdaRequest& aReq) {
   auto myResp = myDescriptor.theResponse->toProtobuf();
   myResp.set_ptime(myDescriptor.theChrono.stop() * 1e3 + 0.5); // to ms
 
+  if (not handleRemoteStates(aReq, myResp)) {
+    throw std::runtime_error("could not handle all the remote states");
+  }
+
   VLOG(2) << "number of busy descriptors " << theDescriptors.size();
   theDescriptors.erase(myIt.first);
 
   return myResp;
+}
+
+bool EdgeComputer::handleRemoteStates(const rpc::LambdaRequest& aRequest,
+                                      rpc::LambdaResponse& aResponse) const {
+  for (const auto& elem : aRequest.states()) {
+    // the state is embedded in the message
+    if (elem.second.location().empty()) {
+      continue;
+    }
+
+    // the state is stored on the local state server
+    if (elem.second.location() == stateClient().serverEndpoint()) {
+      continue;
+    }
+
+    // there are not state dependencies at all
+    const auto jt = aRequest.dependencies().find(elem.first);
+    if (jt == aRequest.dependencies().end()) {
+      continue;
+    }
+
+    auto myDepends = false;
+    for (ssize_t i = 0; i < jt->second.functions_size(); i++) {
+      if (jt->second.functions(i) == aRequest.name()) {
+        myDepends = true;
+        break;
+      }
+    }
+    // the current function does not depend on this state
+    if (not myDepends) {
+      continue;
+    }
+
+    // retrieve from remote server
+    StateClient myStateClient(elem.second.location());
+    std::string myContent;
+    if (not myStateClient.Get(elem.first, myContent)) {
+      throw std::runtime_error("could not find state in " +
+                               elem.second.location() + ": " + elem.first);
+    }
+
+    // copy into local server
+    stateClient().Put(elem.first, myContent);
+
+    // delete from remote server
+    const auto ret = myStateClient.Del(elem.first);
+    LOG_IF(WARNING, ret == false)
+        << "state removed during access on " << elem.second.location() << ": "
+        << elem.first;
+
+    // update location of the state on the response
+    auto it = aResponse.mutable_states()->find(elem.first);
+    if (it == aResponse.mutable_states()->end()) {
+      throw std::runtime_error("could not find state in the response: " +
+                               elem.first);
+    }
+    it->second.set_location(stateClient().serverEndpoint());
+  }
+  return true;
+}
+
+StateClient& EdgeComputer::stateClient() const {
+  if (theStateClient.get() == nullptr) {
+    throw std::runtime_error(
+        "cannot handle remote states without a state server");
+  }
+  return *theStateClient;
 }
 
 void EdgeComputer::taskDone(

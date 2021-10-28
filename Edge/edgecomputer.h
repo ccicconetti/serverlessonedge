@@ -175,6 +175,31 @@ class EdgeComputer final : public EdgeServer
   //! Execute a lambda function (blocks until done).
   rpc::LambdaResponse blockingExecution(const rpc::LambdaRequest& aReq);
 
+  /**
+   * @brief Handle remote states.
+   *
+   * Retrieve the remote states from the requests.
+   * If the request contains a chain, then we only retrieve those
+   * neeed by the current function. Otherwise, we retrieve all the
+   * remote states.
+   *
+   * The remote states retrieved are then deleted from the original
+   * location and the location is updated in the response.
+   *
+   * Embedded states are left unchanged.
+   *
+   * @param aRequest the lambda request.
+   * @param aResponse the lamba response with modified states.
+   *
+   * @return true if all the states were retrieved with success.
+   * @return false otherwise.
+   */
+  bool handleRemoteStates(const rpc::LambdaRequest& aRequest,
+                          rpc::LambdaResponse&      aResponse) const;
+
+  //! Return a client to access the local state server or throw.
+  StateClient& stateClient() const;
+
  private:
   Computer                                        theComputer;
   std::condition_variable                         theDescriptorsCv;
