@@ -81,7 +81,6 @@ I1026 09:17:35.728682 25095 edgeclientmain.cpp:214] processing 0.081 +- 0
 
 You can notice that the processing time is 81 ms, which is 3 times the processing time of either _f1_ or _f2_, i.e., 27 ms, with this configuration.
 
-
 ## Hop-by-hop chain invocation
 
 In the second example we let the client invoke the full chain of functions, using the `edgeclient` command-line utility again. However, this time we will have to specify the `--callback` function that creates a `CallbackServer` in the client to receive asynchronous responses.
@@ -163,3 +162,35 @@ I1027 10:53:32.171430 38407 client.cpp:343] setting the callback end-point to 12
 I1027 10:53:32.269821 38407 edgeclientmain.cpp:292] latency 0.0963982 +- 0
 I1027 10:53:32.270215 38407 edgeclientmain.cpp:295] processing 0 +- 0
 ```
+
+## Chain invocation with remote states
+
+In the third example we do not embed the states in the arguments of function invocations, but rather offload them to `StateServer` instances that are co-located with both the client and the e-computers.
+
+In this mode the e-computer gathers the required states, as indicated by the state dependencies embedded in the function calls, from the state servers as needed. When an e-computer retrieves a state, it invalidates it on the remote state server and becomes the new owner. In the invocation calls the states are substituted by pointers to them using end-points.
+
+The sequence diagram is the following (with some simplifications for better readability):
+
+![](example-chain-4.png)
+
+To set up the environment, i.e., to launch the e-computers, e-router, and e-controller, we can run the script `chain-3.sh` (assuming we are in `build/debug/Executables`):
+
+```
+../../../docs/examples/chain-3.sh
+```
+
+which gives the same output as in the first example.
+
+The full chain of invocations can now be invoked either synchronously by the client one function after another (like in the first example) or with hop-by-hop invocation (like in the second example, using asynchronous function calls).
+
+After having created the function chain JSON description like in the first example with `./edgeclient --chain-conf type=make-template`, the synchronous execution is obtained via:
+
+```
+./edgeclient  \
+  --chain-conf type=file,filename=chain-example.json \
+  --max-requests 1  \
+  --state-endpoint 127.0.0.1:6481 \
+  --server-endpoint 127.0.0.1:6473
+```
+
+while the asynchronous version can be obtained by adding `--callback 127.0.0.1:6480`.
