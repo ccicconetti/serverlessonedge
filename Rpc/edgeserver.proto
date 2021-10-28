@@ -14,9 +14,24 @@ service CallbackServer {
   rpc ReceiveResponse (LambdaResponse) returns (Void) {}
 }
 
+service StateServer {
+  // get a state, if available
+  rpc Get (State) returns (StateResponse) {}
+  
+  // put a state, possibly overwriting existing content
+  rpc Put (State) returns (StateResponse) {}
+}
+
 // application's state
 message State {
-  bytes content = 1;
+  // the name of the state on the server
+  string name   = 1;
+
+  // the endpoint of the server that holds the state
+  string location = 2;
+
+  // the content of the state
+  bytes  content = 3;
 }
 
 message FunctionList {
@@ -107,4 +122,15 @@ message LambdaResponse {
   // if true then this response does not contain the output
   // this is used with asynchronous function invocations
   bool asynchronous = 11;
+}
+
+message StateResponse {
+  // execution response:
+  // - OK: the function was executed with success
+  // - else: string encoding the type of error encountered
+  // should never be empty
+  string retcode    = 1;
+
+  // the state (can be empty)
+  State state       = 2;
 }

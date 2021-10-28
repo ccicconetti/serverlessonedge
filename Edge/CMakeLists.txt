@@ -64,6 +64,8 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimatorrtt.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ptimeestimatorutil.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/rttestimator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/stateclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/stateserver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/topology.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/utilestimator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/wskproxy.cpp
