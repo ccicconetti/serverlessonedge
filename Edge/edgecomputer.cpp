@@ -239,7 +239,7 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
   std::string myRetCode = "OK";
   try {
     // it is an error not have the callback with a function chain
-    if (aReq.chain_size() > 0 and aReq.callback().empty()) {
+    if (aReq.chain_size() > 1 and aReq.callback().empty()) {
       throw std::runtime_error(
           "Cannot handle a function chain without a callback in the request");
     }
@@ -253,7 +253,7 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
 
     // it is an error to request the execution of a function chain without
     // having set the companion beforehand, if needed
-    if (aReq.chain_size() > 0 and
+    if (aReq.chain_size() > 1 and
         (int) aReq.nextfunctionindex() < (aReq.chain_size() - 1) and
         theCompanionClient.get() == nullptr) {
       throw std::runtime_error(
