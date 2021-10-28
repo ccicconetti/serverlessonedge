@@ -420,7 +420,7 @@ void Client::validateStates() {
     if (theStateEndpoint.empty()) {
       // local state
       theLastStates.emplace(
-          elem.first, edge::State::fromContent(std::string('A', elem.second)));
+          elem.first, edge::State::fromContent(std::string(elem.second, 'A')));
     } else {
       // remote state
       theLastStates.emplace(elem.first,
@@ -428,7 +428,7 @@ void Client::validateStates() {
       if (myStateClient.get() == nullptr) {
         myStateClient = std::make_unique<edge::StateClient>(theStateEndpoint);
       }
-      myStateClient->Put(elem.first, std::string('A', elem.second));
+      myStateClient->Put(elem.first, std::string(elem.second, 'A'));
     }
   }
 
