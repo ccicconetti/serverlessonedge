@@ -76,11 +76,13 @@ class SimpleFunctionChain(experiment.Experiment):
                     "--utilization-endpoint {} "
                     "--asynchronous "
                     "--companion-endpoint {}:6473 "
+                    "--state-endpoint {}:30000 "
                     "{}"
                 ).format(
                     conf_file_name,
                     lambda_proc_endpoint,
                     util_collector_endpoint,
+                    h.IP(),
                     h.IP(),
                     self.controller_conf),
                 is_background=True
@@ -100,14 +102,13 @@ class SimpleFunctionChain(experiment.Experiment):
         print "Starting traffic"
         pids = []
         counter = 0
-        start_time = time.time()
         all_lambdas = [x.IP() for x in self.servers]
 
         result_file = "results/out.{}".format(self.experiment_id)
         if os.path.isfile(result_file):
             os.remove(result_file)
 
-        while ((time.time() - start_time) < self.confopts["duration"]):
+        while (counter < self.confopts["duration"]):
             for h in self.clients:
                 chain = dict()
                 chain["functions"] = []
@@ -134,6 +135,7 @@ class SimpleFunctionChain(experiment.Experiment):
                         "--max-requests 1 "
                         "--sizes {} "
                         "{} "
+                        "{} "
                         "--seed {} "
                         "--output-file {} "
                         "--append"
@@ -142,7 +144,10 @@ class SimpleFunctionChain(experiment.Experiment):
                         h.IP(),
                         self.confopts["inputsize"],
                         "--callback {}:6480".format(
-                            h.IP()) if self.confopts["experiment"] == "hopbyhop" else "",
+                            h.IP()) if self.confopts["experiment"] in [
+                                "hopbyhop", "remotestate"] else "",
+                        "--state-endpoint {}:6481".format(
+                            h.IP()) if self.confopts["experiment"] == "remotestate" else "",
                         1000 * self.confopts["seed"] + counter,
                         result_file,
                     ),
@@ -162,7 +167,7 @@ if __name__ == "__main__":
             "experiment": [
                 str,
                 "embedded",
-                "experiment type, one of: embedded, hopbyhop",
+                "experiment type, one of: embedded, hopbyhop, remotestate",
             ],
             "bw": [float, 1, "bandwidth, in Mb/s"],
             "numclients": [int, 1, "number of client threads"],
@@ -188,7 +193,8 @@ if __name__ == "__main__":
     assert experiment.confopts["length"] >= 1
     assert experiment.confopts["bw"] > 0
     assert experiment.confopts["inputsize"] > 0
-    assert experiment.confopts["experiment"] in ["embedded", "hopbyhop"]
+    assert experiment.confopts["experiment"] in [
+        "embedded", "hopbyhop", "remotestate"]
 
     experiment.runExperiment(
         topo.NestedCircularTopo(

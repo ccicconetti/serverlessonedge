@@ -3,6 +3,7 @@
 function run {
   if [ $dryrun -ne 1 ] ; then
     mkdir log results 2> /dev/null
+    mn -c
   fi
 
   for s in $states ; do
@@ -131,5 +132,5 @@ states="3 6"
 lengths="3 6"
 bw="1.0 2.0 5.0 10.0 20.0 50.0 100.0"
 inputsizes="10000 100000"
-experiments="embedded hopbyhop"
+experiments="embedded hopbyhop remotestate"
 $1
