@@ -14,5 +14,6 @@ if [[ $1 == "all" ]] ; then
   rm -f results/*
   rm -f *.json
   rm -f *.dot *.png *.svg
+  rm -f dist.txt
 fi
 
