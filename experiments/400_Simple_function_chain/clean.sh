@@ -5,7 +5,7 @@ if [[ $# -ne 1 ]] ; then
 fi
 
 if [[ $1 == "derived" || $1 == "all" ]] ; then
-  rm -f derived/mean/* derived/histo/* computer*.json conf.json
+  rm -rf derived/*
 fi
 if [[ $1 == "log" || $1 == "all" ]] ; then
   rm -f log.* log/*
