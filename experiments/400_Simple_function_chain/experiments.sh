@@ -17,7 +17,7 @@ function run {
       continue
     fi
 
-    mangle="e=$e.b=$b.s=$s.l=$l.i=$i"
+    mangle="e=$e.b=$b.s=$s.l=$l.i=$i.$x"
     
     cmd="python $script_name --experiment $e --bw $b --states $s --length $l --inputsize $i --duration $duration --numclients 1 --seed $x"
 
@@ -39,6 +39,12 @@ function run {
 }
 
 function analyze {
+  percentile.py -h >& /dev/null
+  if [ $? -ne 0 ] ; then
+    echo "Cannot find 'percentile.py', did you load 'utils/environment'?"
+    exit 1
+  fi
+
   meandir=derived
 
   mkdir -p $meandir 2> /dev/null
@@ -62,15 +68,14 @@ function analyze {
 
     for b in $bw ; do
 
-      mangle_in="e=$e.b=$b.s=$s.l=$l.i=$i.1"
+      mangle_in="e=$e.b=$b.s=$s.l=$l.i=$i"
 
-      ret=$($percentile --col 2 --mean --quantiles 0.90 0.95 0.99 < out.$mangle_in)
+      ret=$(cat out.$mangle_in.* | $percentile --col 2 --mean --quantiles 0.90 0.95 0.99)
       echo "$b $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-avg.dat
       echo "$b $(grep ^"0.9 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-090.dat
       echo "$b $(grep ^"0.95 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-095.dat
-      echo "$b $(grep ^"0.99 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-099.dat
 
-      ret=$($percentile --col -1 --mean < ovsstat.$mangle_in)
+      ret=$(cat ovsstat.$mangle_in.* | $percentile --col -1 --mean)
       echo "$b $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/tpt-$mangle_out-avg.dat
 
     done
@@ -122,7 +127,7 @@ dryrun=0 # set automatically if command 'enumerate' is given
 #
 # configuration starts here
 #
-seed="1"
+seed="1 2 3 4 5"
 duration=120
 percentile="percentile.py --warmup_col 1 --warmup 0 --duration $duration"
 confidence="confidence.py --alpha 0.05"
