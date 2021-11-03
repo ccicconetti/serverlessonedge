@@ -116,7 +116,7 @@ set cbtics  norangelimit autofreq
 set rtics axis in scale 1,0.5 nomirror norotate  autojustify
 set rtics  norangelimit autofreq 
 unset ttics
-set title "" 
+set title "S=6,L=3,A=100k" 
 set title  font "" norotate
 set timestamp bottom 
 set timestamp "" 
