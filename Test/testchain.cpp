@@ -57,16 +57,16 @@ TEST_F(TestChain, test_access_methods) {
   ASSERT_EQ(Chain::Functions({"f1", "f2", "f1"}), myChain.functions());
   ASSERT_EQ(std::set<std::string>({"f1", "f2"}), myChain.uniqueFunctions());
   ASSERT_EQ(std::set<std::string>({"s0", "s1", "s2", "s3"}),
-            myChain.allStates(true));
+            myChain.states().allStates(true));
   ASSERT_EQ(std::set<std::string>({"s0", "s1", "s2"}),
-            myChain.allStates(false));
+            myChain.states().allStates(false));
   ASSERT_EQ(
       Chain::Dependencies(
           {{"s0", {"f1"}}, {"s1", {"f1", "f2"}}, {"s2", {"f2"}}, {"s3", {}}}),
-      myChain.dependencies());
-  ASSERT_EQ(std::set<std::string>(), myChain.states("fX"));
-  ASSERT_EQ(std::set<std::string>({"s0", "s1"}), myChain.states("f1"));
-  ASSERT_EQ(std::set<std::string>({"s1", "s2"}), myChain.states("f2"));
+      myChain.states().dependencies());
+  ASSERT_EQ(std::set<std::string>(), myChain.states().states("fX"));
+  ASSERT_EQ(std::set<std::string>({"s0", "s1"}), myChain.states().states("f1"));
+  ASSERT_EQ(std::set<std::string>({"s1", "s2"}), myChain.states().states("f2"));
   ASSERT_EQ("f1-f2-f1", myChain.name());
 }
 

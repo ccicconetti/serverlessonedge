@@ -31,7 +31,6 @@ SOFTWARE.
 
 #pragma once
 
-#include "Edge/Model/states.h"
 #include "Support/macros.h"
 
 #include <map>
@@ -44,57 +43,50 @@ namespace edge {
 namespace model {
 
 /**
- * @brief A chain of stateful function invocations.
+ * @brief Dependencies of function on the application's states.
  *
  * Objects of this class are immutable.
  */
-class Chain final
+class States final
 {
  public:
-  using Functions    = std::vector<std::string>;
-  using Dependencies = States::Dependencies;
+  // key: state name
+  // value: vector of the names of function that depend on the state
+  using Dependencies = std::map<std::string, std::vector<std::string>>;
 
   /**
-   * @brief Construct a new Chain object.
-   *
-   * @param theFunctions The chain of function invocations.
+   * @brief Construct a new States object.
    *
    * @param theDependencies The dependencies of functions from states.
    *
    * @throw std::runtime_error if some states depend from non-existing
    * functions.
    */
-  explicit Chain(const Functions&    aFunctions,
-                 const Dependencies& aDependencies);
+  explicit States(const Dependencies& aDependencies);
 
-  ~Chain();
+  ~States();
 
   //! @return true if the chains are the same.
-  bool operator==(const Chain& aOther) const;
-
-  //! @return the chain name obtained as a mangle of the functions.
-  std::string name() const;
-
-  //! @return the set of unique function names in the chain.
-  std::set<std::string> uniqueFunctions() const;
-
-  //! @return the chain of functions.
-  const Functions& functions() const;
+  bool operator==(const States& aOther) const;
 
   //! @return the state dependencies.
-  const States& states() const;
+  const Dependencies& dependencies() const;
+
+  /**
+   * @brief Return the states.
+   *
+   * @param aIncludeFreeStates if true then also include the states with no
+   * dependencies.
+   *
+   * @return the states of the chain.
+   */
+  std::set<std::string> allStates(const bool aIncludeFreeStates) const;
+
+  //! @return the states that this function requires.
+  std::set<std::string> states(const std::string& aFunction) const;
 
   //! @return a human-readable single-line string.
   std::string toString() const;
-
-  /**
-   * @brief Return a new chain containing only the given function.
-   *
-   * @param aFunction The function to include.
-   *
-   * @return the new chain.
-   */
-  Chain singleFunctionChain(const std::string& aFunction);
 
   /**
    * @brief Create a chain from a JSON-encoded string.
@@ -105,20 +97,14 @@ class Chain final
    *
    * @throw std::runtime_error if the JSON has invalid or inconsistent text.
    */
-  static Chain fromJson(const std::string& aJson);
+  static States fromJson(const std::string& aJson);
 
   //! Convert to a human-readable JSON-encoded string.
   std::string toJson() const;
 
  private:
-  const Functions theFunctions;
-  const States    theStates;
+  const Dependencies theDependencies;
 };
-
-// free functions
-
-//! @return an example chain.
-Chain exampleChain();
 
 } // namespace model
 } // namespace edge

@@ -139,7 +139,7 @@ Client::singleExecution(const std::string& aInput) {
   edge::LambdaRequest myReq(myName, aInput);
   if (theChain.get() != nullptr) {
     validateStates();
-    for (const auto& myState : theChain->allStates(false)) {
+    for (const auto& myState : theChain->states().allStates(false)) {
       const auto it = theLastStates.find(myState);
       assert(it != theLastStates.end());
       myReq.states().emplace(myState, it->second);
@@ -173,7 +173,7 @@ Client::functionChain(const std::string& aInput) {
   for (const auto& myFunction : theChain->functions()) {
     // create a request and fill it with the states needed by the function
     edge::LambdaRequest myReq(myFunction, myInput, myDataIn);
-    for (const auto& myState : theChain->states(myFunction)) {
+    for (const auto& myState : theChain->states().states(myFunction)) {
       const auto it = theLastStates.find(myState);
       assert(it != theLastStates.end());
       myReq.states().emplace(myState, it->second);

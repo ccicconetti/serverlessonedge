@@ -166,7 +166,7 @@ rpc::LambdaRequest LambdaRequest::toProtobuf() const {
     for (const auto& myFunction : theChain->functions()) {
       myRet.add_chain(myFunction);
     }
-    for (const auto& elem : theChain->dependencies()) {
+    for (const auto& elem : theChain->states().dependencies()) {
       rpc::FunctionList myList;
       for (const auto& myFunction : elem.second) {
         myList.add_functions(myFunction);

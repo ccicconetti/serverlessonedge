@@ -47,7 +47,7 @@ namespace model {
 
 Chain::Chain(const Functions& aFunctions, const Dependencies& aDependencies)
     : theFunctions(aFunctions)
-    , theDependencies(aDependencies) {
+    , theStates(aDependencies) {
   // consistency check
   std::set<std::string> myFunctions;
   for (const auto& myFunction : aFunctions) {
@@ -69,8 +69,7 @@ Chain::~Chain() {
 }
 
 bool Chain::operator==(const Chain& aOther) const {
-  return theFunctions == aOther.theFunctions and
-         theDependencies == aOther.theDependencies;
+  return theFunctions == aOther.theFunctions and theStates == aOther.theStates;
 }
 
 std::string Chain::name() const {
@@ -89,44 +88,20 @@ const Chain::Functions& Chain::functions() const {
   return theFunctions;
 }
 
-const Chain::Dependencies& Chain::dependencies() const {
-  return theDependencies;
-}
-
-std::set<std::string> Chain::allStates(const bool aIncludeFreeStates) const {
-  std::set<std::string> ret;
-  for (const auto& elem : theDependencies) {
-    if (aIncludeFreeStates or not elem.second.empty()) {
-      ret.insert(elem.first);
-    }
-  }
-  return ret;
-}
-
-std::set<std::string> Chain::states(const std::string& aFunction) const {
-  std::set<std::string> ret;
-  for (const auto& elem : theDependencies) {
-    if (std::find(elem.second.begin(), elem.second.end(), aFunction) !=
-        elem.second.end()) {
-      ret.insert(elem.first);
-    }
-  }
-  return ret;
+const States& Chain::states() const {
+  return theStates;
 }
 
 std::string Chain::toString() const {
   std::stringstream ret;
-  ret << "[ " << ::toString(theFunctions, " -> ") << " ], { ";
-  for (const auto& elem : theDependencies) {
-    ret << "(" << elem.first << ": " << ::toString(elem.second, ",") << ") ";
-  }
-  ret << "}";
+  ret << "[ " << ::toString(theFunctions, " -> ") << " ], "
+      << theStates.toString();
   return ret.str();
 }
 
 Chain Chain::singleFunctionChain(const std::string& aFunction) {
   Dependencies myDependencies;
-  for (const auto& elem : theDependencies) {
+  for (const auto& elem : theStates.dependencies()) {
     if (std::find(elem.second.begin(), elem.second.end(), aFunction) !=
         elem.second.end()) {
       myDependencies.emplace(elem.first,
@@ -137,17 +112,10 @@ Chain Chain::singleFunctionChain(const std::string& aFunction) {
 }
 
 Chain Chain::fromJson(const std::string& aJson) {
-  const auto   myJson = json::parse(aJson);
-  Functions    myFunctions(myJson["functions"]);
-  Dependencies myDependencies;
-  for (const auto& elem : myJson["dependencies"].items()) {
-    if (elem.value().is_null()) {
-      myDependencies.emplace(elem.key(), Dependencies::mapped_type());
-    } else {
-      myDependencies.emplace(elem.key(), elem.value());
-    }
-  }
-  return Chain(myFunctions, myDependencies);
+  const auto myJson = json::parse(aJson);
+  Functions  myFunctions(myJson["functions"]);
+  const auto myStates = States::fromJson(aJson);
+  return Chain(myFunctions, myStates.dependencies());
 }
 
 std::string Chain::toJson() const {
@@ -157,7 +125,7 @@ std::string Chain::toJson() const {
     myFunctions.push_back(elem);
   }
   auto& myDependencies = ret["dependencies"];
-  for (const auto& elem : theDependencies) {
+  for (const auto& elem : theStates.dependencies()) {
     auto& myList = myDependencies[elem.first];
     for (const auto& myFunction : elem.second) {
       myList.push_back(myFunction);
