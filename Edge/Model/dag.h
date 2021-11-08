@@ -110,6 +110,9 @@ class Dag final
   //! @return the name of the function or an empty string.
   std::string toName(const size_t aIndex) const;
 
+  //! @return the functions if the passed ones are completed.
+  std::set<size_t> callable(const std::set<size_t>& aCompleted) const;
+
   //! @return a human-readable single-line string.
   std::string toString() const;
 
@@ -129,6 +132,9 @@ class Dag final
 
  private:
   static Predecessors makePredecessors(const Successors& aSuccessors);
+
+  //! @return all ancestors of the function.
+  std::set<size_t> ancestors(const size_t aIndex) const;
 
   //! @return a vector with the name of the functions.
   template <class CONTAINER>

@@ -228,11 +228,17 @@ class Client
   /**
    * @brief Run a chain of function executions.
    *
-   * @return the last function response
-   * of the whole chain.
+   * @return the last function response of the whole chain.
    */
   std::unique_ptr<edge::LambdaResponse>
   functionChain(const std::string& aInput);
+
+  /**
+   * @brief Run a DAG of function executions.
+   *
+   * @return the last function response of the whole DAG.
+   */
+  std::unique_ptr<edge::LambdaResponse> functionDag(const std::string& aInput);
 
   //! Prepare the states if not valid.
   void validateStates();

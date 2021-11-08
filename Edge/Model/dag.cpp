@@ -137,6 +137,43 @@ std::string Dag::entryFunctionName() const {
   return toName(0);
 }
 
+std::set<size_t> Dag::callable(const std::set<size_t>& aCompleted) const {
+  std::set<size_t> ret;
+  for (size_t i = 0; i <= theSuccessors.size(); i++) {
+    // skip functions already completed
+    if (aCompleted.count(i) > 0) {
+      continue;
+    }
+
+    // check if all the ancestors have been completed
+    auto myCallable = true;
+    for (const auto& myAncestor : ancestors(i)) {
+      if (aCompleted.count(myAncestor) == 0) {
+        myCallable = false;
+        break;
+      }
+    }
+    if (myCallable) {
+      ret.emplace(i);
+    }
+  }
+  return ret;
+}
+
+std::set<size_t> Dag::ancestors(const size_t aIndex) const {
+  std::set<size_t> ret;
+  if (aIndex == 0) {
+    return std::set<size_t>();
+  }
+  for (const auto& myPredecessor : thePredecessors[aIndex - 1]) {
+    ret.emplace(myPredecessor);
+    for (const auto& myAncestor : ancestors(myPredecessor)) {
+      ret.emplace(myAncestor);
+    }
+  }
+  return ret;
+}
+
 std::string Dag::toString() const {
   std::stringstream ret;
   ret << "{ ";

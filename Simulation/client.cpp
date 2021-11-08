@@ -127,7 +127,8 @@ void Client::finish() {
 std::unique_ptr<edge::LambdaResponse>
 Client::singleExecution(const std::string& aInput) {
   assert(not theLambda.empty() or not theCallback.empty());
-  if (theChain.get() != nullptr and theCallback.empty()) {
+  if ((theChain.get() != nullptr or theDag.get() != nullptr) and
+      theCallback.empty()) {
     throw std::runtime_error("uninitialized callback end-point");
   }
 
@@ -169,9 +170,7 @@ std::unique_ptr<edge::LambdaResponse>
 Client::functionChain(const std::string& aInput) {
   assert(theLambda.empty());
   assert(theCallback.empty());
-  if (theChain.get() == nullptr) {
-    throw std::runtime_error("uninitialized function chain");
-  }
+  assert(theChain.get() != nullptr);
 
   std::string                           myInput = aInput;
   std::string                           myDataIn;
@@ -235,6 +234,76 @@ Client::functionChain(const std::string& aInput) {
   return myResp;
 }
 
+std::unique_ptr<edge::LambdaResponse>
+Client::functionDag(const std::string& aInput) {
+  assert(theLambda.empty());
+  assert(theCallback.empty());
+  assert(theDag.get() != nullptr);
+  std::ignore = aInput;
+
+  // std::string                           myInput = aInput;
+  // std::string                           myDataIn;
+  std::unique_ptr<edge::LambdaResponse> myResp(nullptr);
+  // unsigned int                          myHops  = 0;
+  // unsigned int                          myPtime = 0;
+  // validateStates();
+
+  // for (const auto& myFunction : theChain->functions()) {
+  //   // create a request and fill it with the states needed by the function
+  //   edge::LambdaRequest myReq(myFunction, myInput, myDataIn);
+  //   for (const auto& myState : theChain->states().states(myFunction)) {
+  //     const auto it = theLastStates.find(myState);
+  //     assert(it != theLastStates.end());
+  //     myReq.states().emplace(myState, it->second);
+  //   }
+
+  //   myReq.theChain = std::make_unique<edge::model::Chain>(
+  //       theChain->singleFunctionChain(myFunction));
+
+  //   // run the lambda function
+  //   myResp = std::make_unique<edge::LambdaResponse>(
+  //       theClient->RunLambda(myReq, theDry));
+
+  //   // return immediately upon failure
+  //   assert(myResp.get() != nullptr);
+  //   VLOG(2) << *myResp;
+  //   if (myResp->theRetCode != "OK") {
+  //     break;
+  //   }
+
+  //   // save the states returned
+  //   for (const auto& elem : myResp->states()) {
+  //     auto it = theLastStates.find(elem.first);
+  //     assert(it != theLastStates.end());
+  //     it->second = elem.second;
+  //   }
+
+  //   // use the return value to fill the next input
+  //   myInput  = myResp->theOutput;
+  //   myDataIn = myResp->theDataOut;
+
+  //   // sum the hops and processing time
+  //   myHops += myResp->theHops;
+  //   myPtime += myResp->theProcessingTime;
+  // }
+
+  // // save all the states in the final response
+  // myResp->states() = theLastStates;
+
+  // // if the number of functions is greater than 2, remove some
+  // // fields that are not meaningful
+  // if (theChain->functions().size() > 1) {
+  //   myResp->theResponder.clear();
+  //   myResp->theLoad1          = 0;
+  //   myResp->theLoad10         = 0;
+  //   myResp->theLoad30         = 0;
+  //   myResp->theHops           = myHops;
+  //   myResp->theProcessingTime = myPtime;
+  // }
+
+  return myResp;
+}
+
 void Client::stop() {
   std::unique_lock<std::mutex> myLock(theMutex);
   if (theNotStartedFlag) {
@@ -267,8 +336,10 @@ void Client::sendRequest(const size_t aSize) {
   // execute the main loop depending on the operating mode
   theLambdaChrono.start();
   std::unique_ptr<edge::LambdaResponse> myResp(nullptr);
-  if (theLambda.empty() and theCallback.empty()) {
+  if (theChain.get() != nullptr and theCallback.empty()) {
     myResp = functionChain(myContent);
+  } else if (theDag.get() != nullptr and theCallback.empty()) {
+    myResp = functionDag(myContent);
   } else {
     myResp = singleExecution(myContent);
   }

@@ -88,6 +88,15 @@ TEST_F(TestDag, test_access_methods) {
   ASSERT_EQ(std::set<std::string>({"f0"}), myDag.predecessorNames(2));
   ASSERT_EQ(std::set<std::string>({"f1", "f2"}), myDag.predecessorNames(3));
   ASSERT_THROW(myDag.predecessorNames(4), std::runtime_error);
+
+  ASSERT_EQ(std::set<size_t>({0}), myDag.callable({}));
+  ASSERT_EQ(std::set<size_t>({1, 2}), myDag.callable({0}));
+  ASSERT_EQ(std::set<size_t>({2}), myDag.callable({0, 1}));
+  ASSERT_EQ(std::set<size_t>({1}), myDag.callable({0, 2}));
+  ASSERT_EQ(std::set<size_t>({3}), myDag.callable({0, 1, 2}));
+  ASSERT_EQ(std::set<size_t>({0}), myDag.callable({1, 2}));
+  ASSERT_EQ(std::set<size_t>({0}), myDag.callable({1, 2, 3}));
+  ASSERT_EQ(std::set<size_t>({}), myDag.callable({0, 1, 2, 3}));
 }
 
 TEST_F(TestDag, test_invalid) {
