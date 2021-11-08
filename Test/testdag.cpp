@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Edge/Model/dag.h"
+#include "Edge/Model/dagfactory.h"
 
 #include "gtest/gtest.h"
 
@@ -168,6 +169,10 @@ TEST_F(TestDag, test_invalid) {
                std::runtime_error);
 
   ASSERT_THROW(Dag::fromJson("not-a-json"), nlohmann::detail::parse_error);
+}
+
+TEST_F(TestDag, test_factory_example) {
+  ASSERT_NO_THROW(Dag::fromJson(DagFactory::exampleDag()));
 }
 
 } // namespace model

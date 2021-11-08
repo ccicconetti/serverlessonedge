@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Edge/Model/chain.h"
+#include "Edge/Model/chainfactory.h"
 
 #include "gtest/gtest.h"
 
@@ -88,6 +89,10 @@ TEST_F(TestChain, test_invalid) {
   ASSERT_THROW(Chain::fromJson(myJson), std::runtime_error);
 
   ASSERT_THROW(Chain::fromJson("not-a-json"), nlohmann::detail::parse_error);
+}
+
+TEST_F(TestChain, test_factory_example) {
+  ASSERT_NO_THROW(Chain::fromJson(ChainFactory::exampleChain()));
 }
 
 } // namespace model
