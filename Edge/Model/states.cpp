@@ -106,6 +106,9 @@ std::string States::toString() const {
 States States::fromJson(const std::string& aJson) {
   const auto   myJson = json::parse(aJson);
   Dependencies myDependencies;
+  if (myJson.find("dependencies") == myJson.end()) {
+    throw std::runtime_error("Invalid JSON content for state dependencies");
+  }
   for (const auto& elem : myJson["dependencies"].items()) {
     if (elem.value().is_null()) {
       myDependencies.emplace(elem.key(), Dependencies::mapped_type());
