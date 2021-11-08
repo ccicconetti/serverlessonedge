@@ -100,15 +100,7 @@ std::string Chain::toString() const {
 }
 
 Chain Chain::singleFunctionChain(const std::string& aFunction) {
-  Dependencies myDependencies;
-  for (const auto& elem : theStates.dependencies()) {
-    if (std::find(elem.second.begin(), elem.second.end(), aFunction) !=
-        elem.second.end()) {
-      myDependencies.emplace(elem.first,
-                             Dependencies::mapped_type({aFunction}));
-    }
-  }
-  return Chain({aFunction}, std::move(myDependencies));
+  return Chain({aFunction}, theStates.dependencies(aFunction));
 }
 
 Chain Chain::fromJson(const std::string& aJson) {

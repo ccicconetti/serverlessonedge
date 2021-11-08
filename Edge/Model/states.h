@@ -72,6 +72,9 @@ class States final
   //! @return the state dependencies.
   const Dependencies& dependencies() const;
 
+  //! @return the dependencies of a given function.
+  Dependencies dependencies(const std::string& aFunction) const;
+
   /**
    * @brief Return the states.
    *

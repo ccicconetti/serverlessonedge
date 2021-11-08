@@ -61,6 +61,17 @@ const States::Dependencies& States::dependencies() const {
   return theDependencies;
 }
 
+States::Dependencies States::dependencies(const std::string& aFunction) const {
+  Dependencies ret;
+  for (const auto& elem : theDependencies) {
+    if (std::find(elem.second.begin(), elem.second.end(), aFunction) !=
+        elem.second.end()) {
+      ret.emplace(elem.first, Dependencies::mapped_type({aFunction}));
+    }
+  }
+  return ret;
+}
+
 std::set<std::string> States::allStates(const bool aIncludeFreeStates) const {
   std::set<std::string> ret;
   for (const auto& elem : theDependencies) {
