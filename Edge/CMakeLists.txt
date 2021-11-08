@@ -8,9 +8,11 @@ add_library(uiiitedge SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entryproportionalfairness.cpp
 
   ${CMAKE_CURRENT_SOURCE_DIR}/Model/chain.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Model/states.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Model/chainfactory.cpp
-
+  ${CMAKE_CURRENT_SOURCE_DIR}/Model/dag.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Model/dagfactory.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Model/states.cpp
+  
   ${CMAKE_CURRENT_SOURCE_DIR}/callbackclient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/callbackserver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/composer.cpp

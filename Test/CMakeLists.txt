@@ -44,6 +44,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomputer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomposer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcontainer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testdag.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgeclient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgeclientmulti.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgecontrolleretsi.cpp
