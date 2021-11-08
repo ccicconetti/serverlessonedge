@@ -41,6 +41,21 @@ message FunctionList {
   repeated string functions = 1;
 }
 
+message IndexList {
+  repeated uint64 functions = 1;
+}
+
+message Dag {
+  // the i-th entry contains the list of successors of function with index i
+  // in the DAG there are N+1 function calls, where N is the size of successors
+  repeated IndexList successors = 1;
+
+  // the i-th entry contains the name of the function with index i
+  // the size of names is equal to the size of successors + 1 (to include
+  // also the last function, which has no successors)
+  repeated string    names = 2;
+}
+
 message LambdaRequest {
   // name of the remote procedure to be executed
   // can be empty if chain is given
@@ -75,13 +90,16 @@ message LambdaRequest {
   // chain of functions to be executed (overrides name)
   repeated string chain = 9;
 
+  // DAG of functions to be executed (overrides name)
+  Dag dag = 10;
+
   // dependencies of functions upon the application's states
   // key:   name of the state
   // value: list of functions that depend on this
-  map<string, FunctionList> dependencies = 10;
+  map<string, FunctionList> dependencies = 11;
 
   // index of the next function to execute in the chain
-  uint32 nextFunctionIndex = 11;
+  uint32 nextFunctionIndex = 12;
 }
 
 message LambdaResponse {

@@ -69,6 +69,13 @@ TEST_F(TestDag, test_access_methods) {
   ASSERT_EQ(std::set<std::string>({"s0", "s1"}), myDag.states().states("f0"));
   ASSERT_EQ(std::set<std::string>({"s1"}), myDag.states().states("f1"));
   ASSERT_EQ("f0-f1-f2-f2", myDag.name());
+  ASSERT_EQ("f0", myDag.entryFunctionName());
+
+  ASSERT_EQ("f0", myDag.toName(0));
+  ASSERT_EQ("f1", myDag.toName(1));
+  ASSERT_EQ("f2", myDag.toName(2));
+  ASSERT_EQ("f2", myDag.toName(3));
+  ASSERT_EQ("", myDag.toName(4));
 
   ASSERT_EQ(std::set<std::string>({"f1", "f2"}), myDag.successorNames(0));
   ASSERT_EQ(std::set<std::string>({"f2"}), myDag.successorNames(1));

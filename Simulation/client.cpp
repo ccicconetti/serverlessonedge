@@ -29,7 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "client.h"
+#include "Simulation/client.h"
 
 #include "Edge/edgeclientfactory.h"
 #include "Edge/edgeclientinterface.h"
@@ -132,19 +132,28 @@ Client::singleExecution(const std::string& aInput) {
   }
 
   // create a new lambda request and copy in it the states and chain (if any)
-  const auto myName =
-      (theChain.get() != nullptr and theChain->functions().size() > 0) ?
-          theChain->functions().front() :
-          theLambda;
-  edge::LambdaRequest myReq(myName, aInput);
+  auto                       myName = theLambda; // overriden with chain or DAG
+  const edge::model::States* myStates(nullptr);  // same
   if (theChain.get() != nullptr) {
+    myName   = theChain->entryFunctionName();
+    myStates = &theChain->states();
+  } else if (theDag.get() != nullptr) {
+    myName   = theDag->entryFunctionName();
+    myStates = &theDag->states();
+  }
+  edge::LambdaRequest myReq(myName, aInput);
+  if (myStates != nullptr) {
     validateStates();
-    for (const auto& myState : theChain->states().allStates(false)) {
+    for (const auto& myState : myStates->allStates(false)) {
       const auto it = theLastStates.find(myState);
       assert(it != theLastStates.end());
       myReq.states().emplace(myState, it->second);
     }
+  }
+  if (theChain.get() != nullptr) {
     myReq.theChain = std::make_unique<edge::model::Chain>(*theChain);
+  } else if (theDag.get() != nullptr) {
+    myReq.theDag = std::make_unique<edge::model::Dag>(*theDag);
   }
   myReq.theNextFunctionIndex = 0;
 
@@ -286,7 +295,10 @@ void Client::recordStat(const edge::LambdaResponse& aResponse) {
   const auto myElapsed = theLambdaChrono.stop();
 
   // name to be used for logging and statistics
-  const auto myName = theLambda.empty() ? theChain->name() : theLambda;
+  const auto myName =
+      (theChain.get() != nullptr) ?
+          theChain->name() :
+          (theDag.get() != nullptr) ? theDag->name() : theLambda;
 
   if (aResponse.theRetCode != "OK") {
     VLOG(1) << "invalid response to " << myName << ": " << aResponse.theRetCode;
@@ -342,8 +354,34 @@ void Client::setChain(const edge::model::Chain&            aChain,
 
   LOG_IF(WARNING, theChain.get() != nullptr) << "overwriting an existing chain";
 
+  if (theDag.get() != nullptr) {
+    LOG(WARNING) << "client previously in function DAG mode";
+    theDag.reset();
+  }
+
   // save the chain and state sizes
   theChain         = std::make_unique<edge::model::Chain>(aChain);
+  theStateSizes    = aStateSizes;
+  theInvalidStates = true;
+}
+
+void Client::setDag(const edge::model::Dag&              aDag,
+                    const std::map<std::string, size_t>& aStateSizes) {
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  if (not theLambda.empty()) {
+    throw std::runtime_error("cannot set DAG info on a client operating in "
+                             "single function execution mode");
+  }
+
+  LOG_IF(WARNING, theDag.get() != nullptr) << "overwriting an existing DAG";
+
+  if (theChain.get() != nullptr) {
+    LOG(WARNING) << "client previously in function chain mode";
+    theChain.reset();
+  }
+
+  // save the chain and state sizes
+  theDag           = std::make_unique<edge::model::Dag>(aDag);
   theStateSizes    = aStateSizes;
   theInvalidStates = true;
 }
@@ -372,12 +410,13 @@ void Client::setStateServer(const std::string& aStateEndpoint) {
       LOG(WARNING) << "clearing the state server end-point: "
                    << theStateEndpoint;
     }
-  }
-  if (aStateEndpoint.empty()) {
-    LOG(INFO) << "setting the state server end-point to " << aStateEndpoint;
   } else {
-    LOG(WARNING) << "updating the state server end-point: " << theStateEndpoint
-                 << " -> " << aStateEndpoint;
+    if (theStateEndpoint.empty()) {
+      LOG(INFO) << "setting the state server end-point to " << aStateEndpoint;
+    } else {
+      LOG(WARNING) << "updating the state server end-point: "
+                   << theStateEndpoint << " -> " << aStateEndpoint;
+    }
   }
   theStateEndpoint = aStateEndpoint;
   theInvalidStates = true;

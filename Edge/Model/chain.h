@@ -84,6 +84,9 @@ class Chain final
   //! @return the state dependencies.
   const States& states() const;
 
+  //! @return the name of the first function of the chain.
+  std::string entryFunctionName() const;
+
   //! @return a human-readable single-line string.
   std::string toString() const;
 

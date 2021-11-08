@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include "edgeserver.grpc.pb.h"
 
+#include "Edge/Model/states.h"
+
 #include <array>
 #include <iostream>
 #include <memory>
@@ -43,7 +45,8 @@ namespace edge {
 
 namespace model {
 class Chain;
-};
+class Dag;
+}; // namespace model
 
 //! An application's state.
 struct State {
@@ -164,6 +167,7 @@ struct LambdaRequest final {
   std::map<std::string, State>  theStates;
   std::string                   theCallback;
   std::unique_ptr<model::Chain> theChain;
+  std::unique_ptr<model::Dag>   theDag;
   unsigned int                  theNextFunctionIndex;
 
  private:
@@ -172,6 +176,9 @@ struct LambdaRequest final {
                          const std::string& aDataIn,
                          const bool         aForward,
                          const unsigned int aHops);
+
+  static model::States::Dependencies
+  getDependencies(const rpc::LambdaRequest& aMsg);
 };
 
 //! A function return, possibly also embeddeding states.

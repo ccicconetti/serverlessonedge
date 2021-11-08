@@ -31,7 +31,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "Edge/Model/chain.h"
+#include "Edge/Model/chain.h" // do not use forward declaration
+#include "Edge/Model/dag.h"   // do not use forward declaration
 #include "Support/chrono.h"
 #include "Support/conf.h"
 #include "Support/macros.h"
@@ -122,6 +123,21 @@ class Client
    */
   void setChain(const edge::model::Chain&            aChain,
                 const std::map<std::string, size_t>& aStateSizes);
+
+  /**
+   * @brief Set the DAG info for a client operating in function DAG mode.
+   *
+   * @param aDag The DAG of functions to be invoked and the state
+   * dependencies.
+   *
+   * @param aStateSizes The size, in bytes, of the states.
+   *
+   * @throw std::runtime_error if aStateSizes does not include all the states
+   * in aDag or if the client has been configured in the ctor to operate
+   * in single function call mode
+   */
+  void setDag(const edge::model::Dag&              aDag,
+              const std::map<std::string, size_t>& aStateSizes);
 
   //! Set the callback endpoint in outgoing requests.
   void setCallback(const std::string& aCallback);
@@ -250,7 +266,12 @@ class Client
 
   // set in setChain()
   std::unique_ptr<edge::model::Chain> theChain;
-  std::map<std::string, size_t>       theStateSizes;
+
+  // set in setDag()
+  std::unique_ptr<edge::model::Dag> theDag;
+
+  // set in setChain() and setDag()
+  std::map<std::string, size_t> theStateSizes;
 
   // set in setCallback()
   std::string theCallback;

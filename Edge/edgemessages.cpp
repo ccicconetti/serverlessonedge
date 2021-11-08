@@ -32,6 +32,7 @@ SOFTWARE.
 #include "Edge/edgemessages.h"
 
 #include "Edge/Model/chain.h"
+#include "Edge/Model/dag.h"
 
 #include <sstream>
 
@@ -105,6 +106,7 @@ LambdaRequest::LambdaRequest(const std::string& aName,
     , theStates()
     , theCallback()
     , theChain(nullptr)
+    , theDag(nullptr)
     , theNextFunctionIndex(0) {
   // noop
 }
@@ -118,22 +120,47 @@ LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
     , theStates(deserializeStates(aMsg))
     , theCallback(aMsg.callback())
     , theChain(nullptr)
+    , theDag(nullptr)
     , theNextFunctionIndex(aMsg.nextfunctionindex()) {
+  // the serialized message also contains a chain
   if (aMsg.chain_size() > 0) {
     model::Chain::Functions myFunctions;
     for (ssize_t i = 0; i < aMsg.chain_size(); i++) {
       myFunctions.emplace_back(aMsg.chain(i));
     }
-    model::Chain::Dependencies myDependencies;
-    for (const auto& elem : aMsg.dependencies()) {
-      model::Chain::Dependencies::mapped_type myFunctionList;
-      for (ssize_t i = 0; i < elem.second.functions_size(); i++) {
-        myFunctionList.emplace_back(elem.second.functions(i));
-      }
-      myDependencies.emplace(elem.first, myFunctionList);
-    }
-    theChain = std::make_unique<model::Chain>(myFunctions, myDependencies);
+    theChain =
+        std::make_unique<model::Chain>(myFunctions, getDependencies(aMsg));
   }
+  // the serialize message also contains a DAG
+  if (aMsg.dag().successors_size() > 0) {
+    model::Dag::Successors mySuccessors;
+    for (ssize_t i = 0; i < aMsg.dag().successors_size(); i++) {
+      model::Dag::Successors::value_type myIndices;
+      for (ssize_t j = 0; j < aMsg.dag().successors(i).functions_size(); j++) {
+        myIndices.emplace_back(aMsg.dag().successors(i).functions(j));
+      }
+      mySuccessors.emplace_back(myIndices);
+    }
+    model::Dag::FunctionNames myFunctionNames;
+    for (ssize_t i = 0; i < aMsg.dag().names_size(); i++) {
+      myFunctionNames.emplace_back(aMsg.dag().names(i));
+    }
+    theDag = std::make_unique<model::Dag>(
+        mySuccessors, myFunctionNames, getDependencies(aMsg));
+  }
+}
+
+model::States::Dependencies
+LambdaRequest::getDependencies(const rpc::LambdaRequest& aMsg) {
+  model::Chain::Dependencies myDependencies;
+  for (const auto& elem : aMsg.dependencies()) {
+    model::Chain::Dependencies::mapped_type myFunctionList;
+    for (ssize_t i = 0; i < elem.second.functions_size(); i++) {
+      myFunctionList.emplace_back(elem.second.functions(i));
+    }
+    myDependencies.emplace(elem.first, myFunctionList);
+  }
+  return myDependencies;
 }
 
 LambdaRequest::LambdaRequest(LambdaRequest&& aOther)
@@ -145,6 +172,7 @@ LambdaRequest::LambdaRequest(LambdaRequest&& aOther)
     , theStates(std::move(aOther.theStates))
     , theCallback(std::move(aOther.theCallback))
     , theChain(std::move(aOther.theChain))
+    , theDag(std::move(aOther.theDag))
     , theNextFunctionIndex(aOther.theNextFunctionIndex) {
   // noop
 }
@@ -162,11 +190,27 @@ rpc::LambdaRequest LambdaRequest::toProtobuf() const {
   myRet.set_hops(theHops);
   serializeStates(*myRet.mutable_states(), theStates);
   myRet.set_callback(theCallback);
+  const model::States* myStates(nullptr);
   if (theChain.get() != nullptr) {
     for (const auto& myFunction : theChain->functions()) {
       myRet.add_chain(myFunction);
     }
-    for (const auto& elem : theChain->states().dependencies()) {
+    myStates = &theChain->states();
+  }
+  if (theDag.get() != nullptr) {
+    for (const auto& myIndexList : theDag->successors()) {
+      auto mySuccessors = myRet.mutable_dag()->add_successors();
+      for (const auto& myIndex : myIndexList) {
+        mySuccessors->add_functions(myIndex);
+      }
+    }
+    for (const auto& myName : theDag->functionNames()) {
+      myRet.mutable_dag()->add_names(myName);
+    }
+    myStates = &theDag->states();
+  }
+  if (myStates != nullptr) {
+    for (const auto& elem : myStates->dependencies()) {
       rpc::FunctionList myList;
       for (const auto& myFunction : elem.second) {
         myList.add_functions(myFunction);
@@ -185,6 +229,8 @@ bool LambdaRequest::operator==(const LambdaRequest& aOther) const {
          theCallback == aOther.theCallback and
          ((theChain.get() == nullptr) == (aOther.theChain.get() == nullptr)) and
          (theChain.get() == nullptr or *theChain == *aOther.theChain) and
+         ((theDag.get() == nullptr) == (aOther.theDag.get() == nullptr)) and
+         (theDag.get() == nullptr or *theDag == *aOther.theDag) and
          theNextFunctionIndex == aOther.theNextFunctionIndex;
 }
 
@@ -200,6 +246,9 @@ LambdaRequest LambdaRequest::copy() const {
   ret.theCallback = theCallback;
   if (theChain.get() != nullptr) {
     ret.theChain = std::make_unique<model::Chain>(*theChain);
+  }
+  if (theDag.get() != nullptr) {
+    ret.theDag = std::make_unique<model::Dag>(*theDag);
   }
   ret.theNextFunctionIndex = theNextFunctionIndex;
   return ret;
@@ -236,6 +285,11 @@ std::string LambdaRequest::toString() const {
     if (theNextFunctionIndex < theChain->functions().size()) {
       myStream << " (" << theChain->functions()[theNextFunctionIndex] << ")";
     }
+  }
+  if (theDag.get() != nullptr) {
+    myStream << ", " << theDag->toString() << ", next function index "
+             << theNextFunctionIndex << " ("
+             << theDag->toName(theNextFunctionIndex) << ")";
   }
   return myStream.str();
 }

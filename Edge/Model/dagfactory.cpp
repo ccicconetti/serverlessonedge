@@ -46,47 +46,43 @@ namespace uiiit {
 namespace edge {
 namespace model {
 
-void DagFactory::make(
-    [[maybe_unused]] const support::Conf&           aConf,
-    [[maybe_unused]] std::unique_ptr<Dag>&          aDag,
-    [[maybe_unused]] std::map<std::string, size_t>& aStateSizes) {
-  // XXX
-  // assert(aChain.get() == nullptr);
-  // assert(aStateSizes.empty());
+void DagFactory::make(const support::Conf&           aConf,
+                      std::unique_ptr<Dag>&          aDag,
+                      std::map<std::string, size_t>& aStateSizes) {
+  assert(aDag.get() == nullptr);
+  assert(aStateSizes.empty());
 
-  // const auto myType = aConf("type");
-  // if (myType.empty()) {
-  //   throw std::runtime_error("No 'type' field found in chain configuration");
-  // }
+  const auto myType = aConf("type");
+  if (myType.empty()) {
+    throw std::runtime_error("No 'type' field found in dag configuration");
+  }
 
-  // if (myType == "make-template") {
-  //   std::ofstream myOutfile(exampleFileName());
-  //   myOutfile << exampleChain();
+  if (myType == "make-template") {
+    std::ofstream myOutfile(exampleFileName());
+    myOutfile << exampleDag();
 
-  //   aChain = nullptr;
-  // } else if (myType == "file") {
-  //   const auto myFilename = aConf("filename");
-  //   if (myFilename.empty()) {
-  //     throw std::runtime_error(
-  //         "No 'filename' field found in chain configuration");
-  //   }
+  } else if (myType == "file") {
+    const auto myFilename = aConf("filename");
+    if (myFilename.empty()) {
+      throw std::runtime_error(
+          "No 'filename' field found in dag configuration");
+    }
 
-  //   // read entire file
-  //   const auto myFileAsString = support::readFileAsString(myFilename);
+    // read entire file
+    const auto myFileAsString = support::readFileAsString(myFilename);
 
-  //   // create chain
-  //   aChain.reset(new Chain(Chain::fromJson(myFileAsString)));
+    // create DAG
+    aDag.reset(new Dag(Dag::fromJson(myFileAsString)));
 
-  //   // read state sizes
-  //   const auto myJson = json::parse(myFileAsString);
-  //   for (const auto& elem : myJson["state-sizes"].items()) {
-  //     aStateSizes.emplace(elem.key(), elem.value());
-  //   }
+    // read state sizes
+    const auto myJson = json::parse(myFileAsString);
+    for (const auto& elem : myJson["state-sizes"].items()) {
+      aStateSizes.emplace(elem.key(), elem.value());
+    }
 
-  // } else {
-  //   throw std::runtime_error(
-  //       "Invalid 'type' field found in chain configuration");
-  // }
+  } else {
+    throw std::runtime_error("Invalid 'type' field found in dag configuration");
+  }
 }
 
 std::string DagFactory::exampleFileName() {

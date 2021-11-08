@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Edge/Model/chain.h"
+#include "Edge/Model/dag.h"
 #include "Edge/edgemessages.h"
 
 #include "gtest/gtest.h"
@@ -71,6 +72,23 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize_chain) {
   myRequest.states().emplace("state2", State::fromLocation("1.2.3.4:6666"));
   myRequest.theCallback = "1.2.3.4:6666";
   myRequest.theChain    = std::make_unique<model::Chain>(model::exampleChain());
+  LOG(INFO) << myRequest.toString();
+
+  const auto    myReqSerialized = myRequest.toProtobuf();
+  LambdaRequest myReqDeserialized(myReqSerialized);
+  ASSERT_TRUE(myRequest == myReqDeserialized)
+      << "\n"
+      << myRequest.toString() << "\nvs.\n"
+      << myReqDeserialized.toString();
+}
+
+TEST_F(TestEdgeMessages, test_request_serialize_deserialize_dag) {
+  LambdaRequest myRequest("", "input", "datain");
+  myRequest.states().emplace("state0", State::fromContent("content"));
+  myRequest.states().emplace("state1", State::fromContent("another_content"));
+  myRequest.states().emplace("state2", State::fromLocation("1.2.3.4:6666"));
+  myRequest.theCallback = "1.2.3.4:6666";
+  myRequest.theDag      = std::make_unique<model::Dag>(model::exampleDag());
   LOG(INFO) << myRequest.toString();
 
   const auto    myReqSerialized = myRequest.toProtobuf();

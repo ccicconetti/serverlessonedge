@@ -133,6 +133,10 @@ const States& Dag::states() const {
   return theStates;
 }
 
+std::string Dag::entryFunctionName() const {
+  return toName(0);
+}
+
 std::string Dag::toString() const {
   std::stringstream ret;
   ret << "{ ";

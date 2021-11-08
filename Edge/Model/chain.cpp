@@ -92,6 +92,13 @@ const States& Chain::states() const {
   return theStates;
 }
 
+std::string Chain::entryFunctionName() const {
+  if (theFunctions.empty()) {
+    throw std::runtime_error("Empty chain");
+  }
+  return theFunctions.front();
+}
+
 std::string Chain::toString() const {
   std::stringstream ret;
   ret << "[ " << ::toString(theFunctions, " -> ") << " ], "

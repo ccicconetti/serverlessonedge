@@ -104,6 +104,12 @@ class Dag final
   //! @return the state dependencies.
   const States& states() const;
 
+  //! @return the name of the first function of the DAG.
+  std::string entryFunctionName() const;
+
+  //! @return the name of the function or an empty string.
+  std::string toName(const size_t aIndex) const;
+
   //! @return a human-readable single-line string.
   std::string toString() const;
 
@@ -123,9 +129,6 @@ class Dag final
 
  private:
   static Predecessors makePredecessors(const Successors& aSuccessors);
-
-  //! @return the name of the function or an empty string.
-  std::string toName(const size_t aIndex) const;
 
   //! @return a vector with the name of the functions.
   template <class CONTAINER>
