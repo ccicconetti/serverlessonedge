@@ -105,6 +105,9 @@ Chain Chain::singleFunctionChain(const std::string& aFunction) {
 
 Chain Chain::fromJson(const std::string& aJson) {
   const auto myJson = json::parse(aJson);
+  if (myJson.find("functions") == myJson.end()) {
+    throw std::runtime_error("Invalid JSON content for a chain");
+  }
   Functions  myFunctions(myJson["functions"]);
   const auto myStates = States::fromJson(aJson);
   return Chain(myFunctions, myStates.dependencies());
