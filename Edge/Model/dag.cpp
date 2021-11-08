@@ -133,6 +133,11 @@ const States& Dag::states() const {
   return theStates;
 }
 
+size_t Dag::numFunctions() const {
+  assert((thePredecessors.size() + 1) == theFunctionNames.size());
+  return thePredecessors.size() + 1;
+}
+
 std::string Dag::entryFunctionName() const {
   return toName(0);
 }
@@ -186,6 +191,10 @@ std::string Dag::toString() const {
   }
   ret << "}, " << theStates.toString();
   return ret.str();
+}
+
+Dag Dag::singleFunctionDag(const std::string& aFunction) const {
+  return Dag({}, {aFunction}, theStates.dependencies(aFunction));
 }
 
 Dag Dag::fromJson(const std::string& aJson) {

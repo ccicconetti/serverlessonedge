@@ -70,6 +70,7 @@ TEST_F(TestDag, test_access_methods) {
   ASSERT_EQ(std::set<std::string>({"s1"}), myDag.states().states("f1"));
   ASSERT_EQ("f0-f1-f2-f2", myDag.name());
   ASSERT_EQ("f0", myDag.entryFunctionName());
+  ASSERT_EQ(4, myDag.numFunctions());
 
   ASSERT_EQ("f0", myDag.toName(0));
   ASSERT_EQ("f1", myDag.toName(1));
@@ -97,6 +98,13 @@ TEST_F(TestDag, test_access_methods) {
   ASSERT_EQ(std::set<size_t>({0}), myDag.callable({1, 2}));
   ASSERT_EQ(std::set<size_t>({0}), myDag.callable({1, 2, 3}));
   ASSERT_EQ(std::set<size_t>({}), myDag.callable({0, 1, 2, 3}));
+
+  const auto mySingle = myDag.singleFunctionDag("f1");
+  ASSERT_EQ(1, mySingle.numFunctions());
+  ASSERT_EQ(Dag::Dependencies({{{"s1", {"f1"}}}}),
+            mySingle.states().dependencies());
+  ASSERT_EQ("f1", mySingle.toName(0));
+  ASSERT_EQ("", mySingle.toName(1));
 }
 
 TEST_F(TestDag, test_invalid) {

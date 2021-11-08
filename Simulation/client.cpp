@@ -35,6 +35,7 @@ SOFTWARE.
 #include "Edge/edgeclientinterface.h"
 #include "Edge/edgemessages.h"
 #include "Edge/stateclient.h"
+#include "Support/queue.h"
 #include "Support/saver.h"
 #include "Support/stat.h"
 #include "Support/tostring.h"
@@ -239,67 +240,84 @@ Client::functionDag(const std::string& aInput) {
   assert(theLambda.empty());
   assert(theCallback.empty());
   assert(theDag.get() != nullptr);
-  std::ignore = aInput;
 
-  // std::string                           myInput = aInput;
-  // std::string                           myDataIn;
-  std::unique_ptr<edge::LambdaResponse> myResp(nullptr);
-  // unsigned int                          myHops  = 0;
-  // unsigned int                          myPtime = 0;
-  // validateStates();
+  std::atomic<unsigned int> myHops  = 0;
+  std::atomic<unsigned int> myPtime = 0;
+  std::set<size_t>          myCompleted;
+  std::set<size_t>          myCalled;
+  support::Queue<ssize_t>   myQueue;
+  std::list<std::thread>    myThreads;
 
-  // for (const auto& myFunction : theChain->functions()) {
-  //   // create a request and fill it with the states needed by the function
-  //   edge::LambdaRequest myReq(myFunction, myInput, myDataIn);
-  //   for (const auto& myState : theChain->states().states(myFunction)) {
-  //     const auto it = theLastStates.find(myState);
-  //     assert(it != theLastStates.end());
-  //     myReq.states().emplace(myState, it->second);
-  //   }
+  validateStates();
 
-  //   myReq.theChain = std::make_unique<edge::model::Chain>(
-  //       theChain->singleFunctionChain(myFunction));
+  while (myCompleted.size() != theDag->numFunctions()) {
+    for (const auto& myIndex : theDag->callable(myCompleted)) {
+      // skip functions already called
+      if (myCalled.count(myIndex) > 0) {
+        continue;
+      }
+      [[maybe_unused]] const auto ret = myCalled.emplace(myIndex);
+      assert(ret.second == true);
 
-  //   // run the lambda function
-  //   myResp = std::make_unique<edge::LambdaResponse>(
-  //       theClient->RunLambda(myReq, theDry));
+      // start a thread to handle this single function in the DAG
+      myThreads.emplace_back(
+          std::thread([this, &myQueue, &aInput, &myHops, &myPtime, myIndex]() {
+            const auto myFunction = theDag->toName(myIndex); // name
 
-  //   // return immediately upon failure
-  //   assert(myResp.get() != nullptr);
-  //   VLOG(2) << *myResp;
-  //   if (myResp->theRetCode != "OK") {
-  //     break;
-  //   }
+            // create a request and fill it with the states needed by the
+            // function
+            edge::LambdaRequest myReq(myFunction, aInput, std::string());
+            for (const auto& myState : theDag->states().states(myFunction)) {
+              const auto it = theLastStates.find(myState);
+              assert(it != theLastStates.end());
+              myReq.states().emplace(myState, it->second);
+            }
 
-  //   // save the states returned
-  //   for (const auto& elem : myResp->states()) {
-  //     auto it = theLastStates.find(elem.first);
-  //     assert(it != theLastStates.end());
-  //     it->second = elem.second;
-  //   }
+            myReq.theDag = std::make_unique<edge::model::Dag>(
+                theDag->singleFunctionDag(myFunction));
 
-  //   // use the return value to fill the next input
-  //   myInput  = myResp->theOutput;
-  //   myDataIn = myResp->theDataOut;
+            // run the lambda function
+            const auto myResp = theClient->RunLambda(myReq, theDry);
 
-  //   // sum the hops and processing time
-  //   myHops += myResp->theHops;
-  //   myPtime += myResp->theProcessingTime;
-  // }
+            // return an invalid function index upon failure
+            VLOG(2) << myResp;
+            if (myResp.theRetCode != "OK") {
+              myQueue.push(-1);
+            }
 
-  // // save all the states in the final response
-  // myResp->states() = theLastStates;
+            // do NOT save the states returned
 
-  // // if the number of functions is greater than 2, remove some
-  // // fields that are not meaningful
-  // if (theChain->functions().size() > 1) {
-  //   myResp->theResponder.clear();
-  //   myResp->theLoad1          = 0;
-  //   myResp->theLoad10         = 0;
-  //   myResp->theLoad30         = 0;
-  //   myResp->theHops           = myHops;
-  //   myResp->theProcessingTime = myPtime;
-  // }
+            // do NOT use the return value to fill the next input
+
+            // sum the hops and processing time
+            myHops += myResp.theHops;
+            myPtime += myResp.theProcessingTime;
+
+            myQueue.push(myIndex);
+          }));
+    }
+    const auto myFunction = myQueue.pop();
+    if (myFunction < 0) {
+      for (auto& myThread : myThreads) {
+        myThread.join();
+      }
+      throw std::runtime_error(
+          "Error received while executing a function in a DAG");
+    }
+    [[maybe_unused]] const auto ret = myCompleted.emplace(myFunction);
+    assert(ret.second == true);
+  }
+
+  for (auto& myThread : myThreads) {
+    myThread.join();
+  }
+
+  auto myResp = std::make_unique<edge::LambdaResponse>("OK", aInput);
+
+  // save all the states in the final response
+  myResp->states()          = theLastStates;
+  myResp->theHops           = myHops;
+  myResp->theProcessingTime = myPtime;
 
   return myResp;
 }

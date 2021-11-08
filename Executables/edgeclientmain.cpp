@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Edge/Model/chainfactory.h"
+#include "Edge/Model/dagfactory.h"
 #include "Edge/callbackserver.h"
 #include "Edge/stateserver.h"
 #include "Simulation/unifclient.h"
@@ -119,6 +120,7 @@ int main(int argc, char* argv[]) {
   std::string myContent;
   std::string myOutputFile;
   std::string myChainConf;
+  std::string myDagConf;
   std::string myCallback;
   std::string myStateEndpoint;
   size_t      myDuration;
@@ -172,6 +174,9 @@ int main(int argc, char* argv[]) {
     ("chain-conf",
      po::value<std::string>(&myChainConf)->default_value(""),
      "Function chain configuration. Load from file with type=file,filename=CHAINFILE.json. Use type=make-template to generated an example. If present override --lambda.")
+    ("dag-conf",
+     po::value<std::string>(&myDagConf)->default_value(""),
+     "Function DAG configuration. Load from file with type=file,filename=DAGFILE.json. Use type=make-template to generated an example. If present override --lambda.")
     ("callback-endpoint",
      po::value<std::string>(&myCallback)->default_value(""),
      "Callback to receive the return of the function/chain in an asynchronous manner. Mandatory with function chains.")
@@ -200,12 +205,25 @@ int main(int argc, char* argv[]) {
       throw std::runtime_error("Empty end-points: " + myServerEndpoints);
     }
 
+    if (not myChainConf.empty() and not myDagConf.empty()) {
+      throw std::runtime_error("Cannot specify both a chain and a DAG");
+    }
+
     std::unique_ptr<ec::model::Chain> myChain;
     std::map<std::string, size_t>     myStateSizes;
     if (not myChainConf.empty()) {
       ec::model::ChainFactory::make(
           uiiit::support::Conf(myChainConf), myChain, myStateSizes);
       if (myChain.get() == nullptr) {
+        return EXIT_SUCCESS;
+      }
+    }
+
+    std::unique_ptr<ec::model::Dag> myDag;
+    if (not myDagConf.empty()) {
+      ec::model::DagFactory::make(
+          uiiit::support::Conf(myDagConf), myDag, myStateSizes);
+      if (myDag.get() == nullptr) {
         return EXIT_SUCCESS;
       }
     }
@@ -219,6 +237,12 @@ int main(int argc, char* argv[]) {
     LOG_IF(INFO, myChain.get() != nullptr)
         << "operating in function chain mode, overriding the lambda name: "
         << myLambda;
+
+    LOG_IF(INFO, myDag.get() != nullptr)
+        << "operating in function DAG mode, overriding the lambda name: "
+        << myLambda;
+
+    assert(myChain.get() == nullptr or myDag.get() == nullptr);
 
     std::unique_ptr<ResponseSaver> myResponseSaver;
     if (not myCallback.empty()) {
@@ -260,7 +284,7 @@ int main(int argc, char* argv[]) {
           myMaxRequests,
           uiiit::support::split<std::set<std::string>>(myServerEndpoints, ","),
           myEdgeClientConf,
-          myChain.get() == nullptr ? myLambda : "",
+          (myChain.get() == nullptr and myDag.get() == nullptr) ? myLambda : "",
           mySaver,
           myVarMap.count("dry") > 0));
       myNewClient->setContent(myContent);
@@ -269,6 +293,9 @@ int main(int argc, char* argv[]) {
       }
       if (myChain.get() != nullptr) {
         myNewClient->setChain(*myChain, myStateSizes);
+      }
+      if (myDag.get() != nullptr) {
+        myNewClient->setDag(*myDag, myStateSizes);
       }
       myNewClient->setStateServer(myStateEndpoint);
       myClients.push_back(myNewClient.get());

@@ -104,6 +104,9 @@ class Dag final
   //! @return the state dependencies.
   const States& states() const;
 
+  //! @return the number of functions in the DAG.
+  size_t numFunctions() const;
+
   //! @return the name of the first function of the DAG.
   std::string entryFunctionName() const;
 
@@ -115,6 +118,15 @@ class Dag final
 
   //! @return a human-readable single-line string.
   std::string toString() const;
+
+  /**
+   * @brief Return a new DAG containing only the given function.
+   *
+   * @param aFunction The function to include.
+   *
+   * @return the new DAG.
+   */
+  Dag singleFunctionDag(const std::string& aFunction) const;
 
   /**
    * @brief Create a DAG from a JSON-encoded string.
