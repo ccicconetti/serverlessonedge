@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include "Edge/Model/chain.h"
 #include "Edge/Model/dag.h"
+#include "Support/uuid.h"
 
 #include <sstream>
 
@@ -82,14 +83,15 @@ bool State::operator==(const State& aOther) const {
 
 LambdaRequest::LambdaRequest(const std::string& aName,
                              const std::string& aInput)
-    : LambdaRequest(aName, aInput, std::string(), false, 0) {
+    : LambdaRequest(aName, aInput, std::string()) {
   // noop
 }
 
 LambdaRequest::LambdaRequest(const std::string& aName,
                              const std::string& aInput,
                              const std::string& aDataIn)
-    : LambdaRequest(aName, aInput, aDataIn, false, 0) {
+    : LambdaRequest(
+          aName, aInput, aDataIn, false, 0, support::Uuid().toString()) {
   // noop
 }
 
@@ -97,7 +99,8 @@ LambdaRequest::LambdaRequest(const std::string& aName,
                              const std::string& aInput,
                              const std::string& aDataIn,
                              const bool         aForward,
-                             const unsigned int aHops)
+                             const unsigned int aHops,
+                             const std::string& aUuid)
     : theName(aName)
     , theInput(aInput)
     , theDataIn(aDataIn)
@@ -107,7 +110,8 @@ LambdaRequest::LambdaRequest(const std::string& aName,
     , theCallback()
     , theChain(nullptr)
     , theDag(nullptr)
-    , theNextFunctionIndex(0) {
+    , theNextFunctionIndex(0)
+    , theUuid(aUuid) {
   // noop
 }
 
@@ -121,7 +125,8 @@ LambdaRequest::LambdaRequest(const rpc::LambdaRequest& aMsg)
     , theCallback(aMsg.callback())
     , theChain(nullptr)
     , theDag(nullptr)
-    , theNextFunctionIndex(aMsg.nextfunctionindex()) {
+    , theNextFunctionIndex(aMsg.nextfunctionindex())
+    , theUuid(aMsg.uuid()) {
   // the serialized message also contains a chain
   if (aMsg.chain_size() > 0) {
     model::Chain::Functions myFunctions;
@@ -173,7 +178,8 @@ LambdaRequest::LambdaRequest(LambdaRequest&& aOther)
     , theCallback(std::move(aOther.theCallback))
     , theChain(std::move(aOther.theChain))
     , theDag(std::move(aOther.theDag))
-    , theNextFunctionIndex(aOther.theNextFunctionIndex) {
+    , theNextFunctionIndex(aOther.theNextFunctionIndex)
+    , theUuid(aOther.theUuid) {
   // noop
 }
 
@@ -219,6 +225,7 @@ rpc::LambdaRequest LambdaRequest::toProtobuf() const {
     }
   }
   myRet.set_nextfunctionindex(theNextFunctionIndex);
+  myRet.set_uuid(theUuid);
   return myRet;
 }
 
@@ -231,7 +238,8 @@ bool LambdaRequest::operator==(const LambdaRequest& aOther) const {
          (theChain.get() == nullptr or *theChain == *aOther.theChain) and
          ((theDag.get() == nullptr) == (aOther.theDag.get() == nullptr)) and
          (theDag.get() == nullptr or *theDag == *aOther.theDag) and
-         theNextFunctionIndex == aOther.theNextFunctionIndex;
+         theNextFunctionIndex == aOther.theNextFunctionIndex
+      /* and theUuid == aOther.theUuid */;
 }
 
 LambdaRequest LambdaRequest::makeOneMoreHop() const {
@@ -241,7 +249,7 @@ LambdaRequest LambdaRequest::makeOneMoreHop() const {
 }
 
 LambdaRequest LambdaRequest::copy() const {
-  LambdaRequest ret(theName, theInput, theDataIn, theForward, theHops);
+  LambdaRequest ret(theName, theInput, theDataIn, theForward, theHops, theUuid);
   ret.theStates   = theStates;
   ret.theCallback = theCallback;
   if (theChain.get() != nullptr) {
@@ -264,7 +272,8 @@ std::string LambdaRequest::name() const {
 std::string LambdaRequest::toString() const {
   std::stringstream myStream;
   myStream << "name: " << theName << ", "
-           << (theForward ? "from edge node" : "from edge client")
+           << (theForward ? "from edge node" : "from edge client") << ", uuid "
+           << theUuid
            << (theCallback.empty() ? std::string() :
                                      (std::string(", callback ") + theCallback))
            << ", hops: " << theHops << ", input: " << theInput

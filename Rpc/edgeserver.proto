@@ -58,7 +58,6 @@ message Dag {
 
 message LambdaRequest {
   // name of the remote procedure to be executed
-  // can be empty if chain is given
   string name     = 1;
 
   // function input, encoded as a string (may be empty)
@@ -98,8 +97,11 @@ message LambdaRequest {
   // value: list of functions that depend on this
   map<string, FunctionList> dependencies = 11;
 
-  // index of the next function to execute in the chain
+  // index of the next function to execute in the chain/DAG
   uint32 nextFunctionIndex = 12;
+
+  // unique identified of this request, needed only by DAGs
+  string uuid = 13;
 }
 
 message LambdaResponse {

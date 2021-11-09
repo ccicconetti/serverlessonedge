@@ -169,13 +169,15 @@ struct LambdaRequest final {
   std::unique_ptr<model::Chain> theChain;
   std::unique_ptr<model::Dag>   theDag;
   unsigned int                  theNextFunctionIndex;
+  const std::string             theUuid;
 
  private:
   explicit LambdaRequest(const std::string& aName,
                          const std::string& aInput,
                          const std::string& aDataIn,
                          const bool         aForward,
-                         const unsigned int aHops);
+                         const unsigned int aHops,
+                         const std::string& aUuid);
 
   static model::States::Dependencies
   getDependencies(const rpc::LambdaRequest& aMsg);

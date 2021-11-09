@@ -99,6 +99,23 @@ TEST_F(TestEdgeMessages, test_request_serialize_deserialize_dag) {
       << myReqDeserialized.toString();
 }
 
+TEST_F(TestEdgeMessages, test_request_copy) {
+  LambdaRequest myRequest("name", "input", "datain");
+  const auto    myCopy = myRequest.copy();
+  ASSERT_EQ(myRequest.theUuid, myCopy.theUuid);
+  ASSERT_TRUE(myRequest == myCopy) << "\n"
+                                   << myRequest.toString() << "\nvs.\n"
+                                   << myCopy.toString();
+}
+
+TEST_F(TestEdgeMessages, test_request_one_more_hop) {
+  LambdaRequest myRequest("name", "input", "datain");
+  const auto    myCopy = myRequest.makeOneMoreHop();
+  ASSERT_FALSE(myRequest == myCopy);
+  ASSERT_EQ(myRequest.theUuid, myCopy.theUuid);
+  ASSERT_EQ(myRequest.theHops + 1, myCopy.theHops);
+}
+
 TEST_F(TestEdgeMessages, test_response_serialize_deserialize_sync) {
   LambdaResponse myResponse("name", "output", {0.1, 0.2, 0.3});
   myResponse.states().emplace("state0", State::fromContent("content"));
