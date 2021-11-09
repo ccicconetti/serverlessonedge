@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# create DAG JSON file:
+#
+# ./edgeclient --dag-conf type=make-template
+#
+# run:
+#
+# ./edgeclient --dag-conf type=file,filename=dag-example.json --max-requests 1
+# ./edgeclient --dag-conf type=file,filename=dag-example.json --max-requests 1 --callback 127.0.0.1:6480
+# ./edgeclient --dag-conf type=file,filename=dag-example.json --max-requests 1 --callback 127.0.0.1:6480 --state-endpoint 127.0.0.1:6481
+#
+
 pids=""
 numcomputers=5
 
