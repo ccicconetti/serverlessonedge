@@ -262,6 +262,29 @@ LambdaRequest LambdaRequest::copy() const {
   return ret;
 }
 
+LambdaRequest LambdaRequest::regenerate(const std::string& aName,
+                                        const size_t       aNextFunctionIndex,
+                                        const rpc::LambdaResponse& aResponse) {
+  LambdaRequest ret(aName,
+                    aResponse.output(),
+                    aResponse.dataout(),
+                    false,
+                    theHops + 1,
+                    theUuid);
+  ret.theStates   = deserializeStates(aResponse);
+  ret.theCallback = theCallback;
+  if (theChain.get() != nullptr) {
+    ret.theChain = std::move(theChain);
+    theChain     = nullptr;
+  }
+  if (theDag.get() != nullptr) {
+    ret.theDag = std::move(theDag);
+    theDag     = nullptr;
+  }
+  ret.theNextFunctionIndex = aNextFunctionIndex;
+  return ret;
+}
+
 std::string LambdaRequest::name() const {
   if (theChain.get() == nullptr) {
     return theName;

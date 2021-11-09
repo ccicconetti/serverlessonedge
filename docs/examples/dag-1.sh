@@ -1,9 +1,10 @@
 #!/bin/bash
 
 pids=""
+numcomputers=5
 
 echo "prepare configuration files"
-for (( i = 0 ; i <= 3 ; i++ )) ; do
+for (( i = 0 ; i < numcomputers ; i++ )) ; do
   ./edgecomputer --json-example | sed -e "s/clambda@1/f$i/" > computer-$i.json
 done
 
@@ -13,7 +14,7 @@ pids="$pids $!"
 sleep 0.5
 
 echo "start the e-computers"
-for (( i = 0 ; i <= 3 ; i++ )) ; do
+for (( i = 0 ; i < numcomputers ; i++ )) ; do
   env $LOG ./edgecomputer \
     --conf type=file,path=computer-$i.json \
     --controller 127.0.0.1:6475 \

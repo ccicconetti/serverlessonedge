@@ -32,6 +32,7 @@ SOFTWARE.
 #include "Edge/edgecomputer.h"
 
 #include "Edge/Model/chain.h"
+#include "Edge/Model/dag.h"
 #include "Edge/callbackclient.h"
 #include "Edge/edgeclientgrpc.h"
 #include "Edge/edgemessages.h"
@@ -69,8 +70,7 @@ void EdgeComputer::AsyncWorker::operator()() {
       // - last function: send final response to callback
       // - non-last function: invoke next function in the chain via companion
 
-      if (myRequest.chain_size() == 0 or
-          (int) myRequest.nextfunctionindex() == (myRequest.chain_size() - 1)) {
+      if (lastFunction(myRequest)) {
         myResp.set_responder(theParent.serverEndpoint());
         myResp.set_hops(myRequest.hops() + 1);
         myResp.set_retcode("OK");
@@ -84,46 +84,66 @@ void EdgeComputer::AsyncWorker::operator()() {
         myClient.ReceiveResponse(myResponse);
 
       } else {
-        // prepare the new request
-        const auto myName =
-            (((int)myRequest.nextfunctionindex() + 1) <
-             myRequest.chain_size()) ?
-                myRequest.chain(myRequest.nextfunctionindex() + 1) :
-                std::string(); // empty name will result in an error
+        // functions to be invoked
+        std::list<std::pair<size_t, std::string>> myFunctions;
 
-        LambdaRequest myOldRequest(myRequest);
-        LambdaRequest myNewRequest(myName, myResp.output(), myResp.dataout());
-        myNewRequest.theHops     = myOldRequest.theHops + 1;
-        myNewRequest.theStates   = deserializeStates(myResp);
-        myNewRequest.theCallback = myOldRequest.theCallback;
-        myNewRequest.theChain    = std::move(myOldRequest.theChain);
-        myNewRequest.theNextFunctionIndex =
-            myOldRequest.theNextFunctionIndex + 1;
+        if (myRequest.chain_size() > 0) {
+          // chain
+          assert(((int)myRequest.nextfunctionindex() + 1) <
+                 myRequest.chain_size());
+          if (((int)myRequest.nextfunctionindex() + 1) <
+              myRequest.chain_size()) {
+            myFunctions.emplace_back(
+                myRequest.nextfunctionindex() + 1,
+                myRequest.chain(myRequest.nextfunctionindex() + 1));
+          }
 
-        {
-          const std::lock_guard<std::mutex> myLock(theParent.theMutex);
-          if (theParent.theCompanionClient.get() == nullptr) {
-            LOG(ERROR) << "companion not set for "
-                       << theParent.serverEndpoint();
-          } else {
-            // send the next request, we expect immediate async response
-            const auto myCompanionEndpoint =
-                theParent.theCompanionClient->serverEndpoint();
-            VLOG(3) << "invoking next function on " << myCompanionEndpoint
-                    << ", " << myNewRequest;
-            const auto myImmediateResp =
-                theParent.theCompanionClient->RunLambda(myNewRequest, false);
-            LOG_IF(ERROR, myImmediateResp.theRetCode != "OK")
-                << "error when executing the next function in the chain via "
-                << myCompanionEndpoint << ": " << myImmediateResp.theRetCode;
-            LOG_IF(ERROR, not myImmediateResp.theAsynchronous)
-                << "received a synchronous response when executing the next "
-                   "function in the chain via "
-                << myCompanionEndpoint << ": result ignored";
+        } else {
+          // DAG
+          assert(myRequest.dag().names_size() > 0);
+          assert((int)myRequest.nextfunctionindex() <
+                 myRequest.dag().successors_size());
+          if ((int)myRequest.nextfunctionindex() <
+              myRequest.dag().successors_size()) {
+            for (const auto myNdx :
+                 myRequest.dag()
+                     .successors(myRequest.nextfunctionindex())
+                     .functions()) {
+              assert((int)myNdx < myRequest.dag().names_size());
+              if ((int)myNdx < myRequest.dag().names_size()) {
+                myFunctions.emplace_back(myNdx, myRequest.dag().names(myNdx));
+              }
+            }
           }
         }
-      }
 
+        const std::lock_guard<std::mutex> myLock(theParent.theCompanionMutex);
+        if (theParent.theCompanionClient.get() == nullptr) {
+          LOG(ERROR) << "companion not set for " << theParent.serverEndpoint();
+          myFunctions.clear(); // do not invoke functions
+        }
+        const auto myCompanionEndpoint =
+            theParent.theCompanionClient->serverEndpoint();
+
+        // invoke all functions
+        for (const auto& elem : myFunctions) {
+          const auto myNewRequest = LambdaRequest(myRequest).regenerate(
+              elem.second, elem.first, myResp);
+
+          // send the next request, we expect immediate async response
+          VLOG(3) << "invoking next function on " << myCompanionEndpoint << ", "
+                  << myNewRequest;
+          const auto myImmediateResp =
+              theParent.theCompanionClient->RunLambda(myNewRequest, false);
+          LOG_IF(ERROR, myImmediateResp.theRetCode != "OK")
+              << "error when executing the next function in the chain via "
+              << myCompanionEndpoint << ": " << myImmediateResp.theRetCode;
+          LOG_IF(ERROR, not myImmediateResp.theAsynchronous)
+              << "received a synchronous response when executing the next "
+                 "function in the chain via "
+              << myCompanionEndpoint << ": result ignored";
+        }
+      }
     } catch (const support::QueueClosed&) {
       break;
     } catch (const std::exception& aErr) {
@@ -163,7 +183,9 @@ EdgeComputer::EdgeComputer(const size_t        aNumThreads,
                         nullptr :
                         std::make_unique<support::Queue<rpc::LambdaRequest>>())
     , theCompanionClient()
-    , theStateClient() {
+    , theCompanionMutex()
+    , theStateClient()
+    , theInvocations() {
   if (aNumThreads > 0) {
     assert(theAsyncWorkers.get() != nullptr);
     assert(theAsyncQueue.get() != nullptr);
@@ -190,11 +212,15 @@ EdgeComputer::~EdgeComputer() {
 }
 
 void EdgeComputer::companion(const std::string& aCompanionEndpoint) {
-  const std::lock_guard<std::mutex> myLock(theMutex);
-  if (theAsyncWorkers.get() == nullptr) {
-    throw std::runtime_error(
-        "cannot set the companion end-point of a synchronous edge computer");
+  {
+    const std::lock_guard<std::mutex> myLock(theMutex);
+    if (theAsyncWorkers.get() == nullptr) {
+      throw std::runtime_error(
+          "cannot set the companion end-point of a synchronous edge computer");
+    }
   }
+
+  const std::lock_guard<std::mutex> myLock(theCompanionMutex);
   if (aCompanionEndpoint.empty()) {
     LOG(WARNING) << "clearing the companion end-point of " << serverEndpoint();
     theCompanionClient.reset();
@@ -238,10 +264,18 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
 
   std::string myRetCode = "OK";
   try {
-    // it is an error not have the callback with a function chain
-    if (aReq.chain_size() > 1 and aReq.callback().empty()) {
+    // it is an error to have both a chain and a DAG
+    if (aReq.chain_size() > 0 and aReq.dag().names_size() > 0) {
       throw std::runtime_error(
-          "Cannot handle a function chain without a callback in the request");
+          "Cannot specify both a function chain and a DAG in the request");
+    }
+
+    // it is an error not have the callback with a function chain or DAG
+    // with more than one function
+    if ((aReq.chain_size() > 1 or aReq.dag().names_size() > 1) and
+        aReq.callback().empty()) {
+      throw std::runtime_error("Cannot handle multiple functions without a "
+                               "callback in the request");
     }
 
     // it is an error to request the execution of a function beyond the chain
@@ -251,13 +285,10 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
           "Out-of-range function execution requested in a chain");
     }
 
-    // it is an error to request the execution of a function chain without
-    // having set the companion beforehand, if needed
-    if (aReq.chain_size() > 1 and
-        (int) aReq.nextfunctionindex() < (aReq.chain_size() - 1) and
-        theCompanionClient.get() == nullptr) {
+    // it is an error to have a DAG without the UUID set
+    if (aReq.dag().names_size() > 1 and aReq.uuid().empty()) {
       throw std::runtime_error(
-          "Cannot invoke the next function in the chain without a companion");
+          "Cannot execute a DAG without a UUID in the request");
     }
 
     if (aReq.dry()) {
@@ -279,7 +310,9 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
         myRetCode = "Cannot handle an asynchronous function invocation";
       } else {
         myResp.set_asynchronous(true);
-        theAsyncQueue->push(aReq);
+        if (checkPreconditions(aReq)) {
+          theAsyncQueue->push(aReq);
+        }
       }
 
     } else {
@@ -295,6 +328,64 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
   myResp.set_hops(aReq.hops() + 1);
   myResp.set_retcode(myRetCode);
   return myResp;
+}
+
+bool EdgeComputer::checkPreconditions(const rpc::LambdaRequest& aRequest) {
+  // no DAG or single-function DAG or first function in a DAG: return now
+  if (aRequest.dag().names_size() <= 1 or aRequest.nextfunctionindex() == 0) {
+    return true;
+  }
+
+  // check how many invocations we expect according to the DAG
+  size_t myExpected = 0;
+  for (ssize_t i = 0; i < aRequest.dag().successors_size(); i++) {
+    for (const auto& mySuccessor : aRequest.dag().successors(i).functions()) {
+      if (mySuccessor == aRequest.nextfunctionindex()) {
+        myExpected++;
+      }
+    }
+  }
+
+  // the function invoked has only one precedessor, proceed immediately
+  if (myExpected == 1) {
+    return true;
+  }
+
+  const std::lock_guard<std::mutex> myLock(theMutex);
+  assert(not aRequest.uuid().empty());
+  auto  it       = theInvocations.emplace(makeHash(aRequest), 0).first;
+  auto& myActual = it->second;
+  myActual++;
+  assert(myActual <= myExpected);
+  VLOG(3) << "hash " << makeHash(aRequest) << ": requested " << myExpected
+          << " vs actual " << myActual << " invocations";
+  if (myActual == myExpected) {
+    theInvocations.erase(it);
+    return true;
+  }
+  return false;
+}
+
+bool EdgeComputer::lastFunction(const rpc::LambdaRequest& aRequest) {
+  if (
+      // single function invocation
+      (aRequest.chain_size() == 0 and aRequest.dag().names_size() == 0) or
+
+      // last function in a chain
+      (aRequest.chain_size() >= 1 and
+       (int) aRequest.nextfunctionindex() == (aRequest.chain_size() - 1)) or
+
+      // last function in a DAG
+      (aRequest.dag().names_size() > 1 and
+       (int) aRequest.nextfunctionindex() ==
+           aRequest.dag().successors_size())) {
+    return true;
+  }
+  return false;
+}
+
+std::string EdgeComputer::makeHash(const rpc::LambdaRequest& aRequest) {
+  return std::to_string(aRequest.nextfunctionindex()) + "-" + aRequest.uuid();
 }
 
 rpc::LambdaResponse
@@ -374,7 +465,6 @@ bool EdgeComputer::handleRemoteStates(const rpc::LambdaRequest& aRequest,
 
     // copy into local server
     stateClient().Put(elem.first, myContent);
-
     // delete from remote server
     const auto ret = myStateClient.Del(elem.first);
     LOG_IF(WARNING, ret == false)

@@ -36,6 +36,8 @@ SOFTWARE.
 #include "Support/chrono.h"
 #include "Support/queue.h"
 
+#include <unordered_map>
+
 namespace uiiit {
 
 namespace support {
@@ -71,6 +73,19 @@ class StateClient;
  * function is the last in the chain then the response is sent to the callback
  * specified in the request, otherwise a new function is invoked on the
  * next computer through the companion endpoint
+ *
+ * - if it is a DAG workflow, then the behavior is the same as with a chain
+ * of functions with two differences:
+ *
+ *   1) the simulation of the function is started only after all the
+ *   invocations from the predecessors of the function have been received:
+ *   if the current function has only one ingress in the DAG, then it
+ *   behaves like a function chain; if it has N > 1 incoming edges in the DAG,
+ *   then it skips the first (N-1) invocations received and then only
+ *   handles the function simulation when receiving the N-th invocation
+ *
+ *   2) since a function can have > 1 outgoing edges in the DAG, after
+ *   the simulation it invokes all of them
  */
 class EdgeComputer final : public EdgeServer
 {
@@ -120,7 +135,7 @@ class EdgeComputer final : public EdgeServer
    * \param aCallback the function called as new load values are available.
    *
    * The companion end-point is empty by default. If needed, i.e., if this
-   * edge computer is expected to serve function chains, then it must be
+   * edge computer is expected to serve function chains or DAGs, then it must be
    * set via the companion() method.
    */
   explicit EdgeComputer(const size_t        aNumThreads,
@@ -139,7 +154,7 @@ class EdgeComputer final : public EdgeServer
   }
 
   /**
-   * @brief Set the companion end-point, which is needed for function chains.
+   * @brief Set the companion end-point, which is needed for chains/DAGs.
    *
    * @param aCompanionEndpoint the end-point of the destination to which to
    * send the next function invocation. If an empty string is passed then
@@ -179,7 +194,7 @@ class EdgeComputer final : public EdgeServer
    * @brief Handle remote states.
    *
    * Retrieve the remote states from the requests.
-   * If the request contains a chain, then we only retrieve those
+   * If the request contains a chain or DAG, then we only retrieve those
    * neeed by the current function. Otherwise, we retrieve all the
    * remote states.
    *
@@ -201,6 +216,41 @@ class EdgeComputer final : public EdgeServer
   StateClient& stateClient() const;
 
  private:
+  /**
+   * @brief Check if the preconditions for running this request are satisfied.
+   *
+   * For chain requests the preconditions are automatically verified.
+   *
+   * For DAG workflows, a request can only be executed if all the invocations
+   * expected have been received.
+   *
+   * @param aRequest the request to be checked.
+   *
+   * @return true if the request should be executed.
+   * @return false if the e-computer should yield (= not executed the request).
+   */
+  bool checkPreconditions(const rpc::LambdaRequest& aRequest);
+
+  //! @return a hash of a request.
+  static std::string hash(const rpc::LambdaRequest& aRequest);
+
+  /**
+   * @brief Check if this is the terminating function.
+   *
+   * This can happen for three reasons:
+   *
+   * - single-function execution request
+   * - last function in a chain
+   * - last function in a DAG
+   *
+   * @return true if the request is the last invocation.
+   */
+  static bool lastFunction(const rpc::LambdaRequest& aRequest);
+
+  //! @return a hash of a request.
+  static std::string makeHash(const rpc::LambdaRequest& aRequest);
+
+ private:
   Computer                                        theComputer;
   std::condition_variable                         theDescriptorsCv;
   std::map<uint64_t, std::unique_ptr<Descriptor>> theDescriptors;
@@ -210,11 +260,17 @@ class EdgeComputer final : public EdgeServer
   const std::unique_ptr<WorkersPool>                        theAsyncWorkers;
   const std::unique_ptr<support::Queue<rpc::LambdaRequest>> theAsyncQueue;
 
-  // only for function chains, which are asynchronous by default
+  // only for function chains and DAGs, which are asynchronous by default
   std::unique_ptr<EdgeClientGrpc> theCompanionClient;
+  std::mutex                      theCompanionMutex;
 
   // only for remote states
   std::unique_ptr<StateClient> theStateClient;
+
+  // only for DAGs
+  // key:   a hash of the request
+  // value: the number of invocations already received
+  std::unordered_map<std::string, size_t> theInvocations;
 };
 
 } // end namespace edge

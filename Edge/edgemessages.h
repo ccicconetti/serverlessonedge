@@ -102,6 +102,7 @@ struct LambdaRequest final {
    * The forward flag is not set.
    */
   explicit LambdaRequest(const std::string& aName, const std::string& aInput);
+
   /**
    * Create a lambda request with text and data input only and no states.
    *
@@ -135,6 +136,21 @@ struct LambdaRequest final {
 
   //! \return a lambda request identical to this one.
   LambdaRequest copy() const;
+
+  /**
+   * @brief Regenerate a lambda request.
+   *
+   * Note that the chain and DAG in this request are invalidated.
+   *
+   * @param aName lambda function name.
+   * @param aNextFunctionIndex the index of the next function.
+   * @param aResponse the response to use for some fields.
+   *
+   * @return a new lambda request regenerated from this one.
+   */
+  LambdaRequest regenerate(const std::string&         aName,
+                           const size_t               aNextFunctionIndex,
+                           const rpc::LambdaResponse& aResponse);
 
   /**
    * @brief Return the request name

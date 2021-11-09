@@ -41,6 +41,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/trivialedgecontrollerinstaller.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcallback.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testchain.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testchaindagtransactiongrpc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomputer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcomposer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testcontainer.cpp
@@ -56,7 +57,6 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testforwardingtable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambda.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdatransactiongrpc.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/testchaintransactiongrpc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testprocessor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testptimeestimator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/teststatesim.cpp

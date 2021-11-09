@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Edge/Model/chain.h"
+#include "Edge/Model/dag.h"
 #include "Edge/callbackserver.h"
 #include "Edge/composer.h"
 #include "Edge/computer.h"
@@ -62,7 +63,7 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-struct TestChainTransactionGrpc : public ::testing::Test {
+struct TestChainDagTransactionGrpc : public ::testing::Test {
   const size_t N = 50;
 
   struct System {
@@ -194,7 +195,7 @@ struct TestChainTransactionGrpc : public ::testing::Test {
   };
 }; // namespace edge
 
-TEST_F(TestChainTransactionGrpc, test_chain_correct) {
+TEST_F(TestChainDagTransactionGrpc, test_chain_correct) {
   System mySystem;
 
   EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
@@ -268,7 +269,7 @@ TEST_F(TestChainTransactionGrpc, test_chain_correct) {
   }
 }
 
-TEST_F(TestChainTransactionGrpc, test_chain_incorrect) {
+TEST_F(TestChainDagTransactionGrpc, test_chain_incorrect) {
   System mySystem;
 
   EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
@@ -301,7 +302,7 @@ TEST_F(TestChainTransactionGrpc, test_chain_incorrect) {
       [&myResponses]() { return myResponses.size(); }, 1, 1));
 }
 
-TEST_F(TestChainTransactionGrpc, test_single_function_async_remote_states) {
+TEST_F(TestChainDagTransactionGrpc, test_single_function_async_remote_states) {
   System mySystem;
   assert(not mySystem.theComputerStateServerEndpoints.empty());
 
@@ -372,7 +373,7 @@ TEST_F(TestChainTransactionGrpc, test_single_function_async_remote_states) {
   ASSERT_EQ("content-s1", myContent);
 }
 
-TEST_F(TestChainTransactionGrpc, test_single_function_sync_remote_states) {
+TEST_F(TestChainDagTransactionGrpc, test_single_function_sync_remote_states) {
   System mySystem;
   assert(not mySystem.theComputerStateServerEndpoints.empty());
 
@@ -428,7 +429,7 @@ TEST_F(TestChainTransactionGrpc, test_single_function_sync_remote_states) {
   ASSERT_EQ("content-s1", myContent);
 }
 
-TEST_F(TestChainTransactionGrpc, test_chain_remote_states) {
+TEST_F(TestChainDagTransactionGrpc, test_chain_remote_states) {
   System mySystem;
   assert(mySystem.theComputerStateServerEndpoints.size() >= 2);
 
@@ -498,6 +499,42 @@ TEST_F(TestChainTransactionGrpc, test_chain_remote_states) {
   ASSERT_FALSE(myStateClient0.Get("s1", myContent));
   ASSERT_TRUE(myStateClient1.Get("s1", myContent));
   ASSERT_EQ("content-s1", myContent);
+}
+
+TEST_F(TestChainDagTransactionGrpc, test_dag) {
+  System mySystem;
+
+  EdgeClientGrpc        myClient(mySystem.theRouterEndpoint);
+  CallbackServer::Queue myResponses;
+  CallbackServer myCallbackServer(mySystem.theCallbackEndpoint, myResponses);
+  myCallbackServer.run(false);
+
+  for (size_t i = 0; i < N; i++) {
+    LambdaRequest myReq("f0", std::string(10, 'A'));
+    myReq.theCallback = mySystem.theCallbackEndpoint;
+    myReq.theDag      = std::make_unique<model::Dag>(
+        model::Dag::Successors({{1, 2}, {3}, {3}}),
+        model::Dag::FunctionNames({"f0", "f1", "f0", "f1"}),
+        model::Dag::Dependencies());
+    myReq.theNextFunctionIndex = 0;
+
+    const auto myResp = myClient.RunLambda(myReq, false);
+    ASSERT_EQ("OK", myResp.theRetCode);
+    ASSERT_TRUE(myResp.theAsynchronous);
+  }
+
+  ASSERT_TRUE(support::waitFor<size_t>(
+      [&myResponses]() { return myResponses.size(); }, N, 10));
+
+  for (size_t i = 0; i < N; i++) {
+    const auto myResp = myResponses.pop();
+    ASSERT_EQ("OK", myResp.theRetCode);
+    ASSERT_FALSE(myResp.theAsynchronous);
+    ASSERT_EQ(6, myResp.theHops);
+    ASSERT_EQ(std::string(10, 'A'), myResp.theOutput);
+    ASSERT_EQ(0u, myResp.theDataOut.size());
+    ASSERT_TRUE(myResp.states().empty());
+  }
 }
 
 } // namespace edge

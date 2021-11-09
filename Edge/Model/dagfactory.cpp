@@ -92,7 +92,7 @@ std::string DagFactory::exampleFileName() {
 std::string DagFactory::exampleDag() {
   return "{\n"
          "  \"successors\" : [ [1, 2], [3], [3] ],\n"
-         "  \"functionNames\" : [ \"f0\", \"f1\", \"f2\", \"f3\" ],\n"
+         "  \"functionNames\" : [ \"f0\", \"f1\", \"f2\", \"f2\" ],\n"
          "  \"dependencies\" :\n"
          "    {\n"
          "    \"s0\" : [ \"f0\" ],\n"
