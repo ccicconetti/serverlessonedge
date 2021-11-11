@@ -6,12 +6,12 @@ function run {
     mn -c
   fi
 
+  for x in $seed ; do
   for s in $states ; do
   for l in $lengths ; do
   for b in $bw ; do
   for i in $inputsizes ; do
   for e in $experiments ; do
-  for x in $seed ; do
 
     if [[ $s -eq $l ]] ; then
       continue
@@ -127,17 +127,15 @@ dryrun=0 # set automatically if command 'enumerate' is given
 #
 # configuration starts here
 #
-seed="1"
+seed="1 2 3 4 5"
 duration=120
-duration=10
 percentile="percentile.py --warmup_col 1 --warmup 0 --duration $duration"
 confidence="confidence.py --alpha 0.05"
 script_name="simple_function_dag.py"
 
-states="6"
+states="4"
 lengths="7"
 bw="1.0 2.0 5.0 10.0 20.0 50.0 100.0"
-bw="1.0 100.0"
 inputsizes="10000 100000"
 experiments="embedded hopbyhop remotestate"
 $1

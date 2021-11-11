@@ -203,7 +203,7 @@ if __name__ == "__main__":
             ],
             "bw": [float, 1, "bandwidth, in Mb/s"],
             "nodes": [int, 6, "numer of nodes"],
-            "states": [int, 6, "number of states"],
+            "states": [int, 4, "number of states"],
             "length": [int, 7, "DAG length, in no. functions (must be odd)"],
             "branches": [int, 5, "number of branches per stage"],
             "inputsize": [int, 10000, "size of the input argument, in bytes"],
