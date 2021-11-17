@@ -130,7 +130,7 @@ set x2label ""
 set x2label  font "" textcolor lt -1 norotate
 set xrange [ * : * ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback
-set ylabel "Network traffic per function chain (MB)" 
+set ylabel "Total network traffic (GB)" 
 set ylabel  font "" textcolor lt -1 rotate
 set y2label "" 
 set y2label  font "" textcolor lt -1 rotate
@@ -169,12 +169,12 @@ set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap 
 GNUTERM = "wxt"
 ## Last datafile plotted: "../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedInFunction.mean.dat"
 plot  \
- '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedExternal.mean.dat' u 1:($2*1e-6) w lp lc 1 lt 1 pt 4 title "Load+net/external",\
- '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedInEdge.mean.dat' u 1:($2*1e-6) w lp lc 2 lt 1 pt 8 title "Load+net/in-edge",\
- '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedInFunction.mean.dat' u 1:($2*1e-6) w lp lc 3 lt 1 pt 10 title "Load+net/in-function",\
- '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedInClient.mean.dat' u 1:($2*1e-6) w lp lc 4 lt 1 pt 6 title "Load+net/in-client",\
- '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedExternal.mean.dat' u 1:($2*1e-6) w lp lc 1 lt 2 pt 5 title "Load/external",\
- '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedInEdge.mean.dat' u 1:($2*1e-6) w lp lc 2 lt 2 pt 9 title "Load/in-edge",\
- '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedInFunction.mean.dat' u 1:($2*1e-6) w lp lc 3 lt 2 pt 11 title "Load/in-function",\
- '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedInClient.mean.dat' u 1:($2*1e-6) w lp lc 1 lt 2 pt 7 title "Load/in-client"
+ '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedExternal.mean.dat' u 1:($2*$1*1e-9) w lp lc 1 lt 1 pt 4 title "Load+net/external",\
+ '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedInEdge.mean.dat' u 1:($2*$1*1e-9) w lp lc 2 lt 1 pt 8 title "Load+net/in-edge",\
+ '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedInFunction.mean.dat' u 1:($2*$1*1e-9) w lp lc 3 lt 1 pt 10 title "Load+net/in-function",\
+ '../results/traffic-net=iiot.apolicy=ProcNet.epolicy=UnchainedInClient.mean.dat' u 1:($2*$1*1e-9) w lp lc 4 lt 1 pt 6 title "Load+net/in-client",\
+ '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedExternal.mean.dat' u 1:($2*$1*1e-9) w lp lc 1 lt 2 pt 5 title "Load/external",\
+ '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedInEdge.mean.dat' u 1:($2*$1*1e-9) w lp lc 2 lt 2 pt 9 title "Load/in-edge",\
+ '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedInFunction.mean.dat' u 1:($2*$1*1e-9) w lp lc 3 lt 2 pt 11 title "Load/in-function",\
+ '../results/traffic-net=iiot.apolicy=ProcOnly.epolicy=UnchainedInClient.mean.dat' u 1:($2*$1*1e-9) w lp lc 1 lt 2 pt 7 title "Load/in-client"
 #    EOF
