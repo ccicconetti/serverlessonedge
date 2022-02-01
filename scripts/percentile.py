@@ -11,6 +11,8 @@ import numpy as np
 parser = argparse.ArgumentParser(
     "Simple statistics computer from data in column text files",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("--delimiter", type=str, default=None,
+                    help="Use the specified delimiter")
 parser.add_argument("--warmup", type=float, default=0,
                     help="Skip lines with the warm-up column small than this")
 parser.add_argument("--duration", type=float, default=-1,
@@ -44,7 +46,7 @@ else:
     index = args.column
 data = []
 for line in sys.stdin:
-    tokens = line.split()
+    tokens = line.split(args.delimiter)
     if args.warmup_column > 0:
         time = float(tokens[args.warmup_column - 1])
         if time < args.warmup or (args.duration > 0 and time > args.duration):
