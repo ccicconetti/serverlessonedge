@@ -53,10 +53,14 @@ fi
 
 tmpfile=/tmp/plot.sh.$$
 for i in $@ ; do
+  outeps="${i/.plt/}.eps"
+  outpng="${i/.plt/}.png"
+  outpdf="${i/.plt/}.pdf"
+
   if [ $EPS -eq 1 ] ; then
-    outfile="${i/.plt/}.eps"
+    outfile=$outeps
   else
-    outfile="${i/.plt/}.pdf"
+    outfile=$outpdf
   fi
   cat << EOF > $tmpfile
 $gnuplot_term
@@ -67,11 +71,16 @@ EOF
   echo -n "Processing $i."
   gnuplot $tmpfile
   if [ $EPS -eq 1 ] ; then
-    convert -flatten -density 150 -rotate 90 $outfile ${outfile/.eps/.pdf}
+    convert -flatten -density 150 -rotate 90 $outeps $outpdf
   fi
   if [ $PNG -eq 1  ] ; then
     echo -n "."
-    convert -flatten -density 150 ${outfile/.eps/.pdf} ${outfile/.eps/.png}
+    if [ -r "$outeps" ] ; then
+      infile=$outeps
+    else
+      infile=$outpdf
+    fi
+    convert -flatten -density 150 $infile $outpng 2> /dev/null
   fi
   echo ".done"
 done
