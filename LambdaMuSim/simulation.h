@@ -8,7 +8,7 @@
  |_______|__||__|__|__|    https://github.com/ccicconetti/serverlessonedge
 
 Licensed under the MIT License <http://opensource.org/licenses/MIT>
-Copyright (c) 2021 C. Cicconetti <https://ccicconetti.github.io/>
+Copyright (c) 2022 C. Cicconetti <https://ccicconetti.github.io/>
 
 Permission is hereby  granted, free of charge, to any  person obtaining a copy
 of this software and associated  documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "StateSim/scenario.h"
+#include "LambdaMuSim/scenario.h"
 #include "Support/macros.h"
 #include "Support/queue.h"
 #include "Support/threadpool.h"
@@ -39,7 +39,41 @@ SOFTWARE.
 #include <boost/filesystem.hpp>
 
 namespace uiiit {
-namespace statesim {
+namespace lambdamusim {
+
+struct Conf {
+  //! File containing the info about nodes
+  const std::string theNodesPath;
+  //! File containing the info about links
+  const std::string theLinksPath;
+  //! File containing the info about edges
+  const std::string theEdgesPath;
+  //! File containing the info about apps
+  const std::string theAppsPath;
+  //! Factor to reserve containers to lambda-apps, in [0,1]
+  const double theAlpha;
+  //! Factor to overprovision the capacity for lambda-apps, in [0,1]
+  const double theBeta;
+
+  //! File where to save performance data (can be empty)
+  const std::string theOutfile;
+  //! Directory where to save performance data (can be empty)
+  const std::string theOutdir;
+
+  std::string toString() const;
+};
+
+struct PerformanceData {};
+
+struct Desc {
+  // conf
+  std::unique_ptr<Scenario> theScenario;
+
+  // output
+  PerformanceData thePerformanceData;
+
+  std::string toString() const;
+};
 
 class Simulation final
 {
@@ -56,79 +90,20 @@ class Simulation final
     Simulation& theSimulation;
   };
 
-  struct Desc {
-    // conf
-    std::unique_ptr<Scenario> theScenario;
-    AllocPolicy               theAllocPolicy;
-    ExecPolicy                theExecPolicy;
-
-    // output
-    PerformanceData thePerformanceData;
-
-    std::string toString() const;
-  };
-
  public:
-  struct Conf {
-    //! File containing the info about nodes
-    const std::string theNodesPath;
-    //! File containing the info about links
-    const std::string theLinksPath;
-    //! File containing the info about edges
-    const std::string theEdgesPath;
-    //! File containing the info about tasks
-    const std::string theTasksPath;
-    //! File where to save performance data (can be empty)
-    const std::string theOutfile;
-    //! Directory where to save performance data (can be empty)
-    const std::string theOutdir;
-    //! Number of lambda functions
-    const size_t theNumFunctions;
-    //! Number of jobs per replication
-    const size_t theNumJobs;
-    //! Latency to access the cloud, in s.
-    const double theCloudLatency;
-    //! Transmission rate towards the cloud, in Mb/s.
-    const double theCloudRate;
-    //! The multiplier factor for the number of operations (tasks).
-    const double theOpsFactor;
-    //! The multiplier factor for the argument sizes (tasks).
-    const double theArgFactor;
-    //! The multiplier factor for the state sizes (tasks).
-    const double theStateFactor;
-
-    std::string toString() const;
-  };
-
   //! Create a simulation environment.
   explicit Simulation(const size_t aNumThreads);
 
   ~Simulation();
 
   /**
-   *  Run a batch of simulations, full factorial on the allocation and
-   *  execution policies passed.
+   *  Run a batch of simulations.
    */
-  void run(const Conf&                  aConf,
-           const size_t                 aStartingSeed,
-           const size_t                 aNumReplications,
-           const std::set<AllocPolicy>& aAllocPolicies,
-           const std::set<ExecPolicy>&  aExecPolicies);
+  void run(const Conf&  aConf,
+           const size_t aStartingSeed,
+           const size_t aNumReplications);
 
  private:
-  /**
-   * Select jobs from a pool.
-   *
-   * \param aJobs The jobs' pool
-   *
-   * \param aNumJobs The target number of jobs to be selected
-   *
-   * \param aRng The RNG
-   */
-  static std::vector<Job> selectJobs(const std::vector<Job>&     aJobs,
-                                     const size_t                aNumJobs,
-                                     std::default_random_engine& aRng);
-
   //! Save current performance data to the given file.
   void save(const std::string& aOutfile);
 
@@ -143,5 +118,5 @@ class Simulation final
   std::vector<Desc>           theDesc;
 };
 
-} // namespace statesim
+} // namespace lambdamusim
 } // namespace uiiit

@@ -88,6 +88,7 @@ add_subdirectory(Executables)
 
 # local libraries
 add_subdirectory(Edge)
+add_subdirectory(LambdaMuSim)
 add_subdirectory(Misc)
 if(WITH_OPENCV)
   add_subdirectory(OpenCV)

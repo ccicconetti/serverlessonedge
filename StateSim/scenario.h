@@ -122,7 +122,7 @@ class Scenario
  public:
   struct Conf {
     //! File containing the info about nodes
-    const std::string& theNodesPath;
+    const std::string theNodesPath;
     //! File containing the info about links
     const std::string theLinksPath;
     //! File containing the info about edges
