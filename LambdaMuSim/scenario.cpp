@@ -67,7 +67,7 @@ Scenario::Scenario(
   }
 
   // add cloud node as theEdges[0], with values to be adjusted later:
-  // - the number of container below as the sum of the containers in the network
+  // - the number of container is the number of lambda+mu apps
   // - the capacity is the sum of requests of all lambda (depends on the apps)
   theEdges.emplace_back(Edge{0, 0});
 
@@ -83,7 +83,6 @@ Scenario::Scenario(
       theEdges.emplace_back(Edge{aNumContainers(*myProcessing),
                                  aContainerCapacity(*myProcessing)});
       myEdgePtrs.emplace_back(myProcessing);
-      theEdges[0].theNumContainers += theEdges.back().theNumContainers;
     }
   }
 
@@ -131,7 +130,8 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
     theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
   }
 
-  // set the cloud capacity
+  // set the cloud num containers and capacity
+  theEdges[0].theNumContainers     = myNumLambda + myNumMu;
   theEdges[0].theContainerCapacity = myNumLambda * aLambdaRequest;
 
   VLOG(2) << "seed " << aSeed << ", " << myNumLambda << " lambda-apps, "

@@ -127,7 +127,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
       [](const auto& aNode) { return aNode.name() == "X" ? 100 : 2; },
       [](const auto& aNode) { return aNode.name() == "X" ? 100 : 1.0; });
 
-  const auto myOut = myScenario.snapshot(2, 2, 0.4, 0.6, 42, 1);
+  const auto myOut = myScenario.snapshot(6, 6, 0.4, 0.6, 1, 42);
 
   ASSERT_EQ(0, myOut.theLambdaCost);
   ASSERT_EQ(0, myOut.theMuCost);
