@@ -328,7 +328,7 @@ TEST_F(TestStateSim, test_network_from_files) {
     for (const auto& myDst : myNetwork.nodes()) {
       const auto myDesc = myNetwork.nextHop(mySrc.first, myDst.first);
       ASSERT_GE(myDesc.first, 0.0f);
-      VLOG(1) << mySrc.first << " -> " << myDst.first << ": " << myDesc.first
+      VLOG(2) << mySrc.first << " -> " << myDst.first << ": " << myDesc.first
               << " (" << myDesc.second << ")";
     }
   }
@@ -337,6 +337,15 @@ TEST_F(TestStateSim, test_network_from_files) {
   for (const auto& myClient : myNetwork.clients()) {
     ASSERT_TRUE(myClient != nullptr);
     ASSERT_EQ(std::string::npos, myClient->name().find("server"));
+    std::stringstream myStream;
+    for (const auto& myServer : myNetwork.processing()) {
+      myStream << ' ' << myNetwork.hops(*myClient, *myServer);
+    }
+    VLOG(1) << myClient->toString()
+            << ", distance from processing nodes: " << myStream.str();
+  }
+  for (const auto& myServer : myNetwork.processing()) {
+    VLOG(1) << myServer->toString();
   }
 }
 
