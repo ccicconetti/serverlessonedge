@@ -56,6 +56,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testetsitransaction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testforwardingtable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambda.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testlambdamusim.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdatransactiongrpc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testprocessor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testptimeestimator.cpp
@@ -68,6 +69,7 @@ add_library(testedgelib SHARED
 target_link_libraries(testedgelib
   uiiitedge
   uiiitetsimec
+  uiiitlambdamusim
   uiiitrest
   uiiitstatesim
 

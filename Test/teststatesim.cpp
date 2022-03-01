@@ -105,23 +105,6 @@ struct TestStateSim : public ::testing::Test {
     boost::filesystem::remove_all(theTestDir);
   }
 
-  bool prepareNetworkFiles() const {
-    std::ofstream myEdges((theTestDir / "edges").string());
-    myEdges << theEdges;
-
-    std::ofstream myLinks((theTestDir / "links").string());
-    myLinks << theLinks;
-
-    std::ofstream myNodes((theTestDir / "nodes").string());
-    myNodes << theNodes;
-
-    std::ofstream myGraph((theTestDir / "graph").string());
-    myGraph << theGraph;
-
-    return static_cast<bool>(myEdges) and static_cast<bool>(myLinks) and
-           static_cast<bool>(myNodes) and static_cast<bool>(myGraph);
-  }
-
   bool prepareTaskFiles() const {
     std::ofstream myTasks((theTestDir / "tasks").string());
     myTasks << theTasks;
@@ -301,7 +284,7 @@ TEST_F(TestStateSim, test_network_files) {
   ASSERT_THROW(loadLinks((theTestDir / "links").string(), myCounter),
                std::runtime_error);
 
-  ASSERT_TRUE(prepareNetworkFiles());
+  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
 
   const auto myNodes = loadNodes((theTestDir / "nodes").string(), myCounter);
   ASSERT_EQ(123, myNodes.size());
@@ -311,7 +294,7 @@ TEST_F(TestStateSim, test_network_files) {
 }
 
 TEST_F(TestStateSim, test_network_from_files) {
-  ASSERT_TRUE(prepareNetworkFiles());
+  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
   Network myNetwork((theTestDir / "nodes").string(),
                     (theTestDir / "links").string(),
                     (theTestDir / "edges").string());
@@ -477,7 +460,7 @@ TEST_F(TestStateSim, test_stateful_tasks) {
 }
 
 TEST_F(TestStateSim, test_scenario_from_files) {
-  ASSERT_TRUE(prepareNetworkFiles());
+  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
   ASSERT_TRUE(prepareTaskFiles());
 
   const std::map<std::string, double> myFuncWeights({
@@ -607,7 +590,7 @@ TEST_F(TestStateSim, test_scenario) {
 }
 
 TEST_F(TestStateSim, test_simulation) {
-  ASSERT_TRUE(prepareNetworkFiles());
+  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
   ASSERT_TRUE(prepareTaskFiles());
 
   Simulation mySim(5);

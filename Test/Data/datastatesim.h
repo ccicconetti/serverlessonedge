@@ -1158,3 +1158,20 @@ const std::string theNodes =
     "120;server_7;188000000000;88000;x86;server;server\n"
     "121;server_8;188000000000;88000;x86;server;server\n"
     "122;server_9;188000000000;88000;x86;server;server\n";
+
+bool prepareNetworkFiles(const boost::filesystem::path& aDir) {
+  std::ofstream myEdges((aDir / "edges").string());
+  myEdges << theEdges;
+
+  std::ofstream myLinks((aDir / "links").string());
+  myLinks << theLinks;
+
+  std::ofstream myNodes((aDir / "nodes").string());
+  myNodes << theNodes;
+
+  std::ofstream myGraph((aDir / "graph").string());
+  myGraph << theGraph;
+
+  return static_cast<bool>(myEdges) and static_cast<bool>(myLinks) and
+         static_cast<bool>(myNodes) and static_cast<bool>(myGraph);
+}
