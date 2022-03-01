@@ -48,7 +48,11 @@ class Node;
 
 namespace lambdamusim {
 
-struct PerformanceData {};
+struct PerformanceData {
+  double      theLambdaCost = 0;
+  double      theMuCost     = 0;
+  std::size_t theMuCloud    = 0;
+};
 
 class Scenario
 {
@@ -61,6 +65,12 @@ class Scenario
   };
 
   struct App {
+    App(const ID aBroker, const Type aType)
+        : theBroker(aBroker)
+        , theType(aType) {
+      // noop
+    }
+
     ID   theBroker = 0;
     Type theType   = Type::Lambda;
   };
@@ -81,7 +91,7 @@ class Scenario
  public:
   //! Create a scenario with the given structures.
   explicit Scenario(
-      const statesim::Network&                                 aNetwork,
+      statesim::Network&                                       aNetwork,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
       const std::function<double(const statesim::Node&)>& aContainerCapacity);
 
@@ -92,6 +102,7 @@ class Scenario
    * @param aAvgMu The average number of mu apps.
    * @param aAlpha The lambda reservation factor.
    * @param aBeta  The lambda overprovisioning factor.
+   * @param aLambdaRequest The capacity requested by each lambda app.
    * @param aSeed The RNG seed.
    * @return PerformanceData
    */
@@ -99,10 +110,13 @@ class Scenario
                            const std::size_t aAvgMu,
                            const double      aAlpha,
                            const double      aBeta,
+                           const double      aLambdaRequest,
                            const std::size_t aSeed);
 
  private:
-  double& networkCost(const ID aBroker, const ID aEdge) noexcept;
+  double&       networkCost(const ID aBroker, const ID aEdge) noexcept;
+  const double& networkCost(const ID aBroker, const ID aEdge) const noexcept;
+  std::string   networkCostToString() const;
 
  private:
   std::vector<App>    theApps;        // size = A

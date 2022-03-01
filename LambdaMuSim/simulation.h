@@ -66,6 +66,8 @@ struct Conf {
   const double theAlpha;
   //! Factor to overprovision the capacity for lambda-apps, in [0,1]
   const double theBeta;
+  //! Capacity requested by each lambda.
+  const double theLambdaRequest;
 
   //! File where to save performance data (can be empty)
   const std::string theOutfile;

@@ -31,11 +31,17 @@ SOFTWARE.
 
 #include "LambdaMuSim/scenario.h"
 #include "LambdaMuSim/simulation.h"
+#include "StateSim/link.h"
 #include "StateSim/network.h"
+#include "StateSim/node.h"
+#include "Support/tostring.h"
 
 #include "gtest/gtest.h"
 
 #include <glog/logging.h>
+
+#include <map>
+#include <set>
 
 namespace uiiit {
 namespace lambdamusim {
@@ -44,7 +50,34 @@ namespace lambdamusim {
 
 struct TestLambdaMuSim : public ::testing::Test {
   TestLambdaMuSim()
-      : theTestDir("TO_REMOVE_DIR") {
+      : theTestDir("TO_REMOVE_DIR")
+      , theExampleNodes(
+            {statesim::Node("A", 0, 1, 1, statesim::Affinity::Cpu, false),
+             statesim::Node("B", 1, 1, 1, statesim::Affinity::Cpu, false),
+             statesim::Node("C", 2, 1, 1, statesim::Affinity::Cpu, true),
+             statesim::Node("D", 3, 1, 1, statesim::Affinity::Cpu, true),
+             statesim::Node("E", 4, 1, 1, statesim::Affinity::Cpu, true)})
+      , theExampleLinks({
+            statesim::Link(statesim::Link::Type::Node, "link_A_C", 5, 1),
+            statesim::Link(statesim::Link::Type::Node, "link_C_D", 6, 1),
+            statesim::Link(statesim::Link::Type::Node, "link_B_D", 7, 1),
+            statesim::Link(statesim::Link::Type::Node, "link_D_E", 8, 1),
+        })
+      , theExampleEdges({
+            {"A", {"link_A_C"}},
+            {"B", {"link_B_D"}},
+            {"C", {"link_A_C", "link_C_D"}},
+            {"D", {"link_C_D", "link_B_D", "link_D_E"}},
+            {"E", {"link_D_E"}},
+            {"link_A_C", {"A", "C"}},
+            {"link_C_D", {"C", "D"}},
+            {"link_B_D", {"B", "D"}},
+            {"link_D_E", {"D", "E"}},
+        })
+      , theExampleClients({
+            "A",
+            "B",
+        }) {
     // noop
   }
 
@@ -57,7 +90,11 @@ struct TestLambdaMuSim : public ::testing::Test {
     boost::filesystem::remove_all(theTestDir);
   }
 
-  const boost::filesystem::path theTestDir;
+  const boost::filesystem::path                      theTestDir;
+  const std::set<statesim::Node>                     theExampleNodes;
+  const std::set<statesim::Link>                     theExampleLinks;
+  const std::map<std::string, std::set<std::string>> theExampleEdges;
+  const std::set<std::string>                        theExampleClients;
 };
 
 TEST_F(TestLambdaMuSim, test_scenario_from_files) {
@@ -70,6 +107,31 @@ TEST_F(TestLambdaMuSim, test_scenario_from_files) {
       myNetwork,
       [](const auto&) { return 2; },
       [](const auto&) { return 1.0; });
+}
+
+TEST_F(TestLambdaMuSim, test_example_snapshot) {
+  statesim::Network myNetwork(
+      theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
+  for (const auto& myClient : myNetwork.clients()) {
+    VLOG(1) << myClient->toString() << ", distance from processing nodes: "
+            << ::toString(myNetwork.processing(),
+                          " ",
+                          [&myClient, &myNetwork](const auto& aServer) {
+                            return std::to_string(
+                                myNetwork.hops(*myClient, *aServer));
+                          });
+  }
+
+  Scenario myScenario(
+      myNetwork,
+      [](const auto& aNode) { return aNode.name() == "X" ? 100 : 2; },
+      [](const auto& aNode) { return aNode.name() == "X" ? 100 : 1.0; });
+
+  const auto myOut = myScenario.snapshot(2, 2, 0.4, 0.6, 42, 1);
+
+  ASSERT_EQ(0, myOut.theLambdaCost);
+  ASSERT_EQ(0, myOut.theMuCost);
+  ASSERT_EQ(0, myOut.theMuCloud);
 }
 
 } // namespace lambdamusim

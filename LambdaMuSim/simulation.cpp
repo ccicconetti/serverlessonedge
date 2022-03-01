@@ -82,6 +82,7 @@ void Simulation::Worker::operator()() {
                                            myDesc.theConf->theAvgMu,
                                            myDesc.theConf->theAlpha,
                                            myDesc.theConf->theBeta,
+                                           myDesc.theConf->theLambdaRequest,
                                            myDesc.theSeed);
 
         } else {
