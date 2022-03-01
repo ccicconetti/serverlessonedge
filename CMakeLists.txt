@@ -1,9 +1,7 @@
-cmake_policy(SET CMP0048 NEW)
+cmake_minimum_required(VERSION 3.18)
+project(edge_computing VERSION 0.1.6 LANGUAGES CXX)
 
-project(edge_computing VERSION 0.1.6)
-cmake_minimum_required(VERSION 3.2)
-
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 # Cmake find modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -19,6 +17,7 @@ else()
 endif()
 find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
+find_package(ortools CONFIG REQUIRED)
 set(Boost_USE_MULTITHREADED TRUE)
 find_package(Boost
   REQUIRED
@@ -56,6 +55,8 @@ MESSAGE("CppREST Library:          ${CPP_REST_LIBRARY}")
 MESSAGE("CppREST Includes Path:    ${CPP_REST_INCLUDE_DIR}")
 MESSAGE("OpenSSL Libraries:        ${OPENSSL_LIBRARIES}")
 MESSAGE("OpenSSL Includes Path:    ${OPENSSL_INCLUDE_DIR}")
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # header of local libraries
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -105,6 +106,7 @@ add_subdirectory(etsimec/Executables)
 add_subdirectory(etsimec/EtsiMec)
 add_subdirectory(etsimec/OpenWhisk)
 add_subdirectory(etsimec/rest/Rest)
+add_subdirectory(etsimec/rest/support/Dataset)
 add_subdirectory(etsimec/rest/support/RpcSupport)
 add_subdirectory(etsimec/rest/support/Support)
 

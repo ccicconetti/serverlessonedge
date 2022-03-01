@@ -60,14 +60,14 @@ OpenCV and QUIC can be enabled at the same time with `-DWITH_QUIC=1 -DWITH_OPENC
 
 Compiling the software requires the following:
 
-- recent C++ compiler, tested with clang-10 and cc-7
-- [CMake](https://cmake.org/) >= 3.2
+- recent C++ compiler, tested with clang-15
+- [CMake](https://cmake.org/) >= 3.18
 - [glog](https://github.com/google/glog), tested with 0.3.5
 - [Boost](https://www.boost.org/), tested with 1.65
-- [gRPC](https://grpc.io/), tested with 1.27.1
-- [protobuf](https://developers.google.com/protocol-buffers/), tested with version shipped with gRPC 1.27.1
+- [gRPC](https://grpc.io/), tested with 1.44.0
+- [protobuf](https://developers.google.com/protocol-buffers/), tested with 3.19.2
 - [OpenCV](https://opencv.org/) (_optional_), tested with 4.1.1 and 4.2.0
-
+ 
 ### Mac OS X
 
 With Mac OS X this should be as simple as installing everything via [Homebrew](https://brew.sh/):
@@ -84,7 +84,7 @@ brew install opencv
 
 ### Linux
 
-On Linux this is a bit more complicated. A script that downloads and installs all dependencies can be found in the repo, which assumes that you are using `Ubuntu 18.04 (Bionic)`. Note that the script requires root privileges, it will change the system default CMake version to 3.16.1, and it will install headers and libraries in the system path `/usr/local`. To run it just hit (from within the cloned `serverlessonedge` repository):
+On Linux this is a bit more complicated. A script that downloads and installs all dependencies can be found in the repo, which assumes that you are using `Ubuntu 18.04 (Bionic)`. Note that the script requires root privileges, it will change the system default CMake version and it will install headers and libraries in the system path `/usr/local`. To run it just hit (from within the cloned `serverlessonedge` repository):
 
 ```
 [sudo] etsimec/utils/build_deps.sh
@@ -100,21 +100,3 @@ If you want to compile OpenCV, run also:
 
 Note that this requires about 12 GB of free space (!).
 
-### Supported versions
-
-Tested on Mac OS X 10.14.5  with clang-11.0.0 and with the following dependencies installed via [Homebrew](https://brew.sh/):
-
-- glog: 0.4.0
-- boost: 1.72.0
-- gRPC: 1.27.2
-- protobuf: 3.11.4
-- cpprestsdk: 2.10.14_1
-- opencv: 4.2.0_1
-
-Tested on Linux Ubuntu 18.04 (Bionic)  with gcc-7.4.0 and clang-10.0.0, with the following dependencies:
-
-- glog from `apt` at version 0.3.5-1
-- boost from `apt` at version 1.65.1
-- gRPC at tag v1.27.2 (with protobuf included as third-party software), see GitHub repo [here](https://github.com/grpc/grpc)
-- C++ REST SDK at tag v2.10.14, see GitHub repo [here](https://github.com/microsoft/cpprestsdk)
-- OpenCV at tag v4.1.1, see GitHub repo [here](https://github.com/opencv/opencv)

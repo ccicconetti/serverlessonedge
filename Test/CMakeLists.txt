@@ -58,6 +58,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambda.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdamusim.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdatransactiongrpc.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testortools.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testprocessor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testptimeestimator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/teststatesim.cpp
@@ -75,6 +76,7 @@ target_link_libraries(testedgelib
 
   gtest
   ${Boost_LIBRARIES}
+  ortools::ortools
 )
 
 add_executable(testedge
