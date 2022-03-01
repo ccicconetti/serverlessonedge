@@ -44,3 +44,5 @@ rbuild
 workspace.code-workspace
 thirdparty/include
 thirdparty/libs
+compile_commands.json
+.cache
