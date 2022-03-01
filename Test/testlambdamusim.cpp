@@ -68,11 +68,8 @@ TEST_F(TestLambdaMuSim, test_scenario_from_files) {
 
   Scenario myScenario(
       myNetwork,
-      0.5,
-      0.5,
       [](const auto&) { return 2; },
-      [](const auto&) { return 1.0; },
-      42);
+      [](const auto&) { return 1.0; });
 }
 
 } // namespace lambdamusim

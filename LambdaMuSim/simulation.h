@@ -42,14 +42,26 @@ namespace uiiit {
 namespace lambdamusim {
 
 struct Conf {
+  enum class Type : uint16_t {
+    Snapshot = 0, //!< single snapshot
+    Dynamic  = 1, //!< dynamic flow simulation
+  };
+
+  //! Simulation type.
+  Type theType;
+
   //! File containing the info about nodes
   const std::string theNodesPath;
   //! File containing the info about links
   const std::string theLinksPath;
   //! File containing the info about edges
   const std::string theEdgesPath;
-  //! File containing the info about apps
+  //! File containing the info about apps (unused with Type::Snapshot)
   const std::string theAppsPath;
+  //! Average number of lambda apps (unused with Type::Dynamic)
+  const std::size_t theAvgLambda;
+  //! Average number of mu apps (unused with Type::Dynamic)
+  const std::size_t theAvgMu;
   //! Factor to reserve containers to lambda-apps, in [0,1]
   const double theAlpha;
   //! Factor to overprovision the capacity for lambda-apps, in [0,1]
@@ -63,10 +75,14 @@ struct Conf {
   std::string toString() const;
 };
 
-struct PerformanceData {};
-
 struct Desc {
-  // conf
+  // RNG seed
+  std::size_t theSeed;
+
+  // configuration
+  const Conf* theConf;
+
+  // simulation scenario
   std::unique_ptr<Scenario> theScenario;
 
   // output

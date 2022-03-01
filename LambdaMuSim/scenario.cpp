@@ -44,17 +44,8 @@ namespace lambdamusim {
 
 Scenario::Scenario(
     const statesim::Network&                                 aNetwork,
-    const double                                             aAlpha,
-    const double                                             aBeta,
     const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
-    const std::function<double(const statesim::Node&)>&      aContainerCapacity,
-    const std::size_t                                        aSeed)
-    : theAlpha(aAlpha)
-    , theBeta(aBeta)
-    , theSeed(aSeed) {
-  VLOG(1) << "created scenario with alpha " << theAlpha << ", beta " << theBeta
-          << ", seed " << theSeed;
-
+    const std::function<double(const statesim::Node&)>& aContainerCapacity) {
   // load brokers: all the network clients
   std::vector<statesim::Node*> myBrokerPtrs;
   for (const auto& myClient : aNetwork.clients()) {
@@ -73,6 +64,15 @@ Scenario::Scenario(
                                  aContainerCapacity(*myProcessing)});
     }
   }
+}
+
+PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
+                                   const std::size_t aAvgMu,
+                                   const double      aAlpha,
+                                   const double      aBeta,
+                                   const std::size_t aSeed) {
+  PerformanceData ret;
+  return ret;
 }
 
 double& Scenario::networkCost(const ID aBroker, const ID aEdge) noexcept {

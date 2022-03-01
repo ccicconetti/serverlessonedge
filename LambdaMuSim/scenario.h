@@ -48,6 +48,8 @@ class Node;
 
 namespace lambdamusim {
 
+struct PerformanceData {};
+
 class Scenario
 {
   NONCOPYABLE_NONMOVABLE(Scenario);
@@ -80,25 +82,29 @@ class Scenario
   //! Create a scenario with the given structures.
   explicit Scenario(
       const statesim::Network&                                 aNetwork,
-      const double                                             aAlpha,
-      const double                                             aBeta,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
-      const std::function<double(const statesim::Node&)>& aContainerCapacity,
-      const std::size_t                                   aSeed);
+      const std::function<double(const statesim::Node&)>& aContainerCapacity);
 
-  //! \return the seed of this scenario
-  std::size_t seed() const noexcept {
-    return theSeed;
-  }
+  /**
+   * @brief Run a single snapshot, overwriting previous apps/allocations.
+   *
+   * @param aAvgLambda The average number of lambda apps.
+   * @param aAvgMu The average number of mu apps.
+   * @param aAlpha The lambda reservation factor.
+   * @param aBeta  The lambda overprovisioning factor.
+   * @param aSeed The RNG seed.
+   * @return PerformanceData
+   */
+  PerformanceData snapshot(const std::size_t aAvgLambda,
+                           const std::size_t aAvgMu,
+                           const double      aAlpha,
+                           const double      aBeta,
+                           const std::size_t aSeed);
 
  private:
   double& networkCost(const ID aBroker, const ID aEdge) noexcept;
 
  private:
-  const double      theAlpha;
-  const double      theBeta;
-  const std::size_t theSeed;
-
   std::vector<App>    theApps;        // size = A
   std::vector<Broker> theBrokers;     // size = B
   std::vector<Edge>   theEdges;       // size = E

@@ -40,13 +40,14 @@ SOFTWARE.
 #include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <stdexcept>
 
 namespace uiiit {
 namespace lambdamusim {
 
 std::string Desc::toString() const {
   std::stringstream myStream;
-  myStream << "seed=" << theScenario->seed();
+  myStream << "seed=" << theSeed;
   return myStream.str();
 }
 
@@ -75,9 +76,17 @@ void Simulation::Worker::operator()() {
 
       auto myExceptionThrow = true;
       try {
-        // myDesc.theScenario->allocateTasks(myDesc.theAllocPolicy);
-        // myDesc.thePerformanceData =
-        //     myDesc.theScenario->performance(myDesc.theExecPolicy);
+        if (myDesc.theConf->theType == Conf::Type::Snapshot) {
+          myDesc.thePerformanceData =
+              myDesc.theScenario->snapshot(myDesc.theConf->theAvgLambda,
+                                           myDesc.theConf->theAvgMu,
+                                           myDesc.theConf->theAlpha,
+                                           myDesc.theConf->theBeta,
+                                           myDesc.theSeed);
+
+        } else {
+          throw std::runtime_error("NOT IMPLEMENTED");
+        }
         myExceptionThrow = false;
       } catch (const std::exception& aErr) {
         LOG(ERROR) << "exception caught (" << aErr.what()
@@ -128,25 +137,19 @@ void Simulation::run(const Conf&  aConf,
   const auto myNetwork = std::make_shared<statesim::Network>(
       aConf.theNodesPath, aConf.theLinksPath, aConf.theEdgesPath);
 
-  // load apps
-  // XXX
-
   // create the scenarios
   theDesc.resize(aNumReplications);
   size_t myDescCounter = 0;
   for (size_t myRun = 0; myRun < aNumReplications; myRun++) {
     assert(myDescCounter < theDesc.size());
-    auto&      myDesc = theDesc[myDescCounter++];
-    const auto mySeed = myRun + aStartingSeed;
+    auto& myDesc = theDesc[myDescCounter++];
 
-    std::default_random_engine myRng(mySeed);
+    myDesc.theConf     = &aConf;
+    myDesc.theSeed     = myRun + aStartingSeed;
     myDesc.theScenario = std::make_unique<Scenario>(
         *myNetwork,
-        aConf.theAlpha,
-        aConf.theBeta,
         [](const statesim::Node& aNode) { return aNode.memory() / 1000; },
-        [](const statesim::Node& aNode) { return aNode.speed() / 1e9; },
-        mySeed);
+        [](const statesim::Node& aNode) { return aNode.speed() / 1e9; });
   }
 
   // dispatch the simulations
