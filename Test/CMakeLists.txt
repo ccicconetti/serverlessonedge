@@ -55,6 +55,7 @@ add_library(testedgelib SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/testedgemessages.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testetsitransaction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testforwardingtable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/testhungarian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambda.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdamusim.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/testlambdatransactiongrpc.cpp
@@ -72,6 +73,8 @@ target_link_libraries(testedgelib
   uiiitlambdamusim
   uiiitrest
   uiiitstatesim
+
+  hungarian
 
   gtest
   ${Boost_LIBRARIES}

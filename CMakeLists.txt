@@ -67,6 +67,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/etsimec/rest/support)
 
 # third-party includes from external repos
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/etsimec/third_party)
+include_directories(thirdparty)
 
 # external dependencies
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto-src)
@@ -108,6 +109,7 @@ add_subdirectory(etsimec/rest/Rest)
 add_subdirectory(etsimec/rest/support/Dataset)
 add_subdirectory(etsimec/rest/support/RpcSupport)
 add_subdirectory(etsimec/rest/support/Support)
+add_subdirectory(thirdparty/hungarian-algorithm-cpp)
 
 # unit tests
 string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
