@@ -34,6 +34,7 @@ SOFTWARE.
 #include "StateSim/network.h"
 #include "StateSim/node.h"
 #include "Support/random.h"
+#include "hungarian-algorithm-cpp/Hungarian.h"
 
 #include <glog/logging.h>
 
@@ -45,6 +46,17 @@ SOFTWARE.
 
 namespace uiiit {
 namespace lambdamusim {
+
+std::string toString(const hungarian::HungarianAlgorithm::DistMatrix& aMatrix) {
+  std::stringstream ret;
+  for (const auto& myColumns : aMatrix) {
+    for (const auto& myValue : myColumns) {
+      ret << '\t' << myValue;
+    }
+    ret << '\n';
+  }
+  return ret.str();
+}
 
 Scenario::Scenario(
     statesim::Network&                                       aNetwork,
@@ -114,12 +126,35 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
                                    const double      aBeta,
                                    const double      aLambdaRequest,
                                    const std::size_t aSeed) {
+
+  // consistency checks
+  if (aAlpha < 0 or aAlpha > 1) {
+    throw std::runtime_error("Invalid alpha, must be in [0,1]: " +
+                             std::to_string(aAlpha));
+  }
+  if (aBeta < 0 or aBeta > 1) {
+    throw std::runtime_error("Invalid beta, must be in [0,1]: " +
+                             std::to_string(aBeta));
+  }
+
   PerformanceData ret;
 
   support::UniformIntRv<ID> myBrokerRv(0, theBrokers.size() - 1, aSeed, 0, 0);
   const auto myNumLambda = support::PoissonRv(aAvgLambda, aSeed, 0, 0)();
   const auto myNumMu     = support::PoissonRv(aAvgMu, aSeed, 1, 0)();
 
+  // clear apps and brokers and any previous assignment between edge nodes
+  // and apps from previous calls
+  theApps.clear();
+  for (auto& myBroker : theBrokers) {
+    myBroker.theApps.clear();
+  }
+  for (auto& myEdge : theEdges) {
+    myEdge.theLambdaApps.clear();
+    myEdge.theMuApps.clear();
+  }
+
+  // initialize apps and brokers
   for (std::size_t i = 0; i < myNumLambda; i++) {
     theApps.emplace_back(myBrokerRv(), Type::Lambda);
     theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
@@ -131,12 +166,66 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   }
 
   // set the cloud num containers and capacity
-  theEdges[0].theNumContainers     = myNumLambda + myNumMu;
-  theEdges[0].theContainerCapacity = myNumLambda * aLambdaRequest;
+  theEdges[CLOUD].theNumContainers     = 1 + myNumMu;
+  theEdges[CLOUD].theContainerCapacity = myNumLambda * aLambdaRequest;
 
   VLOG(2) << "seed " << aSeed << ", " << myNumLambda << " lambda-apps, "
           << myNumMu << " mu-apps, network costs:\n"
           << networkCostToString();
+
+  // assign mu-apps to containers, taking into account the alpha factor
+  // the capacities (and beta factor) are ignored
+
+  // prepare the containers
+  std::vector<ID> myContainerToNodes;
+  for (ID e = 0; e < theEdges.size(); e++) {
+    // reduce the number of containers available for mu-apps, only for
+    // edge-nodes (note this can go to zero)
+    const auto myMuContainersAvailable =
+        e == CLOUD ?
+            theEdges[e].theNumContainers :
+            static_cast<std::size_t>(theEdges[e].theNumContainers * aAlpha);
+    for (ID i = 0; i < myMuContainersAvailable; i++) {
+      myContainerToNodes.emplace_back(e);
+    }
+  }
+
+  // filter the mu-apps only
+  std::vector<ID> myMuApps;
+  for (ID a = 0; a < theApps.size(); a++) {
+    if (theApps[a].theType == Type::Mu) {
+      myMuApps.emplace_back(a);
+    }
+  }
+  assert(myMuApps.size() == myNumMu);
+
+  // assignment problem input matrix, with costs from apps to containers
+  hungarian::HungarianAlgorithm::DistMatrix myApMatrix(
+      myMuApps.size(), std::vector<double>(myContainerToNodes.size()));
+  for (ID a = 0; a < myMuApps.size(); a++) {
+    for (ID c = 0; c < myContainerToNodes.size(); c++) {
+      myApMatrix[a][c] =
+          networkCost(theApps[myMuApps[a]].theBroker, myContainerToNodes[c]);
+    }
+  }
+  VLOG(2) << "assignment problem cost matrix:\n"
+          << uiiit::lambdamusim::toString(myApMatrix);
+
+  // solve assignment problem
+  std::vector<int> myMuAssignment;
+  ret.theMuCost =
+      hungarian::HungarianAlgorithm::Solve(myApMatrix, myMuAssignment);
+
+  // assign apps to edges (and vice versa)
+  for (ID i = 0; i < myMuAssignment.size(); i++) {
+    const auto myAppId  = myMuApps[i];
+    const auto myEdgeId = myContainerToNodes[myMuAssignment[i]];
+    ret.theMuCloud += myEdgeId == CLOUD ? 1 : 0;
+    theApps[myAppId].theEdge = myEdgeId;
+    theEdges[myEdgeId].theMuApps.emplace_back(myAppId);
+  }
+
+  VLOG(2) << "apps after assignment:\n" << appsToString();
 
   return ret;
 }
@@ -163,6 +252,28 @@ std::string Scenario::networkCostToString() const {
     ret << '\n';
   }
   return ret.str();
+}
+
+std::string Scenario::appsToString() const {
+  std::stringstream ret;
+  for (ID a = 0; a < theApps.size(); a++) {
+    ret << "app#" << a << " - broker#" << theApps[a].theBroker << " ["
+        << toString(theApps[a].theType) << "] -> " << theApps[a].theEdge
+        << '\n';
+  }
+  return ret.str();
+}
+
+std::string Scenario::toString(const Type aType) {
+  switch (aType) {
+    case Type::Lambda:
+      return "lambda";
+    case Type::Mu:
+      return "mu";
+    default:
+      return "unknown";
+  }
+  assert(false);
 }
 
 } // namespace lambdamusim

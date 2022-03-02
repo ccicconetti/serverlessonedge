@@ -40,6 +40,7 @@ SOFTWARE.
 
 #include <glog/logging.h>
 
+#include <google/protobuf/io/coded_stream.h>
 #include <map>
 #include <set>
 
@@ -49,6 +50,18 @@ namespace lambdamusim {
 #include "Test/Data/datastatesim.h"
 
 struct TestLambdaMuSim : public ::testing::Test {
+
+  /*
+    example network topology:
+
+    C --- D --- E
+    |     |
+    A     B
+
+    A, B:    brokers (client apps connect to them)
+    C, D, E: edge nodes
+  */
+
   TestLambdaMuSim()
       : theTestDir("TO_REMOVE_DIR")
       , theExampleNodes(
@@ -124,14 +137,22 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
 
   Scenario myScenario(
       myNetwork,
-      [](const auto& aNode) { return aNode.name() == "X" ? 100 : 2; },
-      [](const auto& aNode) { return aNode.name() == "X" ? 100 : 1.0; });
+      [](const auto& aNode) { return 2; },
+      [](const auto& aNode) { return 1.0; });
 
-  const auto myOut = myScenario.snapshot(6, 6, 0.4, 0.6, 1, 42);
+  // edge nodes have 2 containers each, with a lambda-capacity of 1
+  // lambda-apps request a capacity of 1
+  const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 0.5, 1, 42);
 
-  ASSERT_EQ(0, myOut.theLambdaCost);
-  ASSERT_EQ(0, myOut.theMuCost);
-  ASSERT_EQ(0, myOut.theMuCloud);
+  EXPECT_EQ(0, myOut1.theLambdaCost);
+  EXPECT_EQ(12, myOut1.theMuCost);
+  EXPECT_EQ(2, myOut1.theMuCloud);
+
+  const auto myOut2 = myScenario.snapshot(6, 6, 1, 0.5, 1, 42);
+
+  EXPECT_EQ(0, myOut2.theLambdaCost);
+  EXPECT_EQ(7, myOut2.theMuCost);
+  EXPECT_EQ(0, myOut2.theMuCloud);
 }
 
 } // namespace lambdamusim

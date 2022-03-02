@@ -58,6 +58,10 @@ class Scenario
 {
   NONCOPYABLE_NONMOVABLE(Scenario);
 
+  enum {
+    CLOUD = 0,
+  };
+
   using ID = unsigned long;
   enum class Type : uint16_t {
     Lambda = 0,
@@ -71,8 +75,9 @@ class Scenario
       // noop
     }
 
-    ID   theBroker = 0;
-    Type theType   = Type::Lambda;
+    ID   theBroker = 0;            //!< the broker to which this app connects
+    Type theType   = Type::Lambda; //!< the current app type
+    ID   theEdge   = 0;            //!< the edge to which this app is assigned
   };
 
   struct Broker {
@@ -84,8 +89,10 @@ class Scenario
   };
 
   struct Edge {
-    std::size_t theNumContainers     = 0;
-    double      theContainerCapacity = 0;
+    std::size_t     theNumContainers     = 0;
+    double          theContainerCapacity = 0;
+    std::vector<ID> theLambdaApps;
+    std::vector<ID> theMuApps;
   };
 
  public:
@@ -105,6 +112,8 @@ class Scenario
    * @param aLambdaRequest The capacity requested by each lambda app.
    * @param aSeed The RNG seed.
    * @return PerformanceData
+   *
+   * @throw std::runtime_error if alpha,beta not in [0,1]
    */
   PerformanceData snapshot(const std::size_t aAvgLambda,
                            const std::size_t aAvgMu,
@@ -117,6 +126,8 @@ class Scenario
   double&       networkCost(const ID aBroker, const ID aEdge) noexcept;
   const double& networkCost(const ID aBroker, const ID aEdge) const noexcept;
   std::string   networkCostToString() const;
+  std::string   appsToString() const;
+  static std::string toString(const Type aType);
 
  private:
   std::vector<App>    theApps;        // size = A
