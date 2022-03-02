@@ -33,11 +33,28 @@ SOFTWARE.
 
 #include "gtest/gtest.h"
 
+#include <stdexcept>
 #include <vector>
 
 namespace hungarian {
 
 struct TestHungarian : public ::testing::Test {};
+
+TEST_F(TestHungarian, test_invalid) {
+  std::vector<int> myAssignment;
+  ASSERT_NO_THROW(HungarianAlgorithm::Solve(
+      HungarianAlgorithm::DistMatrix({{1}}), myAssignment));
+  ASSERT_THROW(
+      HungarianAlgorithm::Solve(HungarianAlgorithm::DistMatrix(), myAssignment),
+      std::runtime_error);
+  ASSERT_THROW(HungarianAlgorithm::Solve(HungarianAlgorithm::DistMatrix({
+                                             {1, 2, 3},
+                                             {1, 2, 3},
+                                             {1, 2, 3, 4},
+                                         }),
+                                         myAssignment),
+               std::runtime_error);
+}
 
 TEST_F(TestHungarian, test_original_example) {
   // numbers from:
