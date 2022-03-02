@@ -17,7 +17,6 @@ else()
 endif()
 find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
-find_package(ortools CONFIG REQUIRED)
 set(Boost_USE_MULTITHREADED TRUE)
 find_package(Boost
   REQUIRED
