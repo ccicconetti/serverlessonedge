@@ -1,4 +1,5 @@
 add_library(uiiitlambdamusim SHARED
+  ${CMAKE_CURRENT_SOURCE_DIR}/mcfp.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/scenario.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/simulation.cpp
 )
