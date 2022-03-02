@@ -32,13 +32,14 @@ SOFTWARE.
 #include "LambdaMuSim/mcfp.h"
 
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graph_concepts.hpp>
 #include <boost/graph/successive_shortest_path_nonnegative_weights.hpp>
-
-#include <boost/graph/find_flow_cost.hpp>
 
 #include <numeric>
 #include <stdexcept>
 #include <string>
+
+#include <glog/logging.h>
 
 namespace uiiit {
 namespace lambdamusim {
@@ -104,9 +105,9 @@ class EdgeAdder
   Reversed& m_rev;
 };
 
-long Mcfp::solve(const Costs&      aCosts,
-                 const Requests&   aRequests,
-                 const Capacities& aCapacities) {
+double Mcfp::solve(const Costs&      aCosts,
+                   const Requests&   aRequests,
+                   const Capacities& aCapacities) {
   // consistency checks
   if (aCosts.empty()) {
     throw std::runtime_error("Invalid empty cost matrix");
@@ -208,10 +209,31 @@ long Mcfp::solve(const Costs&      aCosts,
     ea.addEdge(w, d, 0, myMaxCap);
   }
 
-  // find the minimum cost flow
+  // solve the minimum cost flow problem
   boost::successive_shortest_path_nonnegative_weights(g, s, d);
 
-  return boost::find_flow_cost(g);
+  // compute the cost and return it
+  double ret = 0;
+  for (size_type t = 1; t <= T; t++) {
+    for (size_type w = (T + 1); w <= (T + W); w++) {
+      Traits::edge_descriptor e;
+      [[maybe_unused]] bool   found;
+      std::tie(e, found) = boost::edge(t, w, g);
+      assert(found);
+      const auto myCost = aCosts[t - 1][w - (T + 1)];
+      assert(weight(e) == myCost);
+      const auto myCapacity = capacity(e);
+      const auto myResidual = residual_capacity(e);
+      VLOG(2) << e << " cost " << myCost << " capacity " << myCapacity
+              << " residual " << myResidual;
+      if (myCapacity > 0) {
+        assert(myCapacity >= myResidual);
+        ret += (myCapacity - myResidual) * myCost;
+      }
+    }
+  }
+
+  return ret;
 }
 
 } // namespace lambdamusim

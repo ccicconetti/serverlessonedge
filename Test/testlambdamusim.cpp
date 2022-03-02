@@ -138,7 +138,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   Scenario myScenario(
       myNetwork,
       [](const auto& aNode) { return 2; },
-      [](const auto& aNode) { return 1.0; });
+      [](const auto& aNode) { return 1; });
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1

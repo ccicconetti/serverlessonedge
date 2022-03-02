@@ -90,7 +90,7 @@ class Scenario
 
   struct Edge {
     std::size_t     theNumContainers     = 0;
-    double          theContainerCapacity = 0;
+    long            theContainerCapacity = 0;
     std::vector<ID> theLambdaApps;
     std::vector<ID> theMuApps;
   };
@@ -100,7 +100,7 @@ class Scenario
   explicit Scenario(
       statesim::Network&                                       aNetwork,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
-      const std::function<double(const statesim::Node&)>& aContainerCapacity);
+      const std::function<long(const statesim::Node&)>& aContainerCapacity);
 
   /**
    * @brief Run a single snapshot, overwriting previous apps/allocations.
@@ -119,7 +119,7 @@ class Scenario
                            const std::size_t aAvgMu,
                            const double      aAlpha,
                            const double      aBeta,
-                           const double      aLambdaRequest,
+                           const long        aLambdaRequest,
                            const std::size_t aSeed);
 
  private:

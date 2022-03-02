@@ -86,32 +86,41 @@ TEST_F(TestMcfp, test_invalid) {
 }
 
 TEST_F(TestMcfp, test_simple_problem_instances) {
-  ASSERT_EQ(2,
-            Mcfp::solve(Mcfp::Costs({
-                            {1, 2},
-                            {2, 1},
-                            {3, 3},
-                        }),
-                        Mcfp::Requests({1, 1, 1}),
-                        Mcfp::Capacities({1, 1})));
+  ASSERT_FLOAT_EQ(2,
+                  Mcfp::solve(Mcfp::Costs({
+                                  {1, 2},
+                                  {2, 1},
+                                  {3, 3},
+                              }),
+                              Mcfp::Requests({1, 1, 1}),
+                              Mcfp::Capacities({1, 1})));
 
-  ASSERT_EQ(5,
-            Mcfp::solve(Mcfp::Costs({
-                            {1, 2},
-                            {2, 1},
-                            {3, 3},
-                        }),
-                        Mcfp::Requests({1, 1, 1}),
-                        Mcfp::Capacities({10, 10})));
+  ASSERT_FLOAT_EQ(5,
+                  Mcfp::solve(Mcfp::Costs({
+                                  {1, 2},
+                                  {2, 1},
+                                  {3, 3},
+                              }),
+                              Mcfp::Requests({1, 1, 1}),
+                              Mcfp::Capacities({10, 10})));
 
-  ASSERT_EQ(3,
-            Mcfp::solve(Mcfp::Costs({
-                            {0, 0},
-                            {0, 0},
-                            {3, 3},
-                        }),
-                        Mcfp::Requests({10, 10, 1}),
-                        Mcfp::Capacities({11, 11})));
+  ASSERT_FLOAT_EQ(3,
+                  Mcfp::solve(Mcfp::Costs({
+                                  {0, 0},
+                                  {0, 0},
+                                  {3, 3},
+                              }),
+                              Mcfp::Requests({10, 10, 1}),
+                              Mcfp::Capacities({11, 11})));
+
+  ASSERT_FLOAT_EQ(1.7,
+                  Mcfp::solve(Mcfp::Costs({
+                                  {1.5, .1},
+                                  {2, .1},
+                                  {3, .1},
+                              }),
+                              Mcfp::Requests({1, 1, 1}),
+                              Mcfp::Capacities({2, 2})));
 }
 
 } // namespace lambdamusim

@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "LambdaMuSim/scenario.h"
 
+#include "LambdaMuSim/mcfp.h"
 #include "StateSim/network.h"
 #include "StateSim/node.h"
 #include "Support/random.h"
@@ -61,7 +62,7 @@ std::string toString(const hungarian::HungarianAlgorithm::DistMatrix& aMatrix) {
 Scenario::Scenario(
     statesim::Network&                                       aNetwork,
     const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
-    const std::function<double(const statesim::Node&)>&      aContainerCapacity)
+    const std::function<long(const statesim::Node&)>&        aContainerCapacity)
     : theApps()
     , theBrokers()
     , theEdges()
@@ -124,7 +125,7 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
                                    const std::size_t aAvgMu,
                                    const double      aAlpha,
                                    const double      aBeta,
-                                   const double      aLambdaRequest,
+                                   const long        aLambdaRequest,
                                    const std::size_t aSeed) {
 
   // consistency checks
@@ -135,6 +136,10 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   if (aBeta < 0 or aBeta > 1) {
     throw std::runtime_error("Invalid beta, must be in [0,1]: " +
                              std::to_string(aBeta));
+  }
+  if (aLambdaRequest <= 0) {
+    throw std::runtime_error("Invalid lambda request, must be > 0: " +
+                             std::to_string(aLambdaRequest));
   }
 
   PerformanceData ret;
@@ -173,8 +178,10 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
           << myNumMu << " mu-apps, network costs:\n"
           << networkCostToString();
 
+  //
   // assign mu-apps to containers, taking into account the alpha factor
   // the capacities (and beta factor) are ignored
+  //
 
   // prepare the containers
   std::vector<ID> myContainerToNodes;
@@ -224,6 +231,31 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
     theApps[myAppId].theEdge = myEdgeId;
     theEdges[myEdgeId].theMuApps.emplace_back(myAppId);
   }
+
+  //
+  // assign lambda-apps to the remaining containers, taking into account the
+  // beta factor, app requests, and container capacities
+  //
+
+  // filter the lambda-apps only
+  std::vector<ID> myLambdaApps;
+  for (ID a = 0; a < theApps.size(); a++) {
+    if (theApps[a].theType == Type::Lambda) {
+      myLambdaApps.emplace_back(a);
+    }
+  }
+  assert(myLambdaApps.size() == myNumLambda);
+
+  // fill the request vector
+  Mcfp::Requests myLambdaRequests(myLambdaApps.size(), aLambdaRequest);
+  // fill the capacities vector
+  Mcfp::Capacities myLambdaCapacities;
+  // fill the cost matrix
+  Mcfp::Costs myLambdaCosts;
+
+  // solve the minimum cost flow problem
+  ret.theLambdaCost =
+      Mcfp::solve(myLambdaCosts, myLambdaRequests, myLambdaCapacities);
 
   VLOG(2) << "apps after assignment:\n" << appsToString();
 

@@ -63,9 +63,9 @@ class Mcfp
    *
    * @throw std::runtime_error if the input passed is inconsistent.
    */
-  static long solve(const Costs&      aCosts,
-                    const Requests&   aRequests,
-                    const Capacities& aCapacities);
+  static double solve(const Costs&      aCosts,
+                      const Requests&   aRequests,
+                      const Capacities& aCapacities);
 };
 
 } // namespace lambdamusim
