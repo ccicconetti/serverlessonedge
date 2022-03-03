@@ -86,8 +86,8 @@ Node Node::make(const std::string& aString, Counter<int>& aCounter) {
   }
   return Node(myTokens[1],
               aCounter(),
-              std::stof(myTokens[2]),
-              std::stoull(myTokens[3]) * 1000000,
+              std::stof(myTokens[3]) * 1e6,
+              std::stoull(myTokens[2]),
               myElem->second.first,
               myElem->second.second);
 }
