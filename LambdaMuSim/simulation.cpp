@@ -34,11 +34,13 @@ SOFTWARE.
 #include "LambdaMuSim/scenario.h"
 #include "StateSim/network.h"
 #include "StateSim/node.h"
+#include "Support/tostring.h"
 
 #include <glog/logging.h>
 
 #include <algorithm>
 #include <cmath>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 
@@ -51,12 +53,27 @@ std::string Desc::toString() const {
   return myStream.str();
 }
 
-std::string Conf::toString() const {
-  std::stringstream ret;
-  ret << "nodes " << theNodesPath << ", links " << theLinksPath << ", edges "
-      << theEdgesPath << ", apps " << theAppsPath << ", alpha " << theAlpha
-      << ", beta " << theBeta;
-  return ret.str();
+std::vector<std::string> Conf::toStrings() const {
+  return std::vector<std::string>({
+      std::to_string(theCloudDistanceFactor),
+      std::to_string(theAvgLambda),
+      std::to_string(theAvgMu),
+      std::to_string(theAlpha),
+      std::to_string(theBeta),
+      std::to_string(theLambdaRequest),
+  });
+}
+
+std::string Conf::type() const {
+  switch (theType) {
+    case Type::Dynamic:
+      return "dynamic";
+    case Type::Snapshot:
+      return "snapshot";
+    default:
+      return "unknown";
+  }
+  assert(false);
 }
 
 Simulation::Worker::Worker(Simulation& aSimulation)
@@ -77,13 +94,19 @@ void Simulation::Worker::operator()() {
       auto myExceptionThrow = true;
       try {
         if (myDesc.theConf->theType == Conf::Type::Snapshot) {
-          myDesc.thePerformanceData =
+          auto myPerformanceData =
               myDesc.theScenario->snapshot(myDesc.theConf->theAvgLambda,
                                            myDesc.theConf->theAvgMu,
                                            myDesc.theConf->theAlpha,
                                            myDesc.theConf->theBeta,
                                            myDesc.theConf->theLambdaRequest,
                                            myDesc.theSeed);
+
+          {
+            const std::lock_guard<std::mutex> myLock(theSimulation.theMutex);
+            theSimulation.theData.emplace_back(myDesc.theSeed,
+                                               std::move(myPerformanceData));
+          }
 
         } else {
           throw std::runtime_error("NOT IMPLEMENTED");
@@ -108,10 +131,12 @@ void Simulation::Worker::stop() {
 }
 
 Simulation::Simulation(const size_t aNumThreads)
-    : theNumThreads(aNumThreads)
+    : theMutex()
+    , theNumThreads(aNumThreads)
     , theWorkers()
     , theQueueIn()
-    , theDesc() {
+    , theDesc()
+    , theData() {
   LOG(INFO) << "Initialize simulation environment with " << theNumThreads
             << " threads";
   for (size_t i = 0; i < aNumThreads; i++) {
@@ -131,8 +156,10 @@ void Simulation::run(const Conf&  aConf,
                      const size_t aStartingSeed,
                      const size_t aNumReplications) {
   LOG(INFO) << "starting a batch of simulation from seed " << aStartingSeed
-            << " to seed " << (aStartingSeed + aNumReplications)
-            << " conf files " << aConf.toString();
+            << " to seed " << (aStartingSeed + aNumReplications);
+
+  // clean up previous output data
+  theData.clear();
 
   // load network from files
   const auto myNetwork = std::make_shared<statesim::Network>(
@@ -184,42 +211,22 @@ void Simulation::run(const Conf&  aConf,
     }
     myDescCounter--;
   }
-  if (not aConf.theOutfile.empty()) {
-    save(aConf.theOutfile);
-  }
-  if (not aConf.theOutdir.empty()) {
-    saveDir(aConf.theOutdir);
-  }
+
+  // save simulation output
+  save(aConf, theData);
 }
 
-void Simulation::save([[maybe_unused]] const std::string& aOutfile) {
-  // std::ofstream myOutstream(aOutfile);
-  // for (const auto& myDesc : theDesc) {
-  //   myDesc.thePerformanceData.save(myOutstream);
-  // }
-}
-
-void Simulation::saveDir(const boost::filesystem::path& aDir) {
-  boost::filesystem::create_directories(aDir);
-  // for (const auto& myDesc : theDesc) {
-  //   const auto& myPerf = myDesc.thePerformanceData;
-
-  //   {
-  //     std::ofstream myOutstream((aDir / ("job-" +
-  //     myDesc.toString())).string()); for (size_t i = 0; i < myPerf.numJobs();
-  //     i++) {
-  //       myOutstream << myPerf.theJobData[i].toString() << '\n';
-  //     }
-  //   }
-
-  //   {
-  //     std::ofstream myOutstream(
-  //         (aDir / ("node-" + myDesc.toString())).string());
-  //     for (size_t i = 0; i < myPerf.numNodes(); i++) {
-  //       myOutstream << myPerf.theLoad[i] << '\n';
-  //     }
-  //   }
-  // }
+void Simulation::save(const Conf& aConf, const Data& aData) {
+  std::ofstream myOut(aConf.theOutfile,
+                      aConf.theAppend ? std::ios::app : std::ios::trunc);
+  if (not myOut) {
+    throw std::runtime_error("could not open file for writing: " +
+                             aConf.theOutfile);
+  }
+  for (const auto& myRecord : aData) {
+    myOut << ::toString(aConf.toStrings(), ",") << ',' << std::get<0>(myRecord)
+          << ',' << ::toString(std::get<1>(myRecord).toStrings(), ",") << '\n';
+  }
 }
 
 } // namespace lambdamusim

@@ -38,6 +38,8 @@ SOFTWARE.
 
 #include <boost/filesystem.hpp>
 
+#include <mutex>
+
 namespace uiiit {
 namespace lambdamusim {
 
@@ -73,10 +75,11 @@ struct Conf {
 
   //! File where to save performance data (can be empty)
   const std::string theOutfile;
-  //! Directory where to save performance data (can be empty)
-  const std::string theOutdir;
+  //! Whether the output file should be appended or replaced.
+  const bool theAppend;
 
-  std::string toString() const;
+  std::vector<std::string> toStrings() const;
+  std::string              type() const;
 };
 
 struct Desc {
@@ -88,9 +91,6 @@ struct Desc {
 
   // simulation scenario
   std::unique_ptr<Scenario> theScenario;
-
-  // output
-  PerformanceData thePerformanceData;
 
   std::string toString() const;
 };
@@ -110,6 +110,9 @@ class Simulation final
     Simulation& theSimulation;
   };
 
+  //! Simulation output data.
+  using Data = std::deque<std::tuple<std::size_t, PerformanceData>>;
+
  public:
   //! Create a simulation environment.
   explicit Simulation(const size_t aNumThreads);
@@ -125,17 +128,16 @@ class Simulation final
 
  private:
   //! Save current performance data to the given file.
-  void save(const std::string& aOutfile);
-
-  //! Save current performance data to the given file.
-  void saveDir(const boost::filesystem::path& aDir);
+  static void save(const Conf& aConf, const Data& aData);
 
  private:
+  mutable std::mutex          theMutex;
   const size_t                theNumThreads;
   support::ThreadPool<Worker> theWorkers;
   support::Queue<size_t>      theQueueIn;
   support::Queue<bool>        theQueueOut;
   std::vector<Desc>           theDesc;
+  Data                        theData;
 };
 
 } // namespace lambdamusim

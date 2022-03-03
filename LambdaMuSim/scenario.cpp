@@ -48,6 +48,14 @@ SOFTWARE.
 namespace uiiit {
 namespace lambdamusim {
 
+std::vector<std::string> PerformanceData::toStrings() const {
+  return std::vector<std::string>({
+      std::to_string(theLambdaCost),
+      std::to_string(theMuCost),
+      std::to_string(theMuCloud),
+  });
+}
+
 std::string toString(const hungarian::HungarianAlgorithm::DistMatrix& aMatrix) {
   std::stringstream ret;
   for (const auto& myColumns : aMatrix) {

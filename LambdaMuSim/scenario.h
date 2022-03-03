@@ -52,6 +52,8 @@ struct PerformanceData {
   double      theLambdaCost = 0;
   double      theMuCost     = 0;
   std::size_t theMuCloud    = 0;
+
+  std::vector<std::string> toStrings() const;
 };
 
 class Scenario

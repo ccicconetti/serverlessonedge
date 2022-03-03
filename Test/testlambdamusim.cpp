@@ -169,9 +169,42 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         0.5,
                         1,
                         (theTestDir / "out").string(),
-                        theTestDir.string()},
+                        true},
                    42,
                    2);
+
+  std::string myContent;
+  std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
+
+  ASSERT_EQ(
+      "2.000000,10,10,0.500000,0.500000,1.000000,42,21.000000,13.000000,0\n"
+      "2.000000,10,10,0.500000,0.500000,1.000000,43,33.000000,31.000000,0\n",
+      myContent);
+
+  // run again with same seed
+  mySimulation.run(Conf{Conf::Type::Snapshot,
+                        (theTestDir / "nodes").string(),
+                        (theTestDir / "links").string(),
+                        (theTestDir / "edges").string(),
+                        2.0,
+                        "", // unused with snapshot
+                        10,
+                        10,
+                        0.5,
+                        0.5,
+                        1,
+                        (theTestDir / "out").string(),
+                        true},
+                   43,
+                   1);
+
+  std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
+
+  ASSERT_EQ(
+      "2.000000,10,10,0.500000,0.500000,1.000000,42,21.000000,13.000000,0\n"
+      "2.000000,10,10,0.500000,0.500000,1.000000,43,33.000000,31.000000,0\n"
+      "2.000000,10,10,0.500000,0.500000,1.000000,43,33.000000,31.000000,0\n",
+      myContent);
 }
 
 } // namespace lambdamusim
