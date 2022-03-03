@@ -190,22 +190,22 @@ void Simulation::run(const Conf&  aConf,
         *myNetwork,
         myDesc.theConf->theCloudDistanceFactor,
         [](const auto& aNode) {
-          if (aNode.memory() == 0) {
-            throw std::runtime_error("Invalid empty memory in node: " +
+          const auto myNumContainers =
+              static_cast<std::size_t>(std::round(aNode.speed() / 1e9));
+          if (myNumContainers == 0) {
+            throw std::runtime_error("Invalid node (num containers): " +
                                      aNode.toString());
           }
-          return aNode.memory() / 1000000000;
+          return myNumContainers;
         },
         [](const auto& aNode) {
-          const auto myTotalSpeed    = aNode.speed() / 1e9;
-          const auto myNumContainers = aNode.memory() / 1000000000;
-          const auto myCapacity =
-              static_cast<long>(myTotalSpeed / myNumContainers);
-          if (myCapacity <= 0) {
-            throw std::runtime_error("Invalid empty capacity in node: " +
-                                     aNode.toString());
+          if (aNode.name().find("server") != std::string::npos) {
+            return 20;
+          } else if (aNode.name().find("nuc") != std::string::npos) {
+            return 10;
           }
-          return myCapacity;
+          throw std::runtime_error("Invalid node (container speed): " +
+                                   aNode.toString());
         });
   }
 

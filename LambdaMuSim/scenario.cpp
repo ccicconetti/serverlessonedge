@@ -50,6 +50,8 @@ namespace lambdamusim {
 
 std::vector<std::string> PerformanceData::toStrings() const {
   return std::vector<std::string>({
+      std::to_string(theNumContainers),
+      std::to_string(theTotCapacity),
       std::to_string(theNumLambda),
       std::to_string(theNumMu),
       std::to_string(theLambdaCost),
@@ -60,6 +62,8 @@ std::vector<std::string> PerformanceData::toStrings() const {
 
 const std::vector<std::string>& PerformanceData::toColumns() {
   static const std::vector<std::string> ret({
+      "num-containers",
+      "tot-capacity",
       "num-lambda",
       "num-mu",
       "lambda-cost",
@@ -182,6 +186,8 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
     myBroker.theApps.clear();
   }
   for (auto& myEdge : theEdges) {
+    ret.theNumContainers += myEdge.theNumContainers;
+    ret.theTotCapacity += myEdge.theContainerCapacity;
     myEdge.theLambdaApps.clear();
     myEdge.theMuApps.clear();
   }
@@ -200,6 +206,8 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   // set the cloud num containers and capacity
   theEdges[CLOUD].theNumContainers     = 1 + myNumMu;
   theEdges[CLOUD].theContainerCapacity = myNumLambda * aLambdaRequest;
+  ret.theNumContainers += theEdges[CLOUD].theNumContainers;
+  ret.theTotCapacity += theEdges[CLOUD].theContainerCapacity;
 
   VLOG(2) << "seed " << aSeed << ", " << myNumLambda << " lambda-apps, "
           << myNumMu << " mu-apps, network costs:\n"

@@ -136,6 +136,10 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(48, myOut1.theLambdaCost);
   EXPECT_EQ(16, myOut1.theMuCost);
   EXPECT_EQ(2, myOut1.theMuCloud);
+  EXPECT_EQ(8, myOut1.theNumLambda);
+  EXPECT_EQ(5, myOut1.theNumMu);
+  EXPECT_EQ(2 * 3 + 1 + 5, myOut1.theNumContainers);
+  EXPECT_EQ(3 * 1 + 8, myOut1.theTotCapacity);
 
   // same but use all edge containers for mu-apps
   const auto myOut2 = myScenario.snapshot(6, 6, 1, 0.5, 1, 42);
@@ -176,10 +180,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::string myContent;
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
-  EXPECT_EQ(
-      "42,2.000000,10,10,0.500000,0.500000,1,9,5,21.000000,13.000000,0\n"
-      "43,2.000000,10,10,0.500000,0.500000,1,13,10,33.000000,31.000000,0\n",
-      myContent);
+  EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
+            "906,259,9,5,21.000000,13.000000,0\n"
+            "43,2.000000,10,10,0.500000,0.500000,1,"
+            "911,263,13,10,31.000000,31.000000,0\n",
+            myContent);
 
   // run again with same seed
   mySimulation.run(Conf{Conf::Type::Snapshot,
@@ -200,11 +205,15 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
 
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
-  EXPECT_EQ(
-      "42,2.000000,10,10,0.500000,0.500000,1,9,5,21.000000,13.000000,0\n"
-      "43,2.000000,10,10,0.500000,0.500000,1,13,10,33.000000,31.000000,0\n"
-      "43,2.000000,10,10,0.500000,0.500000,1,13,10,33.000000,31.000000,0\n",
-      myContent);
+  EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
+            "906,259,9,5,21.000000,13.000000,0\n"
+            "43,2.000000,10,10,0.500000,0.500000,1,"
+            "911,263,13,10,31.000000,31.000000,0\n"
+            "43,2.000000,10,10,0.500000,0.500000,1,"
+            "911,263,13,10,31.000000,31.000000,0\n",
+            myContent);
+
+  VLOG(2) << '\n' << myContent;
 }
 
 } // namespace lambdamusim

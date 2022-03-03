@@ -49,11 +49,13 @@ class Node;
 namespace lambdamusim {
 
 struct PerformanceData {
-  std::size_t theNumLambda  = 0;
-  std::size_t theNumMu      = 0;
-  double      theLambdaCost = 0;
-  double      theMuCost     = 0;
-  std::size_t theMuCloud    = 0;
+  std::size_t theNumLambda     = 0;
+  std::size_t theNumMu         = 0;
+  std::size_t theNumContainers = 0;
+  std::size_t theTotCapacity   = 0;
+  double      theLambdaCost    = 0;
+  double      theMuCost        = 0;
+  std::size_t theMuCloud       = 0;
 
   std::vector<std::string>               toStrings() const;
   static const std::vector<std::string>& toColumns();
