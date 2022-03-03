@@ -50,10 +50,23 @@ namespace lambdamusim {
 
 std::vector<std::string> PerformanceData::toStrings() const {
   return std::vector<std::string>({
+      std::to_string(theNumLambda),
+      std::to_string(theNumMu),
       std::to_string(theLambdaCost),
       std::to_string(theMuCost),
       std::to_string(theMuCloud),
   });
+}
+
+const std::vector<std::string>& PerformanceData::toColumns() {
+  static const std::vector<std::string> ret({
+      "num-lambda",
+      "num-mu",
+      "lambda-cost",
+      "mu-cost",
+      "mu-cloud",
+  });
+  return ret;
 }
 
 std::string toString(const hungarian::HungarianAlgorithm::DistMatrix& aMatrix) {
@@ -192,108 +205,17 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
           << myNumMu << " mu-apps, network costs:\n"
           << networkCostToString();
 
-  //
+  // save assignment-independent output
+  ret.theNumLambda = myNumLambda;
+  ret.theNumMu     = myNumMu;
+
   // assign mu-apps to containers, taking into account the alpha factor
   // the capacities (and beta factor) are ignored
-  //
+  assignMuApps(aAlpha, ret);
 
-  // prepare the containers
-  std::vector<ID> myContainerToNodes;
-  for (ID e = 0; e < theEdges.size(); e++) {
-    // reduce the number of containers available for mu-apps, only for
-    // edge-nodes (note this can go to zero)
-    const auto myMuContainersAvailable =
-        e == CLOUD ?
-            theEdges[e].theNumContainers :
-            static_cast<std::size_t>(theEdges[e].theNumContainers * aAlpha);
-    for (ID i = 0; i < myMuContainersAvailable; i++) {
-      myContainerToNodes.emplace_back(e);
-    }
-  }
-
-  // filter the mu-apps only
-  std::vector<ID> myMuApps;
-  for (ID a = 0; a < theApps.size(); a++) {
-    if (theApps[a].theType == Type::Mu) {
-      myMuApps.emplace_back(a);
-    }
-  }
-  assert(myMuApps.size() == myNumMu);
-
-  // assignment problem input matrix, with costs from apps to containers
-  hungarian::HungarianAlgorithm::DistMatrix myApMatrix(
-      myMuApps.size(), std::vector<double>(myContainerToNodes.size()));
-  for (ID a = 0; a < myMuApps.size(); a++) {
-    for (ID c = 0; c < myContainerToNodes.size(); c++) {
-      myApMatrix[a][c] =
-          networkCost(theApps[myMuApps[a]].theBroker, myContainerToNodes[c]);
-    }
-  }
-  VLOG(2) << "assignment problem cost matrix:\n"
-          << uiiit::lambdamusim::toString(myApMatrix);
-
-  // solve assignment problem
-  std::vector<int> myMuAssignment;
-  ret.theMuCost =
-      hungarian::HungarianAlgorithm::Solve(myApMatrix, myMuAssignment);
-
-  // assign apps to edges (and vice versa)
-  for (ID i = 0; i < myMuAssignment.size(); i++) {
-    const auto myAppId  = myMuApps[i];
-    const auto myEdgeId = myContainerToNodes[myMuAssignment[i]];
-    ret.theMuCloud += myEdgeId == CLOUD ? 1 : 0;
-    theApps[myAppId].theEdge = myEdgeId;
-    theEdges[myEdgeId].theMuApps.emplace_back(myAppId);
-  }
-
-  //
   // assign lambda-apps to the remaining containers, taking into account the
   // beta factor, app requests, and container capacities
-  //
-
-  // filter the lambda-apps only
-  std::vector<ID> myLambdaApps;
-  for (ID a = 0; a < theApps.size(); a++) {
-    if (theApps[a].theType == Type::Lambda) {
-      myLambdaApps.emplace_back(a);
-    }
-  }
-  assert(myLambdaApps.size() == myNumLambda);
-
-  // filter the containers not assigned to mu-apps
-  std::vector<ID> myLambdaContainers;
-  for (ID e = 0; e < theEdges.size(); e++) {
-    assert(theEdges[e].theNumContainers >= theEdges[e].theMuApps.size());
-    const auto myNumContainers =
-        theEdges[e].theNumContainers - theEdges[e].theMuApps.size();
-    for (std::size_t i = 0; i < myNumContainers; i++) {
-      myLambdaContainers.emplace_back(e);
-    }
-  }
-
-  // fill the request vector
-  Mcfp::Requests myLambdaRequests(myLambdaApps.size(), aLambdaRequest);
-
-  // fill the capacities vector
-  Mcfp::Capacities myLambdaCapacities;
-  for (const auto& e : myLambdaContainers) {
-    myLambdaCapacities.emplace_back(
-        static_cast<long>(aBeta * theEdges[e].theContainerCapacity));
-  }
-
-  // fill the cost matrix
-  Mcfp::Costs myLambdaCosts(myLambdaApps.size(),
-                            std::vector<double>(myLambdaContainers.size()));
-  for (ID a = 0; a < myLambdaApps.size(); a++) {
-    for (ID e = 0; e < myLambdaContainers.size(); e++) {
-      myLambdaCosts[a][e] =
-          networkCost(theApps[a].theBroker, myLambdaContainers[e]);
-    }
-  }
-
-  // solve the minimum cost flow problem
-  ret.theLambdaCost =
-      Mcfp::solve(myLambdaCosts, myLambdaRequests, myLambdaCapacities);
+  assignLambdaApps(aBeta, aLambdaRequest, ret);
 
   VLOG(2) << "apps after assignment:\n" << appsToString();
 
@@ -347,6 +269,113 @@ std::string Scenario::toString(const Type aType) {
       return "unknown";
   }
   assert(false);
+}
+
+void Scenario::assignMuApps(const double aAlpha, PerformanceData& aData) {
+  // prepare the containers
+  std::vector<ID> myContainerToNodes;
+  for (ID e = 0; e < theEdges.size(); e++) {
+    // reduce the number of containers available for mu-apps, only for
+    // edge-nodes (note this can go to zero)
+    const auto myMuContainersAvailable =
+        e == CLOUD ?
+            theEdges[e].theNumContainers :
+            static_cast<std::size_t>(theEdges[e].theNumContainers * aAlpha);
+    for (ID i = 0; i < myMuContainersAvailable; i++) {
+      myContainerToNodes.emplace_back(e);
+    }
+  }
+
+  // filter the mu-apps only
+  std::vector<ID> myMuApps;
+  for (ID a = 0; a < theApps.size(); a++) {
+    if (theApps[a].theType == Type::Mu) {
+      myMuApps.emplace_back(a);
+    }
+  }
+
+  // no mu-apps to assign
+  if (myMuApps.empty()) {
+    return;
+  }
+
+  // assignment problem input matrix, with costs from apps to containers
+  hungarian::HungarianAlgorithm::DistMatrix myApMatrix(
+      myMuApps.size(), std::vector<double>(myContainerToNodes.size()));
+  for (ID a = 0; a < myMuApps.size(); a++) {
+    for (ID c = 0; c < myContainerToNodes.size(); c++) {
+      myApMatrix[a][c] =
+          networkCost(theApps[myMuApps[a]].theBroker, myContainerToNodes[c]);
+    }
+  }
+  VLOG(2) << "assignment problem cost matrix:\n"
+          << uiiit::lambdamusim::toString(myApMatrix);
+
+  // solve assignment problem
+  std::vector<int> myMuAssignment;
+  aData.theMuCost =
+      hungarian::HungarianAlgorithm::Solve(myApMatrix, myMuAssignment);
+
+  // assign apps to edges (and vice versa)
+  for (ID i = 0; i < myMuAssignment.size(); i++) {
+    const auto myAppId  = myMuApps[i];
+    const auto myEdgeId = myContainerToNodes[myMuAssignment[i]];
+    aData.theMuCloud += myEdgeId == CLOUD ? 1 : 0;
+    theApps[myAppId].theEdge = myEdgeId;
+    theEdges[myEdgeId].theMuApps.emplace_back(myAppId);
+  }
+}
+
+void Scenario::assignLambdaApps(const double     aBeta,
+                                const long       aLambdaRequest,
+                                PerformanceData& aData) {
+  // filter the lambda-apps only
+  std::vector<ID> myLambdaApps;
+  for (ID a = 0; a < theApps.size(); a++) {
+    if (theApps[a].theType == Type::Lambda) {
+      myLambdaApps.emplace_back(a);
+    }
+  }
+
+  // no lambda-apps to assign
+  if (myLambdaApps.empty()) {
+    return;
+  }
+
+  // filter the containers not assigned to mu-apps
+  std::vector<ID> myLambdaContainers;
+  for (ID e = 0; e < theEdges.size(); e++) {
+    assert(theEdges[e].theNumContainers >= theEdges[e].theMuApps.size());
+    const auto myNumContainers =
+        theEdges[e].theNumContainers - theEdges[e].theMuApps.size();
+    for (std::size_t i = 0; i < myNumContainers; i++) {
+      myLambdaContainers.emplace_back(e);
+    }
+  }
+
+  // fill the request vector
+  Mcfp::Requests myLambdaRequests(myLambdaApps.size(), aLambdaRequest);
+
+  // fill the capacities vector
+  Mcfp::Capacities myLambdaCapacities;
+  for (const auto& e : myLambdaContainers) {
+    myLambdaCapacities.emplace_back(
+        static_cast<long>(aBeta * theEdges[e].theContainerCapacity));
+  }
+
+  // fill the cost matrix
+  Mcfp::Costs myLambdaCosts(myLambdaApps.size(),
+                            std::vector<double>(myLambdaContainers.size()));
+  for (ID a = 0; a < myLambdaApps.size(); a++) {
+    for (ID e = 0; e < myLambdaContainers.size(); e++) {
+      myLambdaCosts[a][e] =
+          networkCost(theApps[a].theBroker, myLambdaContainers[e]);
+    }
+  }
+
+  // solve the minimum cost flow problem
+  aData.theLambdaCost =
+      Mcfp::solve(myLambdaCosts, myLambdaRequests, myLambdaCapacities);
 }
 
 } // namespace lambdamusim

@@ -64,6 +64,18 @@ std::vector<std::string> Conf::toStrings() const {
   });
 }
 
+const std::vector<std::string>& Conf::toColumns() {
+  static const std::vector<std::string> ret({
+      "cloud-distance-factor",
+      "avg-lambda",
+      "avg-mu",
+      "alpha",
+      "beta",
+      "lambda-request",
+  });
+  return ret;
+}
+
 std::string Conf::type() const {
   switch (theType) {
     case Type::Dynamic:
@@ -224,7 +236,11 @@ void Simulation::save(const Conf& aConf, const Data& aData) {
                              aConf.theOutfile);
   }
   for (const auto& myRecord : aData) {
-    myOut << ::toString(aConf.toStrings(), ",") << ',' << std::get<0>(myRecord)
+    assert(aConf.toStrings().size() == Conf::toColumns().size());
+    assert(std::get<1>(myRecord).toStrings().size() ==
+           PerformanceData::toColumns().size());
+
+    myOut << std::get<0>(myRecord) << ',' << ::toString(aConf.toStrings(), ",")
           << ',' << ::toString(std::get<1>(myRecord).toStrings(), ",") << '\n';
   }
 }

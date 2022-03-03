@@ -9,13 +9,15 @@ target_link_libraries(uiiitlambdamusim
   uiiitsupport
 )
 
-# add_executable(lambdamusim
-#   ${CMAKE_CURRENT_SOURCE_DIR}/lambdamusimmain.cpp
-# )
+add_executable(lambdamusim
+  ${CMAKE_CURRENT_SOURCE_DIR}/lambdamusimmain.cpp
+)
 
-# target_link_libraries(lambdamusim
-#   uiiitlambdamusim
+target_link_libraries(lambdamusim
+  uiiitlambdamusim
 
-#   ${GLOG}
-#   ${Boost_LIBRARIES}
-# )
+  hungarian
+
+  ${GLOG}
+  ${Boost_LIBRARIES}
+)

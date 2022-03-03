@@ -49,11 +49,14 @@ class Node;
 namespace lambdamusim {
 
 struct PerformanceData {
+  std::size_t theNumLambda  = 0;
+  std::size_t theNumMu      = 0;
   double      theLambdaCost = 0;
   double      theMuCost     = 0;
   std::size_t theMuCloud    = 0;
 
-  std::vector<std::string> toStrings() const;
+  std::vector<std::string>               toStrings() const;
+  static const std::vector<std::string>& toColumns();
 };
 
 class Scenario
@@ -143,6 +146,10 @@ class Scenario
   std::string   networkCostToString() const;
   std::string   appsToString() const;
   static std::string toString(const Type aType);
+  void               assignMuApps(const double aAlpha, PerformanceData& aData);
+  void               assignLambdaApps(const double     aBeta,
+                                      const long       aLambdaRequest,
+                                      PerformanceData& aData);
 
  private:
   std::vector<App>    theApps;        // size = A

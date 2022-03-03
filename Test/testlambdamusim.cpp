@@ -133,23 +133,23 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   // lambda-apps request a capacity of 1
   const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 0.5, 1, 42);
 
-  ASSERT_EQ(34, myOut1.theLambdaCost);
-  ASSERT_EQ(16, myOut1.theMuCost);
-  ASSERT_EQ(2, myOut1.theMuCloud);
+  EXPECT_EQ(48, myOut1.theLambdaCost);
+  EXPECT_EQ(16, myOut1.theMuCost);
+  EXPECT_EQ(2, myOut1.theMuCloud);
 
   // same but use all edge containers for mu-apps
   const auto myOut2 = myScenario.snapshot(6, 6, 1, 0.5, 1, 42);
 
-  ASSERT_EQ(44, myOut2.theLambdaCost);
-  ASSERT_EQ(7, myOut2.theMuCost);
-  ASSERT_EQ(0, myOut2.theMuCloud);
+  EXPECT_EQ(48, myOut2.theLambdaCost);
+  EXPECT_EQ(7, myOut2.theMuCost);
+  EXPECT_EQ(0, myOut2.theMuCloud);
 
   // same but lambda-apps have bigger requests
   const auto myOut3 = myScenario.snapshot(6, 6, 1, 0.5, 2, 42);
 
-  ASSERT_EQ(92, myOut3.theLambdaCost);
-  ASSERT_EQ(7, myOut3.theMuCost);
-  ASSERT_EQ(0, myOut3.theMuCloud);
+  EXPECT_EQ(96, myOut3.theLambdaCost);
+  EXPECT_EQ(7, myOut3.theMuCost);
+  EXPECT_EQ(0, myOut3.theMuCloud);
 }
 
 TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
@@ -176,9 +176,9 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::string myContent;
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
-  ASSERT_EQ(
-      "2.000000,10,10,0.500000,0.500000,1.000000,42,21.000000,13.000000,0\n"
-      "2.000000,10,10,0.500000,0.500000,1.000000,43,33.000000,31.000000,0\n",
+  EXPECT_EQ(
+      "42,2.000000,10,10,0.500000,0.500000,1,9,5,21.000000,13.000000,0\n"
+      "43,2.000000,10,10,0.500000,0.500000,1,13,10,33.000000,31.000000,0\n",
       myContent);
 
   // run again with same seed
@@ -200,10 +200,10 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
 
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
-  ASSERT_EQ(
-      "2.000000,10,10,0.500000,0.500000,1.000000,42,21.000000,13.000000,0\n"
-      "2.000000,10,10,0.500000,0.500000,1.000000,43,33.000000,31.000000,0\n"
-      "2.000000,10,10,0.500000,0.500000,1.000000,43,33.000000,31.000000,0\n",
+  EXPECT_EQ(
+      "42,2.000000,10,10,0.500000,0.500000,1,9,5,21.000000,13.000000,0\n"
+      "43,2.000000,10,10,0.500000,0.500000,1,13,10,33.000000,31.000000,0\n"
+      "43,2.000000,10,10,0.500000,0.500000,1,13,10,33.000000,31.000000,0\n",
       myContent);
 }
 
