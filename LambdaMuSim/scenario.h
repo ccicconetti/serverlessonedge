@@ -77,7 +77,7 @@ class Scenario
 
     ID   theBroker = 0;            //!< the broker to which this app connects
     Type theType   = Type::Lambda; //!< the current app type
-    ID   theEdge   = 0;            //!< the edge to which this app is assigned
+    ID   theEdge   = 0;            //!< the edge to which is assigned (mu-only)
   };
 
   struct Broker {
@@ -96,9 +96,22 @@ class Scenario
   };
 
  public:
-  //! Create a scenario with the given structures.
+  /**
+   * @brief Construct a new scenario.
+   *
+   * @param aNetwork The network to use to determine the edge costs.
+   * @param aCloudDistanceFactor Factor to scale the maximum distance in
+   * aNetwork to obtain the cost to reach the cloud
+   * @param aNumContainers Function to determine the number of containers based
+   * on the node characteristics.
+   * @param aContainerCapacity Function to determine the capacity of
+   * lambda-containers based on the node characteristics.
+   *
+   * @throw std::runtime_error if the input args are inconsistent.
+   */
   explicit Scenario(
-      statesim::Network&                                       aNetwork,
+      statesim::Network& aNetwork,
+      const double       aCloudDistanceFactor,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
       const std::function<long(const statesim::Node&)>& aContainerCapacity);
 

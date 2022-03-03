@@ -60,13 +60,19 @@ std::string toString(const hungarian::HungarianAlgorithm::DistMatrix& aMatrix) {
 }
 
 Scenario::Scenario(
-    statesim::Network&                                       aNetwork,
+    statesim::Network& aNetwork,
+    const double       aCloudDistanceFactor,
     const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
     const std::function<long(const statesim::Node&)>&        aContainerCapacity)
     : theApps()
     , theBrokers()
     , theEdges()
     , theNetworkCost() {
+
+  if (aCloudDistanceFactor <= 0) {
+    throw std::runtime_error("Invalid cloud distance factor, must be > 0: " +
+                             std::to_string(aCloudDistanceFactor));
+  }
 
   // load brokers: all the network clients
   std::vector<statesim::Node*> myBrokerPtrs;
@@ -115,7 +121,7 @@ Scenario::Scenario(
       networkCost(b, e)     = static_cast<double>(myDistance);
     }
   }
-  const double myCloudDistance = 1.0 + myMaxDistance;
+  const double myCloudDistance = aCloudDistanceFactor * myMaxDistance;
   for (ID b = 0; b < theBrokers.size(); b++) {
     networkCost(b, 0) = myCloudDistance;
   }
@@ -246,12 +252,36 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   }
   assert(myLambdaApps.size() == myNumLambda);
 
+  // filter the containers not assigned to mu-apps
+  std::vector<ID> myLambdaContainers;
+  for (ID e = 0; e < theEdges.size(); e++) {
+    assert(theEdges[e].theNumContainers >= theEdges[e].theMuApps.size());
+    const auto myNumContainers =
+        theEdges[e].theNumContainers - theEdges[e].theMuApps.size();
+    for (std::size_t i = 0; i < myNumContainers; i++) {
+      myLambdaContainers.emplace_back(e);
+    }
+  }
+
   // fill the request vector
   Mcfp::Requests myLambdaRequests(myLambdaApps.size(), aLambdaRequest);
+
   // fill the capacities vector
   Mcfp::Capacities myLambdaCapacities;
+  for (const auto& e : myLambdaContainers) {
+    myLambdaCapacities.emplace_back(
+        static_cast<long>(aBeta * theEdges[e].theContainerCapacity));
+  }
+
   // fill the cost matrix
-  Mcfp::Costs myLambdaCosts;
+  Mcfp::Costs myLambdaCosts(myLambdaApps.size(),
+                            std::vector<double>(myLambdaContainers.size()));
+  for (ID a = 0; a < myLambdaApps.size(); a++) {
+    for (ID e = 0; e < myLambdaContainers.size(); e++) {
+      myLambdaCosts[a][e] =
+          networkCost(theApps[a].theBroker, myLambdaContainers[e]);
+    }
+  }
 
   // solve the minimum cost flow problem
   ret.theLambdaCost =
@@ -290,8 +320,11 @@ std::string Scenario::appsToString() const {
   std::stringstream ret;
   for (ID a = 0; a < theApps.size(); a++) {
     ret << "app#" << a << " - broker#" << theApps[a].theBroker << " ["
-        << toString(theApps[a].theType) << "] -> " << theApps[a].theEdge
-        << '\n';
+        << toString(theApps[a].theType) << "]";
+    if (theApps[a].theType == Type::Mu) {
+      ret << " -> " << theApps[a].theEdge;
+    }
+    ret << '\n';
   }
   return ret.str();
 }

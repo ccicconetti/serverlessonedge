@@ -149,8 +149,25 @@ void Simulation::run(const Conf&  aConf,
     myDesc.theSeed     = myRun + aStartingSeed;
     myDesc.theScenario = std::make_unique<Scenario>(
         *myNetwork,
-        [](const statesim::Node& aNode) { return aNode.memory() / 1000; },
-        [](const statesim::Node& aNode) { return aNode.speed() / 1e9; });
+        myDesc.theConf->theCloudDistanceFactor,
+        [](const auto& aNode) {
+          if (aNode.memory() == 0) {
+            throw std::runtime_error("Invalid empty memory in node: " +
+                                     aNode.toString());
+          }
+          return aNode.memory() / 1000000000;
+        },
+        [](const auto& aNode) {
+          const auto myTotalSpeed    = aNode.speed() / 1e9;
+          const auto myNumContainers = aNode.memory() / 1000000000;
+          const auto myCapacity =
+              static_cast<long>(myTotalSpeed / myNumContainers);
+          if (myCapacity <= 0) {
+            throw std::runtime_error("Invalid empty capacity in node: " +
+                                     aNode.toString());
+          }
+          return myCapacity;
+        });
   }
 
   // dispatch the simulations

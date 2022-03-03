@@ -110,18 +110,6 @@ struct TestLambdaMuSim : public ::testing::Test {
   const std::set<std::string>                        theExampleClients;
 };
 
-TEST_F(TestLambdaMuSim, test_scenario_from_files) {
-  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
-  statesim::Network myNetwork((theTestDir / "nodes").string(),
-                              (theTestDir / "links").string(),
-                              (theTestDir / "edges").string());
-
-  Scenario myScenario(
-      myNetwork,
-      [](const auto&) { return 2; },
-      [](const auto&) { return 1.0; });
-}
-
 TEST_F(TestLambdaMuSim, test_example_snapshot) {
   statesim::Network myNetwork(
       theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
@@ -137,6 +125,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
 
   Scenario myScenario(
       myNetwork,
+      2.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; });
 
@@ -144,15 +133,45 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   // lambda-apps request a capacity of 1
   const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 0.5, 1, 42);
 
-  EXPECT_EQ(0, myOut1.theLambdaCost);
-  EXPECT_EQ(12, myOut1.theMuCost);
-  EXPECT_EQ(2, myOut1.theMuCloud);
+  ASSERT_EQ(34, myOut1.theLambdaCost);
+  ASSERT_EQ(16, myOut1.theMuCost);
+  ASSERT_EQ(2, myOut1.theMuCloud);
 
+  // same but use all edge containers for mu-apps
   const auto myOut2 = myScenario.snapshot(6, 6, 1, 0.5, 1, 42);
 
-  EXPECT_EQ(0, myOut2.theLambdaCost);
-  EXPECT_EQ(7, myOut2.theMuCost);
-  EXPECT_EQ(0, myOut2.theMuCloud);
+  ASSERT_EQ(44, myOut2.theLambdaCost);
+  ASSERT_EQ(7, myOut2.theMuCost);
+  ASSERT_EQ(0, myOut2.theMuCloud);
+
+  // same but lambda-apps have bigger requests
+  const auto myOut3 = myScenario.snapshot(6, 6, 1, 0.5, 2, 42);
+
+  ASSERT_EQ(92, myOut3.theLambdaCost);
+  ASSERT_EQ(7, myOut3.theMuCost);
+  ASSERT_EQ(0, myOut3.theMuCloud);
+}
+
+TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
+  Simulation mySimulation(1);
+  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
+
+  // run two replications
+  mySimulation.run(Conf{Conf::Type::Snapshot,
+                        (theTestDir / "nodes").string(),
+                        (theTestDir / "links").string(),
+                        (theTestDir / "edges").string(),
+                        2.0,
+                        "", // unused with snapshot
+                        10,
+                        10,
+                        0.5,
+                        0.5,
+                        1,
+                        (theTestDir / "out").string(),
+                        theTestDir.string()},
+                   42,
+                   2);
 }
 
 } // namespace lambdamusim

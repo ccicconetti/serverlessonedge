@@ -56,6 +56,8 @@ struct Conf {
   const std::string theLinksPath;
   //! File containing the info about edges
   const std::string theEdgesPath;
+  //! Cloud distance scale fctor
+  const double theCloudDistanceFactor;
   //! File containing the info about apps (unused with Type::Snapshot)
   const std::string theAppsPath;
   //! Average number of lambda apps (unused with Type::Dynamic)
