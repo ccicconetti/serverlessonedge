@@ -63,7 +63,7 @@ After having run all the simulations and set up your environment, you can post-p
 ./analyze.sh
 ```
 
-which will produce post-processed files into the directory `results`.
+which will produce post-processed files into the directory `post`.
 
 ## Visualization
 
