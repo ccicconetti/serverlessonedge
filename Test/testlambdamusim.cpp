@@ -29,6 +29,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "Dataset/afdb-utils.h"
+#include "LambdaMuSim/apppool.h"
 #include "LambdaMuSim/scenario.h"
 #include "LambdaMuSim/simulation.h"
 #include "StateSim/link.h"
@@ -214,6 +216,73 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
             myContent);
 
   VLOG(2) << '\n' << myContent;
+}
+
+TEST_F(TestLambdaMuSim, test_app_pool) {
+  dataset::TimestampDataset myDataset({
+      {"app0",
+       {
+           {100, true},
+           {110, true},
+           {1000, true},
+           {1110, true},
+           {1120, true},
+           {1140, true},
+           {1160, true},
+           {2120, true},
+           {2140, true},
+           {2160, true},
+       }},
+      {"app1",
+       {
+           {100, true},
+           {150, true},
+           {250, true},
+           {300, true},
+           {400, true},
+           {999, true},
+       }},
+      {"app2",
+       {
+           {100, true},
+           {110, true},
+           {140, true},
+           {170, true},
+           {180, true},
+           {200, true},
+       }},
+  });
+
+  dataset::CostModel myCostModel{1, 10, 0, 0, 0.3, 0, 0, 0};
+
+  const std::size_t     N = 20;
+  AppPool               myAppPool(myDataset, myCostModel, 1, N, 42);
+  std::set<std::size_t> myAllApps;
+  for (std::size_t i = 0; i < N; i++) {
+    myAllApps.insert(i);
+  }
+
+  std::set<std::size_t> mySelected;
+  double                myExpected = myAppPool.next();
+  for (auto i = 0; i < 10000; i++) {
+    std::size_t myApp;
+    double      myTime;
+    std::tie(myApp, myTime) = myAppPool.advance();
+    ASSERT_LT(myTime, 1000);
+    ASSERT_EQ(myExpected, myTime);
+    mySelected.insert(myApp);
+    myExpected = myAppPool.next();
+  }
+  ASSERT_EQ(myAllApps, mySelected);
+
+  double myNext = 0;
+  while (myNext == 0) {
+    myAppPool.advance();
+    myNext = myAppPool.next();
+  }
+  myAppPool.advance(myNext / 3);
+  ASSERT_FLOAT_EQ(myNext * 2 / 3, myAppPool.next());
+  ASSERT_FLOAT_EQ(myNext * 2 / 3, myAppPool.advance().second);
 }
 
 } // namespace lambdamusim
