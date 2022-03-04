@@ -90,8 +90,10 @@ AppPool::AppPool(const dataset::TimestampDataset& aDataset,
   for (std::size_t i = 0; i < aNumApps; i++) {
     const auto myPeriodId = myRvPeriods();
     auto       it         = thePeriods[myPeriodId].begin();
-    const auto myOffset   = support::UniformIntRv<std::size_t>(
-        0, thePeriods[myPeriodId].size() - 1, aSeed, i, 0)();
+    assert(thePeriods[myPeriodId].size() % 2 == 0);
+    const auto myOffset =
+        2 * support::UniformIntRv<std::size_t>(
+                0, (thePeriods[myPeriodId].size() / 2) - 1, aSeed, i, 0)();
 
     std::advance(it, myOffset);
     assert(it != thePeriods[myPeriodId].end());

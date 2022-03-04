@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "LambdaMuSim/scenario.h"
 
+#include "LambdaMuSim/apppool.h"
 #include "LambdaMuSim/mcfp.h"
 #include "StateSim/network.h"
 #include "StateSim/node.h"
@@ -152,26 +153,107 @@ Scenario::Scenario(
   }
 }
 
+PerformanceData Scenario::dynamic(const double                     aDuration,
+                                  const double                     aEpoch,
+                                  const dataset::TimestampDataset& aDataset,
+                                  const dataset::CostModel&        aCostModel,
+                                  const std::size_t                aMinPeriods,
+                                  const std::size_t                aAvgApps,
+                                  const double                     aAlpha,
+                                  const double                     aBeta,
+                                  const long        aLambdaRequest,
+                                  const std::size_t aSeed) {
+  checkArgs(aAlpha, aBeta, aLambdaRequest);
+
+  PerformanceData ret;
+
+  support::UniformIntRv<ID> myBrokerRv(0, theBrokers.size() - 1, aSeed, 0, 0);
+  const auto myNumApps = support::PoissonRv(aAvgApps, aSeed, 0, 0)();
+
+  // clear apps and brokers and any previous assignment between edge nodes
+  // and apps from previous calls
+  theApps.clear();
+  for (auto& myBroker : theBrokers) {
+    myBroker.theApps.clear();
+  }
+  for (auto& myEdge : theEdges) {
+    ret.theNumContainers += myEdge.theNumContainers;
+    ret.theTotCapacity += myEdge.theContainerCapacity;
+    myEdge.theLambdaApps.clear();
+    myEdge.theMuApps.clear();
+  }
+
+  // initialize apps and brokers, all apps are born in a lambda state
+  for (std::size_t i = 0; i < myNumApps; i++) {
+    theApps.emplace_back(myBrokerRv(), Type::Lambda);
+    theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
+  }
+
+  // set the cloud num containers and capacity
+  theEdges[CLOUD].theNumContainers     = 1 + myNumApps;
+  theEdges[CLOUD].theContainerCapacity = myNumApps * aLambdaRequest;
+  ret.theNumContainers += theEdges[CLOUD].theNumContainers;
+  ret.theTotCapacity += theEdges[CLOUD].theContainerCapacity;
+
+  VLOG(2) << "seed " << aSeed << ", " << myNumApps << " apps, network costs:\n"
+          << networkCostToString();
+
+  AppPool myAppPool(aDataset, aCostModel, aMinPeriods, myNumApps, aSeed);
+  double  myClock     = 0;
+  double  myNextEpoch = 0;
+  while (myClock < aDuration) {
+    assert(myNextEpoch >= 0);
+    assert(myAppPool.next() >= 0);
+
+    double myTimeElapsed = 0;
+    if (myNextEpoch <= myAppPool.next()) {
+      VLOG(2) << (myClock + myNextEpoch) << " a new epoch begins";
+      // perform periodic optimization
+      // XXX
+
+      myAppPool.advance(myNextEpoch);
+      myTimeElapsed = myNextEpoch;
+      myNextEpoch   = aEpoch;
+
+    } else {
+      // perform in-between-epochs assignment
+
+      std::size_t myAppChanged;
+      std::tie(myAppChanged, myTimeElapsed) = myAppPool.advance();
+      myNextEpoch -= myTimeElapsed;
+      VLOG(2) << myClock << " app#" << myAppChanged << " changed";
+
+      // XXX
+    }
+
+    assert(myTimeElapsed >= 0);
+    myClock += myTimeElapsed;
+  }
+
+  // // save assignment-independent output
+  // ret.theNumLambda = myNumLambda;
+  // ret.theNumMu     = myNumMu;
+
+  // // assign mu-apps to containers, taking into account the alpha factor
+  // // the capacities (and beta factor) are ignored
+  // assignMuApps(aAlpha, ret);
+
+  // // assign lambda-apps to the remaining containers, taking into account the
+  // // beta factor, app requests, and container capacities
+  // assignLambdaApps(aBeta, aLambdaRequest, ret);
+
+  // VLOG(2) << "apps after assignment:\n" << appsToString();
+
+  return ret;
+}
+
 PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
                                    const std::size_t aAvgMu,
                                    const double      aAlpha,
                                    const double      aBeta,
                                    const long        aLambdaRequest,
                                    const std::size_t aSeed) {
-
-  // consistency checks
-  if (aAlpha < 0 or aAlpha > 1) {
-    throw std::runtime_error("Invalid alpha, must be in [0,1]: " +
-                             std::to_string(aAlpha));
-  }
-  if (aBeta < 0 or aBeta > 1) {
-    throw std::runtime_error("Invalid beta, must be in [0,1]: " +
-                             std::to_string(aBeta));
-  }
-  if (aLambdaRequest <= 0) {
-    throw std::runtime_error("Invalid lambda request, must be > 0: " +
-                             std::to_string(aLambdaRequest));
-  }
+  checkArgs(aAlpha, aBeta, aLambdaRequest);
 
   PerformanceData ret;
 
@@ -384,6 +466,23 @@ void Scenario::assignLambdaApps(const double     aBeta,
   // solve the minimum cost flow problem
   aData.theLambdaCost =
       Mcfp::solve(myLambdaCosts, myLambdaRequests, myLambdaCapacities);
+}
+
+void Scenario::checkArgs(const double aAlpha,
+                         const double aBeta,
+                         const long   aLambdaRequest) {
+  if (aAlpha < 0 or aAlpha > 1) {
+    throw std::runtime_error("Invalid alpha, must be in [0,1]: " +
+                             std::to_string(aAlpha));
+  }
+  if (aBeta < 0 or aBeta > 1) {
+    throw std::runtime_error("Invalid beta, must be in [0,1]: " +
+                             std::to_string(aBeta));
+  }
+  if (aLambdaRequest <= 0) {
+    throw std::runtime_error("Invalid lambda request, must be > 0: " +
+                             std::to_string(aLambdaRequest));
+  }
 }
 
 } // namespace lambdamusim

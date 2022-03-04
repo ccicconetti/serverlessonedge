@@ -31,6 +31,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "Dataset/afdb-utils.h"
 #include "Support/macros.h"
 
 #include <cstddef>
@@ -133,7 +134,7 @@ class Scenario
    * @param aSeed The RNG seed.
    * @return PerformanceData
    *
-   * @throw std::runtime_error if alpha,beta not in [0,1]
+   * @throw std::runtime_error if the arguments are invalid.
    */
   PerformanceData snapshot(const std::size_t aAvgLambda,
                            const std::size_t aAvgMu,
@@ -141,6 +142,34 @@ class Scenario
                            const double      aBeta,
                            const long        aLambdaRequest,
                            const std::size_t aSeed);
+
+  /**
+   * @brief Run a dynamic simulation.
+   *
+   * @param aDuration The simulation duration.
+   * @param aEpoch The duration of an epoch.
+   * @param aDataset The timestamp dataset of apps.
+   * @param aCostModel The cost model to use to determine the periods.
+   * @param aMinPeriods Exclude apps with too few periods.
+   * @param aAvgApps The average number of apps.
+   * @param aAlpha The lambda reservation factor.
+   * @param aBeta  The lambda overprovisioning factor.
+   * @param aLambdaRequest The capacity requested by each lambda app.
+   * @param aSeed The RNG seed.
+   * @return PerformanceData
+   *
+   * @throw std::runtime_error if the arguments are invalid.
+   */
+  PerformanceData dynamic(const double                     aDuration,
+                          const double                     aEpoch,
+                          const dataset::TimestampDataset& aDataset,
+                          const dataset::CostModel&        aCostModel,
+                          const std::size_t                aMinPeriods,
+                          const std::size_t                aAvgApps,
+                          const double                     aAlpha,
+                          const double                     aBeta,
+                          const long                       aLambdaRequest,
+                          const std::size_t                aSeed);
 
  private:
   double&       networkCost(const ID aBroker, const ID aEdge) noexcept;
@@ -152,6 +181,8 @@ class Scenario
   void               assignLambdaApps(const double     aBeta,
                                       const long       aLambdaRequest,
                                       PerformanceData& aData);
+  static void
+  checkArgs(const double aAlpha, const double aBeta, const long aLambdaRequest);
 
  private:
   std::vector<App>    theApps;        // size = A

@@ -92,7 +92,41 @@ struct TestLambdaMuSim : public ::testing::Test {
       , theExampleClients({
             "A",
             "B",
-        }) {
+        })
+      , theDataset({
+            {"app0",
+             {
+                 {100, true},
+                 {110, true},
+                 {1000, true},
+                 {1110, true},
+                 {1120, true},
+                 {1140, true},
+                 {1160, true},
+                 {2120, true},
+                 {2140, true},
+                 {2160, true},
+             }},
+            {"app1",
+             {
+                 {100, true},
+                 {150, true},
+                 {250, true},
+                 {300, true},
+                 {400, true},
+                 {999, true},
+             }},
+            {"app2",
+             {
+                 {100, true},
+                 {110, true},
+                 {140, true},
+                 {170, true},
+                 {180, true},
+                 {200, true},
+             }},
+        })
+      , theCostModel{1, 10, 0, 0, 0.3, 0, 0, 0} {
     // noop
   }
 
@@ -110,6 +144,8 @@ struct TestLambdaMuSim : public ::testing::Test {
   const std::set<statesim::Link>                     theExampleLinks;
   const std::map<std::string, std::set<std::string>> theExampleEdges;
   const std::set<std::string>                        theExampleClients;
+  const dataset::TimestampDataset                    theDataset;
+  const dataset::CostModel                           theCostModel;
 };
 
 TEST_F(TestLambdaMuSim, test_example_snapshot) {
@@ -219,44 +255,8 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
 }
 
 TEST_F(TestLambdaMuSim, test_app_pool) {
-  dataset::TimestampDataset myDataset({
-      {"app0",
-       {
-           {100, true},
-           {110, true},
-           {1000, true},
-           {1110, true},
-           {1120, true},
-           {1140, true},
-           {1160, true},
-           {2120, true},
-           {2140, true},
-           {2160, true},
-       }},
-      {"app1",
-       {
-           {100, true},
-           {150, true},
-           {250, true},
-           {300, true},
-           {400, true},
-           {999, true},
-       }},
-      {"app2",
-       {
-           {100, true},
-           {110, true},
-           {140, true},
-           {170, true},
-           {180, true},
-           {200, true},
-       }},
-  });
-
-  dataset::CostModel myCostModel{1, 10, 0, 0, 0.3, 0, 0, 0};
-
   const std::size_t     N = 20;
-  AppPool               myAppPool(myDataset, myCostModel, 1, N, 42);
+  AppPool               myAppPool(theDataset, theCostModel, 1, N, 42);
   std::set<std::size_t> myAllApps;
   for (std::size_t i = 0; i < N; i++) {
     myAllApps.insert(i);
@@ -283,6 +283,25 @@ TEST_F(TestLambdaMuSim, test_app_pool) {
   myAppPool.advance(myNext / 3);
   ASSERT_FLOAT_EQ(myNext * 2 / 3, myAppPool.next());
   ASSERT_FLOAT_EQ(myNext * 2 / 3, myAppPool.advance().second);
+}
+
+TEST_F(TestLambdaMuSim, test_example_dynamic) {
+  statesim::Network myNetwork(
+      theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
+
+  Scenario myScenario(
+      myNetwork,
+      2.0,
+      [](const auto& aNode) { return 2; },
+      [](const auto& aNode) { return 1; });
+
+  // edge nodes have 2 containers each, with a lambda-capacity of 1
+  // lambda-apps request a capacity of 1
+  const auto myOut = myScenario.dynamic(
+      10000, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
+
+  EXPECT_EQ(16, myOut.theNumContainers);
+  EXPECT_EQ(12, myOut.theTotCapacity);
 }
 
 } // namespace lambdamusim

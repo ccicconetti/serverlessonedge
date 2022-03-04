@@ -85,7 +85,7 @@ class AppPool final
    *
    * @param aDataset The timestamp dataset of apps.
    * @param aCostModel The cost model to use to determine the periods.
-   * @param aMinInvocations Exclude apps with too few periods.
+   * @param aMinPeriods Exclude apps with too few periods.
    * @param aNumApps The number of applications in pool.
    * @param aSeed The RNG seed.
    */
