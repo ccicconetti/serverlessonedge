@@ -302,6 +302,8 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   EXPECT_EQ(16, myOut.theNumContainers);
   EXPECT_EQ(12, myOut.theTotCapacity);
+  EXPECT_EQ(4, myOut.theNumLambda);
+  EXPECT_EQ(5, myOut.theNumMu);
 }
 
 } // namespace lambdamusim

@@ -182,7 +182,8 @@ class Scenario
                                       const long       aLambdaRequest,
                                       PerformanceData& aData);
   static void
-  checkArgs(const double aAlpha, const double aBeta, const long aLambdaRequest);
+              checkArgs(const double aAlpha, const double aBeta, const long aLambdaRequest);
+  static Type flip(const Type aType) noexcept;
 
  private:
   std::vector<App>    theApps;        // size = A

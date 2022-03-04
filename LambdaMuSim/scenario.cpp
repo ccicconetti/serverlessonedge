@@ -38,13 +38,21 @@ SOFTWARE.
 #include "Support/random.h"
 #include "hungarian-algorithm-cpp/Hungarian.h"
 
+#include <boost/accumulators/framework/accumulator_set.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
 #include <glog/logging.h>
+
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
+#include <boost/accumulators/statistics/weighted_mean.hpp>
 
 #include <cassert>
 #include <iostream>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+
+namespace ba = boost::accumulators;
 
 namespace uiiit {
 namespace lambdamusim {
@@ -163,6 +171,26 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
                                   const double                     aBeta,
                                   const long        aLambdaRequest,
                                   const std::size_t aSeed) {
+  struct Accumulator {
+    Accumulator(const double& aClock)
+        : theClock(aClock)
+        , theLast(0)
+        , theAcc() {
+      // noop
+    }
+    void operator()(const double aValue) {
+      theAcc(aValue, ba::weight = (theClock - theLast));
+      theLast = theClock;
+    }
+    double mean() {
+      return ba::weighted_mean(theAcc);
+    }
+    const double& theClock;
+    double        theLast;
+    ba::accumulator_set<double, ba::stats<ba::tag::weighted_mean>, double>
+        theAcc;
+  };
+
   checkArgs(aAlpha, aBeta, aLambdaRequest);
 
   PerformanceData ret;
@@ -198,9 +226,12 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
   VLOG(2) << "seed " << aSeed << ", " << myNumApps << " apps, network costs:\n"
           << networkCostToString();
 
-  AppPool myAppPool(aDataset, aCostModel, aMinPeriods, myNumApps, aSeed);
-  double  myClock     = 0;
-  double  myNextEpoch = 0;
+  AppPool     myAppPool(aDataset, aCostModel, aMinPeriods, myNumApps, aSeed);
+  double      myClock     = 0;
+  double      myNextEpoch = 0;
+  std::size_t myNumLambda = myNumApps; // all apps start as lambda
+  Accumulator myNumLambdaAcc(myClock);
+  Accumulator myNumMuAcc(myClock);
   while (myClock < aDuration) {
     assert(myNextEpoch >= 0);
     assert(myAppPool.next() >= 0);
@@ -218,21 +249,42 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
     } else {
       // perform in-between-epochs assignment
 
-      std::size_t myAppChanged;
-      std::tie(myAppChanged, myTimeElapsed) = myAppPool.advance();
+      std::size_t myChanged;
+      std::tie(myChanged, myTimeElapsed) = myAppPool.advance();
       myNextEpoch -= myTimeElapsed;
-      VLOG(2) << myClock << " app#" << myAppChanged << " changed";
+      auto& myType = theApps[myChanged].theType;
+      VLOG(2) << myClock << " app#" << myChanged
+              << " changed: " << toString(myType) << " -> "
+              << toString(flip(myType));
 
       // XXX
+      if (myType == Type::Lambda) { // lambda -> mu
+        assert(myNumLambda > 0);
+        assert(myNumApps >= myNumLambda);
+
+        myNumLambdaAcc(myNumLambda);
+        myNumMuAcc(myNumApps - myNumLambda);
+        myNumLambda--;
+
+      } else { // mu -> lambda
+        assert(myType == Type::Mu);
+        assert(myNumLambda < myNumApps);
+        assert(myNumApps >= myNumLambda);
+
+        myNumLambdaAcc(myNumLambda);
+        myNumMuAcc(myNumApps - myNumLambda);
+        myNumLambda++;
+      }
+      myType = flip(myType);
     }
 
     assert(myTimeElapsed >= 0);
     myClock += myTimeElapsed;
   }
 
-  // // save assignment-independent output
-  // ret.theNumLambda = myNumLambda;
-  // ret.theNumMu     = myNumMu;
+  // save output
+  ret.theNumLambda = std::round(myNumLambdaAcc.mean());
+  ret.theNumMu     = std::round(myNumMuAcc.mean());
 
   // // assign mu-apps to containers, taking into account the alpha factor
   // // the capacities (and beta factor) are ignored
@@ -483,6 +535,19 @@ void Scenario::checkArgs(const double aAlpha,
     throw std::runtime_error("Invalid lambda request, must be > 0: " +
                              std::to_string(aLambdaRequest));
   }
+}
+
+Scenario::Type Scenario::flip(const Type aType) noexcept {
+  switch (aType) {
+    case Type::Lambda:
+      return Type::Mu;
+    case Type::Mu:
+      return Type::Lambda;
+    default:
+      assert(false);
+      return Type::Lambda;
+  }
+  assert(false);
 }
 
 } // namespace lambdamusim
