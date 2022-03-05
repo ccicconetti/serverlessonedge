@@ -300,10 +300,14 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   const auto myOut = myScenario.dynamic(
       10000, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
 
+  EXPECT_FLOAT_EQ(4.4268537, myOut.theNumLambda);
+  EXPECT_FLOAT_EQ(4.5731463, myOut.theNumMu);
   EXPECT_EQ(16, myOut.theNumContainers);
   EXPECT_EQ(12, myOut.theTotCapacity);
-  EXPECT_FLOAT_EQ(4.33467, myOut.theNumLambda);
-  EXPECT_FLOAT_EQ(4.66533, myOut.theNumMu);
+  EXPECT_FLOAT_EQ(26.546547, myOut.theLambdaCost);
+  EXPECT_FLOAT_EQ(18.532532, myOut.theMuCost);
+  EXPECT_FLOAT_EQ(4.4994993, myOut.theMuCloud);
+  EXPECT_EQ(47, myOut.theMuMigrations);
 }
 
 } // namespace lambdamusim

@@ -208,8 +208,6 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
   for (auto& myEdge : theEdges) {
     ret.theNumContainers += myEdge.theNumContainers;
     ret.theTotCapacity += myEdge.theContainerCapacity;
-    myEdge.theLambdaApps.clear();
-    myEdge.theMuApps.clear();
   }
 
   // initialize apps and brokers, all apps are born in a lambda state
@@ -233,19 +231,57 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
   std::size_t myNumLambda = myNumApps; // all apps start as lambda
   Accumulator myNumLambdaAcc(myClock);
   Accumulator myNumMuAcc(myClock);
+  double      myLambdaCost = 0;
+  double      myMuCost     = 0;
+  Accumulator myLambdaCostAcc(myClock);
+  Accumulator myMuCostAcc(myClock);
+  Accumulator myMuCloudAcc(myClock);
   while (myClock < aDuration) {
     assert(myNextEpoch >= 0);
     assert(myAppPool.next() >= 0);
 
     double myTimeElapsed = 0;
     if (myNextEpoch <= myAppPool.next()) {
-      VLOG(2) << (myClock + myNextEpoch) << " a new epoch begins";
       // perform periodic optimization
-      // XXX
+      VLOG(2) << (myClock + myNextEpoch) << " a new epoch begins";
 
       myAppPool.advance(myNextEpoch);
       myTimeElapsed = myNextEpoch;
       myNextEpoch   = aEpoch;
+
+      // save the old mu-app assignment (arbitrary on first epoch)
+      std::map<ID, ID> myOldAssignment; // app id -> edge id
+      for (ID a = 0; a < theApps.size(); a++) {
+        if (theApps[a].theType == Type::Mu) {
+          [[maybe_unused]] const auto myRet =
+              myOldAssignment.emplace(a, theApps[a].theEdge);
+          assert(myRet.second == true);
+        }
+      }
+
+      PerformanceData myData;
+
+      // assign mu-apps to containers, taking into account the alpha factor
+      // the capacities (and beta factor) are ignored
+      assignMuApps(aAlpha, myData);
+      myMuCost = myData.theMuCost;
+      myMuCloudAcc(myData.theMuCloud);
+
+      // count the number of mu-app migrations occurring
+      for (const auto& elem : myOldAssignment) {
+        const auto a = elem.first;  // app id
+        const auto e = elem.second; // edge node id
+        if (theApps[a].theEdge != e) {
+          ret.theMuMigrations++;
+        }
+      }
+
+      // assign lambda-apps to the remaining containers, taking into account the
+      // beta factor, app requests, and container capacities
+      assignLambdaApps(aBeta, aLambdaRequest, myData);
+      myLambdaCost = myData.theLambdaCost;
+
+      VLOG(2) << "apps after assignment:\n" << appsToString();
 
     } else {
       // perform in-between-epochs assignment
@@ -253,49 +289,61 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
       std::size_t myChanged;
       std::tie(myChanged, myTimeElapsed) = myAppPool.advance();
       myNextEpoch -= myTimeElapsed;
-      auto& myType = theApps[myChanged].theType;
-      VLOG(2) << myClock << " app#" << myChanged
-              << " changed: " << toString(myType) << " -> "
-              << toString(flip(myType));
+      auto&      myType    = theApps[myChanged].theType;
+      const auto myNewType = flip(myType);
 
-      // XXX
+      // migrate the changed app only
+      double myOldCost;
+      double myNewCost;
       if (myType == Type::Lambda) { // lambda -> mu
         assert(myNumLambda > 0);
         assert(myNumApps >= myNumLambda);
 
-        myNumLambdaAcc(myNumLambda);
-        myNumMuAcc(myNumApps - myNumLambda);
+        std::tie(myOldCost, myNewCost) = migrateLambdaToMu(myChanged, aAlpha);
+
+        myLambdaCost -= myOldCost;
+        myMuCost += myNewCost;
         myNumLambda--;
+
+        VLOG(2) << myClock << " app#" << myChanged
+                << " changed from lambda to mu: cost lambda -" << myOldCost
+                << ", mu +" << myNewCost << " (there are " << myNumLambda << "|"
+                << (myNumApps - myNumLambda) << " lambda|mu apps)";
 
       } else { // mu -> lambda
         assert(myType == Type::Mu);
         assert(myNumLambda < myNumApps);
         assert(myNumApps >= myNumLambda);
 
-        myNumLambdaAcc(myNumLambda);
-        myNumMuAcc(myNumApps - myNumLambda);
+        std::tie(myOldCost, myNewCost) =
+            migrateMuToLambda(myChanged, aLambdaRequest);
+
+        myLambdaCost += myNewCost;
+        myMuCost -= myOldCost;
         myNumLambda++;
+
+        VLOG(2) << myClock << " app#" << myChanged
+                << " changed from mu to lambda: cost lambda +" << myNewCost
+                << ", mu -" << myOldCost << " (there are " << myNumLambda << "|"
+                << (myNumApps - myNumLambda) << " lambda|mu apps)";
       }
-      myType = flip(myType);
+      assert(myType == myNewType);
+      myNumLambdaAcc(myNumLambda);
+      myNumMuAcc(myNumApps - myNumLambda);
     }
+    myLambdaCostAcc(myLambdaCost);
+    myMuCostAcc(myMuCost);
 
     assert(myTimeElapsed >= 0);
     myClock += myTimeElapsed;
   }
 
-  // save output
-  ret.theNumLambda = myNumLambdaAcc.mean();
-  ret.theNumMu     = myNumMuAcc.mean();
-
-  // // assign mu-apps to containers, taking into account the alpha factor
-  // // the capacities (and beta factor) are ignored
-  // assignMuApps(aAlpha, ret);
-
-  // // assign lambda-apps to the remaining containers, taking into account the
-  // // beta factor, app requests, and container capacities
-  // assignLambdaApps(aBeta, aLambdaRequest, ret);
-
-  // VLOG(2) << "apps after assignment:\n" << appsToString();
+  // save weighted means to the output
+  ret.theNumLambda  = myNumLambdaAcc.mean();
+  ret.theNumMu      = myNumMuAcc.mean();
+  ret.theLambdaCost = myLambdaCostAcc.mean();
+  ret.theMuCost     = myMuCostAcc.mean();
+  ret.theMuCloud    = myMuCloudAcc.mean();
 
   return ret;
 }
@@ -323,8 +371,6 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   for (auto& myEdge : theEdges) {
     ret.theNumContainers += myEdge.theNumContainers;
     ret.theTotCapacity += myEdge.theContainerCapacity;
-    myEdge.theLambdaApps.clear();
-    myEdge.theMuApps.clear();
   }
 
   // initialize apps and brokers
@@ -468,6 +514,11 @@ void Scenario::assignMuApps(const double aAlpha, PerformanceData& aData) {
   aData.theMuCost =
       hungarian::HungarianAlgorithm::Solve(myApMatrix, myMuAssignment);
 
+  // clear previous assignments
+  for (auto& myEdge : theEdges) {
+    myEdge.theMuApps.clear();
+  }
+
   // assign apps to edges (and vice versa)
   for (ID i = 0; i < myMuAssignment.size(); i++) {
     const auto myAppId  = myMuApps[i];
@@ -562,6 +613,90 @@ void Scenario::assignLambdaApps(const double     aBeta,
       theApps[a].theWeights.emplace_back(elem.first, elem.second);
     }
   }
+}
+
+std::pair<double, double> Scenario::migrateLambdaToMu(const ID     aApp,
+                                                      const double aAlpha) {
+  assert(aApp < theApps.size());
+  assert(theApps[aApp].theType == Type::Lambda);
+  assert(not theApps[aApp].theWeights.empty());
+
+  const auto myOldCost = lambdaCost(aApp);
+
+  // find the least-cost free container
+  ID     myCandidateEdge = std::numeric_limits<ID>::max();
+  double myCandidateCost = std::numeric_limits<double>::max();
+  for (ID e = 0; e < theEdges.size(); e++) {
+    const auto myUsableMuContainers =
+        e == CLOUD ?
+            theEdges[e].theNumContainers :
+            static_cast<std::size_t>(theEdges[e].theNumContainers * aAlpha);
+    assert(myUsableMuContainers >= theEdges[e].theMuApps.size());
+    const auto myAvailableMuContainers =
+        myUsableMuContainers - theEdges[e].theMuApps.size();
+    if (myAvailableMuContainers > 0) {
+      const auto myCurrentCost = networkCost(theApps[aApp].theBroker, e);
+      if (myCurrentCost < myCandidateCost) {
+        myCandidateCost = myCurrentCost;
+        myCandidateEdge = e;
+      }
+    }
+  }
+  assert(myCandidateEdge < theEdges.size());
+
+  theEdges[myCandidateEdge].theMuApps.emplace_back(aApp);
+
+  theApps[aApp].theEdge = myCandidateEdge;
+  theApps[aApp].theWeights.clear();
+  theApps[aApp].theType = Type::Mu;
+
+  return {myOldCost, muCost(aApp)};
+}
+
+std::pair<double, double>
+Scenario::migrateMuToLambda(const ID aApp, const long aLambdaRequest) {
+  assert(aApp < theApps.size());
+  assert(theApps[aApp].theType == Type::Mu);
+  assert(theApps[aApp].theWeights.empty());
+
+  // remove aApp from the list of applications served by its assigned edge
+  const auto      myOldCost  = muCost(aApp);
+  auto&           myOriginal = theEdges[theApps[aApp].theEdge].theMuApps;
+  std::vector<ID> myCopy;
+  for (const auto& a : myOriginal) {
+    if (a != aApp) {
+      myCopy.emplace_back(a);
+    }
+  }
+  assert(myCopy.size() == (myOriginal.size() - 1));
+  myCopy.swap(myOriginal);
+
+  // migrate lambda to the cloud
+  // theApps[aApp].theEdge is not meaningful anymore
+  theApps[aApp].theWeights.emplace_back(CLOUD, aLambdaRequest);
+  theApps[aApp].theType = Type::Lambda;
+
+  return {myOldCost, lambdaCost(aApp)};
+}
+
+double Scenario::lambdaCost(const ID aApp) const {
+  assert(aApp < theApps.size());
+  assert(theApps[aApp].theType == Type::Lambda);
+  assert(not theApps[aApp].theWeights.empty());
+
+  double ret = 0;
+  for (const auto& elem : theApps[aApp].theWeights) {
+    ret += networkCost(theApps[aApp].theBroker, elem.first) * elem.second;
+  }
+  return ret;
+}
+
+double Scenario::muCost(const ID aApp) const {
+  assert(aApp < theApps.size());
+  assert(theApps[aApp].theType == Type::Mu);
+  assert(theApps[aApp].theWeights.empty());
+
+  return networkCost(theApps[aApp].theBroker, theApps[aApp].theEdge);
 }
 
 void Scenario::checkArgs(const double aAlpha,

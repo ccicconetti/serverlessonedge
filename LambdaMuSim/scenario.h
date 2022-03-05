@@ -50,13 +50,14 @@ class Node;
 namespace lambdamusim {
 
 struct PerformanceData {
-  double      theNumLambda     = 0;
-  double      theNumMu         = 0;
+  double      theNumLambda     = 0; //!< int with S, real with D
+  double      theNumMu         = 0; //!< int with S, real with D
   std::size_t theNumContainers = 0;
   std::size_t theTotCapacity   = 0;
-  double      theLambdaCost    = 0;
-  double      theMuCost        = 0;
-  double      theMuCloud       = 0;
+  double      theLambdaCost    = 0; //! average with D
+  double      theMuCost        = 0; //! average with D
+  double      theMuCloud       = 0; //! int with S, real with D
+  std::size_t theMuMigrations  = 0; //! D only
 
   std::vector<std::string>               toStrings() const;
   static const std::vector<std::string>& toColumns();
@@ -100,7 +101,6 @@ class Scenario
   struct Edge {
     std::size_t     theNumContainers     = 0;
     long            theContainerCapacity = 0;
-    std::vector<ID> theLambdaApps;
     std::vector<ID> theMuApps;
   };
 
@@ -182,6 +182,12 @@ class Scenario
   void               assignLambdaApps(const double     aBeta,
                                       const long       aLambdaRequest,
                                       PerformanceData& aData);
+  std::pair<double, double> migrateLambdaToMu(const ID     aApp,
+                                              const double aAlpha);
+  std::pair<double, double> migrateMuToLambda(const ID   aApp,
+                                              const long aLambdaRequest);
+  double                    lambdaCost(const ID aApp) const;
+  double                    muCost(const ID aApp) const;
   static void
               checkArgs(const double aAlpha, const double aBeta, const long aLambdaRequest);
   static Type flip(const Type aType) noexcept;
