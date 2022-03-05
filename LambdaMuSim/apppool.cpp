@@ -38,6 +38,7 @@ SOFTWARE.
 #include <cstddef>
 #include <iterator>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -112,14 +113,17 @@ AppPool::AppPool(const dataset::TimestampDataset& aDataset,
   }
 
   for (const auto& myDesc : theDesc) {
+    std::stringstream myStream;
+    const auto&       myApp = thePool[myDesc.theAppId];
+    for (auto it = myApp.theCurrent; it != myApp.theEnd; ++it) {
+      myStream << ' ' << *it;
+    }
+    for (auto it = myApp.theBegin; it != myApp.theCurrent; ++it) {
+      myStream << ' ' << *it;
+    }
     VLOG(2) << "#" << myDesc.theAppId << ", period id "
             << thePool[myDesc.theAppId].thePeriodId << ", remaining "
-            << myDesc.theRemaining << ", periods ["
-            << ::toString(
-                   thePeriods[thePool[myDesc.theAppId].thePeriodId],
-                   ",",
-                   [](const auto& aValue) { return std::to_string(aValue); })
-            << "]";
+            << myDesc.theRemaining << ", periods [" << myStream.str() << " ]";
   }
 }
 
