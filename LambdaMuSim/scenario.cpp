@@ -36,6 +36,7 @@ SOFTWARE.
 #include "StateSim/network.h"
 #include "StateSim/node.h"
 #include "Support/random.h"
+#include "Support/tostring.h"
 #include "hungarian-algorithm-cpp/Hungarian.h"
 
 #include <boost/accumulators/framework/accumulator_set.hpp>
@@ -395,6 +396,15 @@ std::string Scenario::appsToString() const {
         << toString(theApps[a].theType) << "]";
     if (theApps[a].theType == Type::Mu) {
       ret << " -> " << theApps[a].theEdge;
+    } else {
+      ret << ", weights {"
+          << ::toString(theApps[a].theWeights,
+                        ",",
+                        [](const auto& pair) {
+                          return "(" + std::to_string(pair.first) + "," +
+                                 std::to_string(pair.second) + ")";
+                        })
+          << "}";
     }
     ret << '\n';
   }
@@ -497,6 +507,12 @@ void Scenario::assignLambdaApps(const double     aBeta,
 
   // fill the request vector
   Mcfp::Requests myLambdaRequests(myLambdaApps.size(), aLambdaRequest);
+  VLOG(2) << "requests: ["
+          << ::toString(
+                 myLambdaRequests,
+                 ",",
+                 [](const auto& aValue) { return std::to_string(aValue); })
+          << "]";
 
   // fill the capacities vector
   Mcfp::Capacities myLambdaCapacities;
@@ -504,6 +520,12 @@ void Scenario::assignLambdaApps(const double     aBeta,
     myLambdaCapacities.emplace_back(
         static_cast<long>(aBeta * theEdges[e].theContainerCapacity));
   }
+  VLOG(2) << "capacities: ["
+          << ::toString(
+                 myLambdaCapacities,
+                 ",",
+                 [](const auto& aValue) { return std::to_string(aValue); })
+          << "]";
 
   // fill the cost matrix
   Mcfp::Costs myLambdaCosts(myLambdaApps.size(),
@@ -516,8 +538,30 @@ void Scenario::assignLambdaApps(const double     aBeta,
   }
 
   // solve the minimum cost flow problem
-  aData.theLambdaCost =
-      Mcfp::solve(myLambdaCosts, myLambdaRequests, myLambdaCapacities);
+  Mcfp::Weights myWeights;
+  aData.theLambdaCost = Mcfp::solve(
+      myLambdaCosts, myLambdaRequests, myLambdaCapacities, myWeights);
+
+  assert(myWeights.size() == myLambdaApps.size());
+  assert(not myWeights.empty());
+  assert(myWeights[0].size() == myLambdaContainers.size());
+
+  // copy the MCFP output weights (per container) into the apps' weights (per
+  // edge node), by aggregating multiple containers per edge node by sum
+  for (std::size_t t = 0; t < myWeights.size(); t++) {
+    std::map<ID, double> myWeightMap;
+    for (std::size_t w = 0; w < myWeights[t].size(); w++) {
+      const auto myWeight = myWeights[t][w];
+      const auto e        = myLambdaContainers[w]; // edge node index
+      auto       it       = myWeightMap.emplace(e, 0);
+      it.first->second += myWeight;
+    }
+    const auto a = myLambdaApps[t]; // app index
+    theApps[a].theWeights.clear();
+    for (const auto& elem : myWeightMap) {
+      theApps[a].theWeights.emplace_back(elem.first, elem.second);
+    }
+  }
 }
 
 void Scenario::checkArgs(const double aAlpha,

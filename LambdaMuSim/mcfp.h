@@ -48,6 +48,7 @@ class Mcfp
 {
  public:
   using Costs      = std::vector<std::vector<double>>;
+  using Weights    = std::vector<std::vector<double>>;
   using Requests   = std::vector<long>;
   using Capacities = std::vector<long>;
 
@@ -59,13 +60,15 @@ class Mcfp
    * @param aCosts The task-worker costs.
    * @param aRequests The amount of work each task requires.
    * @param aCapacities The workers' capacities.
+   * @param aWeights The weights returned.
    * @return the minimum cost found.
    *
    * @throw std::runtime_error if the input passed is inconsistent.
    */
   static double solve(const Costs&      aCosts,
                       const Requests&   aRequests,
-                      const Capacities& aCapacities);
+                      const Capacities& aCapacities,
+                      Weights&          aWeights);
 };
 
 } // namespace lambdamusim

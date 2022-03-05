@@ -86,6 +86,7 @@ class Scenario
     ID   theBroker = 0;            //!< the broker to which this app connects
     Type theType   = Type::Lambda; //!< the current app type
     ID   theEdge   = 0;            //!< the edge to which is assigned (mu-only)
+    std::vector<std::pair<ID, double>> theWeights; //!< weights (lambda-only)
   };
 
   struct Broker {

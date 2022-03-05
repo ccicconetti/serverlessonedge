@@ -31,6 +31,8 @@ SOFTWARE.
 
 #include "LambdaMuSim/mcfp.h"
 
+#include "Support/tostring.h"
+
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_concepts.hpp>
 #include <boost/graph/successive_shortest_path_nonnegative_weights.hpp>
@@ -107,7 +109,8 @@ class EdgeAdder
 
 double Mcfp::solve(const Costs&      aCosts,
                    const Requests&   aRequests,
-                   const Capacities& aCapacities) {
+                   const Capacities& aCapacities,
+                   Weights&          aWeights) {
   // consistency checks
   if (aCosts.empty()) {
     throw std::runtime_error("Invalid empty cost matrix");
@@ -212,7 +215,8 @@ double Mcfp::solve(const Costs&      aCosts,
   // solve the minimum cost flow problem
   boost::successive_shortest_path_nonnegative_weights(g, s, d);
 
-  // compute the cost and return it
+  // compute the cost and return it, along with the weights
+  aWeights   = Weights(T, std::vector<double>(W));
   double ret = 0;
   for (size_type t = 1; t <= T; t++) {
     for (size_type w = (T + 1); w <= (T + W); w++) {
@@ -223,14 +227,27 @@ double Mcfp::solve(const Costs&      aCosts,
       const auto myCost = aCosts[t - 1][w - (T + 1)];
       assert(weight(e) == myCost);
       const auto myCapacity = capacity(e);
-      const auto myResidual = residual_capacity(e);
-      VLOG(2) << e << " cost " << myCost << " capacity " << myCapacity
-              << " residual " << myResidual;
       if (myCapacity > 0) {
+        const auto myResidual = residual_capacity(e);
+
         assert(myCapacity >= myResidual);
-        ret += (myCapacity - myResidual) * myCost;
+        assert((t - 1) < aWeights.size());
+        assert((w - T - 1) < aWeights[t - 1].size());
+
+        const auto myWeight          = myCapacity - myResidual;
+        aWeights[t - 1][w - (T + 1)] = myWeight;
+        ret += myWeight * myCost;
       }
     }
+  }
+  if (VLOG_IS_ON(2)) {
+    std::stringstream myStream;
+    for (const auto& elem : aWeights) {
+      myStream << ::toString(elem, "\t", [](const auto& aValue) {
+        return std::to_string(aValue);
+      }) << '\n';
+    }
+    VLOG(2) << "cost " << ret << ", weights\n" << myStream.str();
   }
 
   return ret;

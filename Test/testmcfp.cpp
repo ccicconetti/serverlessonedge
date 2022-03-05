@@ -42,11 +42,15 @@ namespace lambdamusim {
 struct TestMcfp : public ::testing::Test {};
 
 TEST_F(TestMcfp, test_invalid) {
-  ASSERT_NO_THROW(Mcfp::solve(
-      Mcfp::Costs({{1}}), Mcfp::Requests({1}), Mcfp::Capacities({1})));
+  Mcfp::Weights myWeights;
+  ASSERT_NO_THROW(Mcfp::solve(Mcfp::Costs({{1}}),
+                              Mcfp::Requests({1}),
+                              Mcfp::Capacities({1}),
+                              myWeights));
 
   ASSERT_THROW(
-      Mcfp::solve(Mcfp::Costs({}), Mcfp::Requests({}), Mcfp::Capacities({})),
+      Mcfp::solve(
+          Mcfp::Costs({}), Mcfp::Requests({}), Mcfp::Capacities({}), myWeights),
       std::runtime_error);
 
   ASSERT_NO_THROW(Mcfp::solve(Mcfp::Costs({
@@ -55,7 +59,8 @@ TEST_F(TestMcfp, test_invalid) {
                                   {1, 1},
                               }),
                               Mcfp::Requests({1, 2, 3}),
-                              Mcfp::Capacities({1, 2})));
+                              Mcfp::Capacities({1, 2}),
+                              myWeights));
 
   ASSERT_THROW(Mcfp::solve(Mcfp::Costs({
                                {1, 1},
@@ -63,7 +68,8 @@ TEST_F(TestMcfp, test_invalid) {
                                {1, 1},
                            }),
                            Mcfp::Requests({1, 2}),
-                           Mcfp::Capacities({1, 2})),
+                           Mcfp::Capacities({1, 2}),
+                           myWeights),
                std::runtime_error);
 
   ASSERT_THROW(Mcfp::solve(Mcfp::Costs({
@@ -72,7 +78,8 @@ TEST_F(TestMcfp, test_invalid) {
                                {1, 1},
                            }),
                            Mcfp::Requests({1, 2, 3}),
-                           Mcfp::Capacities({1, 2, 3})),
+                           Mcfp::Capacities({1, 2, 3}),
+                           myWeights),
                std::runtime_error);
 
   ASSERT_THROW(Mcfp::solve(Mcfp::Costs({
@@ -81,11 +88,13 @@ TEST_F(TestMcfp, test_invalid) {
                                {1, 1},
                            }),
                            Mcfp::Requests({1, 2, 3, 4}),
-                           Mcfp::Capacities({1, 2, 3})),
+                           Mcfp::Capacities({1, 2, 3}),
+                           myWeights),
                std::runtime_error);
 }
 
 TEST_F(TestMcfp, test_simple_problem_instances) {
+  Mcfp::Weights myWeights;
   ASSERT_FLOAT_EQ(2,
                   Mcfp::solve(Mcfp::Costs({
                                   {1, 2},
@@ -93,7 +102,13 @@ TEST_F(TestMcfp, test_simple_problem_instances) {
                                   {3, 3},
                               }),
                               Mcfp::Requests({1, 1, 1}),
-                              Mcfp::Capacities({1, 1})));
+                              Mcfp::Capacities({1, 1}),
+                              myWeights));
+
+  ASSERT_EQ(3, myWeights.size());
+  ASSERT_EQ(std::vector<double>({1, 0}), myWeights[0]);
+  ASSERT_EQ(std::vector<double>({0, 1}), myWeights[1]);
+  ASSERT_EQ(std::vector<double>({0, 0}), myWeights[2]);
 
   ASSERT_FLOAT_EQ(5,
                   Mcfp::solve(Mcfp::Costs({
@@ -102,7 +117,8 @@ TEST_F(TestMcfp, test_simple_problem_instances) {
                                   {3, 3},
                               }),
                               Mcfp::Requests({1, 1, 1}),
-                              Mcfp::Capacities({10, 10})));
+                              Mcfp::Capacities({10, 10}),
+                              myWeights));
 
   ASSERT_FLOAT_EQ(3,
                   Mcfp::solve(Mcfp::Costs({
@@ -111,7 +127,8 @@ TEST_F(TestMcfp, test_simple_problem_instances) {
                                   {3, 3},
                               }),
                               Mcfp::Requests({10, 10, 1}),
-                              Mcfp::Capacities({11, 11})));
+                              Mcfp::Capacities({11, 11}),
+                              myWeights));
 
   ASSERT_FLOAT_EQ(1.7,
                   Mcfp::solve(Mcfp::Costs({
@@ -120,7 +137,8 @@ TEST_F(TestMcfp, test_simple_problem_instances) {
                                   {3, .1},
                               }),
                               Mcfp::Requests({1, 1, 1}),
-                              Mcfp::Capacities({2, 2})));
+                              Mcfp::Capacities({2, 2}),
+                              myWeights));
 }
 
 } // namespace lambdamusim

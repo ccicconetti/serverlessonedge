@@ -169,9 +169,9 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
-  const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 0.5, 1, 42);
+  const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 1, 1, 42);
 
-  EXPECT_EQ(48, myOut1.theLambdaCost);
+  EXPECT_EQ(5 * 6 + 1 + 1 + 2, myOut1.theLambdaCost); // 5:cloud, 3: edge
   EXPECT_EQ(16, myOut1.theMuCost);
   EXPECT_EQ(2, myOut1.theMuCloud);
   EXPECT_EQ(8, myOut1.theNumLambda);
@@ -180,18 +180,18 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(3 * 1 + 8, myOut1.theTotCapacity);
 
   // same but use all edge containers for mu-apps
-  const auto myOut2 = myScenario.snapshot(6, 6, 1, 0.5, 1, 42);
+  const auto myOut2 = myScenario.snapshot(6, 6, 1, 1, 1, 42);
 
-  EXPECT_EQ(48, myOut2.theLambdaCost);
+  EXPECT_EQ(7 * 6 + 2, myOut2.theLambdaCost); // 7: cloud, 1: edge
   EXPECT_EQ(7, myOut2.theMuCost);
   EXPECT_EQ(0, myOut2.theMuCloud);
 
   // same but lambda-apps have bigger requests
-  const auto myOut3 = myScenario.snapshot(6, 6, 1, 0.5, 2, 42);
+  const auto myOut3 = myScenario.snapshot(6, 6, 1, 1, 2, 42);
 
-  EXPECT_EQ(96, myOut3.theLambdaCost);
-  EXPECT_EQ(7, myOut3.theMuCost);
-  EXPECT_EQ(0, myOut3.theMuCloud);
+  EXPECT_EQ(15 * 6 + 2, myOut3.theLambdaCost); // 7.5: cloud, 0.5: edge
+  EXPECT_EQ(myOut2.theMuCost, myOut3.theMuCost);
+  EXPECT_EQ(myOut2.theMuCloud, myOut3.theMuCloud);
 }
 
 TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
