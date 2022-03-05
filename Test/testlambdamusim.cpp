@@ -219,9 +219,9 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
   EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
-            "906,259,9,5,21.000000,13.000000,0\n"
+            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000\n"
             "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13,10,31.000000,31.000000,0\n",
+            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000\n",
             myContent);
 
   // run again with same seed
@@ -244,11 +244,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
   EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
-            "906,259,9,5,21.000000,13.000000,0\n"
+            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000\n"
             "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13,10,31.000000,31.000000,0\n"
+            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000\n"
             "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13,10,31.000000,31.000000,0\n",
+            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000\n",
             myContent);
 
   VLOG(2) << '\n' << myContent;
@@ -302,8 +302,8 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   EXPECT_EQ(16, myOut.theNumContainers);
   EXPECT_EQ(12, myOut.theTotCapacity);
-  EXPECT_EQ(4, myOut.theNumLambda);
-  EXPECT_EQ(5, myOut.theNumMu);
+  EXPECT_FLOAT_EQ(4.33467, myOut.theNumLambda);
+  EXPECT_FLOAT_EQ(4.66533, myOut.theNumMu);
 }
 
 } // namespace lambdamusim

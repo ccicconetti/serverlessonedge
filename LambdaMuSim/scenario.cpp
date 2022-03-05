@@ -283,8 +283,8 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
   }
 
   // save output
-  ret.theNumLambda = std::round(myNumLambdaAcc.mean());
-  ret.theNumMu     = std::round(myNumMuAcc.mean());
+  ret.theNumLambda = myNumLambdaAcc.mean();
+  ret.theNumMu     = myNumMuAcc.mean();
 
   // // assign mu-apps to containers, taking into account the alpha factor
   // // the capacities (and beta factor) are ignored
