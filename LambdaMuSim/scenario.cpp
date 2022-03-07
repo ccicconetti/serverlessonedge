@@ -58,6 +58,15 @@ namespace ba = boost::accumulators;
 namespace uiiit {
 namespace lambdamusim {
 
+bool PerformanceData::operator==(const PerformanceData& aOther) const noexcept {
+  return theNumLambda == aOther.theNumLambda and theNumMu == aOther.theNumMu and
+         theNumContainers == aOther.theNumContainers and
+         theTotCapacity == aOther.theTotCapacity and
+         theLambdaCost == aOther.theLambdaCost and
+         theMuCost == aOther.theMuCost and theMuCloud == aOther.theMuCloud and
+         theMuMigrations == aOther.theMuMigrations;
+}
+
 std::vector<std::string> PerformanceData::toStrings() const {
   return std::vector<std::string>({
       std::to_string(theNumContainers),
@@ -67,6 +76,7 @@ std::vector<std::string> PerformanceData::toStrings() const {
       std::to_string(theLambdaCost),
       std::to_string(theMuCost),
       std::to_string(theMuCloud),
+      std::to_string(theMuMigrations),
   });
 }
 
@@ -79,6 +89,7 @@ const std::vector<std::string>& PerformanceData::toColumns() {
       "lambda-cost",
       "mu-cost",
       "mu-cloud",
+      "mu-migrations",
   });
   return ret;
 }
@@ -201,14 +212,7 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
 
   // clear apps and brokers and any previous assignment between edge nodes
   // and apps from previous calls
-  theApps.clear();
-  for (auto& myBroker : theBrokers) {
-    myBroker.theApps.clear();
-  }
-  for (auto& myEdge : theEdges) {
-    ret.theNumContainers += myEdge.theNumContainers;
-    ret.theTotCapacity += myEdge.theContainerCapacity;
-  }
+  clearPreviousAssignments(ret);
 
   // initialize apps and brokers, all apps are born in a lambda state
   for (std::size_t i = 0; i < myNumApps; i++) {
@@ -364,14 +368,7 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
 
   // clear apps and brokers and any previous assignment between edge nodes
   // and apps from previous calls
-  theApps.clear();
-  for (auto& myBroker : theBrokers) {
-    myBroker.theApps.clear();
-  }
-  for (auto& myEdge : theEdges) {
-    ret.theNumContainers += myEdge.theNumContainers;
-    ret.theTotCapacity += myEdge.theContainerCapacity;
-  }
+  clearPreviousAssignments(ret);
 
   // initialize apps and brokers
   for (std::size_t i = 0; i < myNumLambda; i++) {
@@ -727,6 +724,18 @@ Scenario::Type Scenario::flip(const Type aType) noexcept {
       return Type::Lambda;
   }
   assert(false);
+}
+
+void Scenario::clearPreviousAssignments(PerformanceData& aData) {
+  theApps.clear();
+  for (auto& myBroker : theBrokers) {
+    myBroker.theApps.clear();
+  }
+  for (ID e = 0; e < theEdges.size(); e++) {
+    aData.theNumContainers += e == CLOUD ? 0 : theEdges[e].theNumContainers;
+    aData.theTotCapacity += e == CLOUD ? 0 : theEdges[e].theContainerCapacity;
+    theEdges[e].theMuApps.clear();
+  }
 }
 
 } // namespace lambdamusim

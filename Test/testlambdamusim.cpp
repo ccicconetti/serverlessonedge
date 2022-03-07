@@ -178,6 +178,14 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(5, myOut1.theNumMu);
   EXPECT_EQ(2 * 3 + 1 + 5, myOut1.theNumContainers);
   EXPECT_EQ(3 * 1 + 8, myOut1.theTotCapacity);
+  EXPECT_EQ(0, myOut1.theMuMigrations);
+
+  // repeat identical simulation
+  const auto myOut1again = myScenario.snapshot(6, 6, 0.5, 1, 1, 42);
+
+  ASSERT_EQ(myOut1, myOut1again)
+      << "\nexpected: " << ::toString(myOut1.toStrings(), ",")
+      << "\nactual:   " << ::toString(myOut1again.toStrings(), ",");
 
   // same but use all edge containers for mu-apps
   const auto myOut2 = myScenario.snapshot(6, 6, 1, 1, 1, 42);
@@ -219,9 +227,9 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
   EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
-            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000\n"
+            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000,0\n"
             "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000\n",
+            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000,0\n",
             myContent);
 
   // run again with same seed
@@ -244,11 +252,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
 
   EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
-            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000\n"
+            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000,0\n"
             "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000\n"
+            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000,0\n"
             "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000\n",
+            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000,0\n",
             myContent);
 
   VLOG(2) << '\n' << myContent;
@@ -297,17 +305,38 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
-  const auto myOut = myScenario.dynamic(
+  const auto myOut1 = myScenario.dynamic(
       10000, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
 
-  EXPECT_FLOAT_EQ(4.4268537, myOut.theNumLambda);
-  EXPECT_FLOAT_EQ(4.5731463, myOut.theNumMu);
-  EXPECT_EQ(16, myOut.theNumContainers);
-  EXPECT_EQ(12, myOut.theTotCapacity);
-  EXPECT_FLOAT_EQ(26.546547, myOut.theLambdaCost);
-  EXPECT_FLOAT_EQ(18.532532, myOut.theMuCost);
-  EXPECT_FLOAT_EQ(4.4994993, myOut.theMuCloud);
-  EXPECT_EQ(47, myOut.theMuMigrations);
+  EXPECT_FLOAT_EQ(4.4268537, myOut1.theNumLambda);
+  EXPECT_FLOAT_EQ(4.5731463, myOut1.theNumMu);
+  EXPECT_EQ(16, myOut1.theNumContainers);
+  EXPECT_EQ(12, myOut1.theTotCapacity);
+  EXPECT_FLOAT_EQ(26.546547, myOut1.theLambdaCost);
+  EXPECT_FLOAT_EQ(18.532532, myOut1.theMuCost);
+  EXPECT_FLOAT_EQ(4.4994993, myOut1.theMuCloud);
+  EXPECT_EQ(47, myOut1.theMuMigrations);
+
+  // repeat identical simulation
+  const auto myOut1again = myScenario.dynamic(
+      10000, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
+
+  ASSERT_EQ(myOut1, myOut1again)
+      << "\nexpected: " << ::toString(myOut1.toStrings(), ",")
+      << "\nactual:   " << ::toString(myOut1again.toStrings(), ",");
+
+  // same but all mu-apps go to the cloud
+  // const auto myOut2 = myScenario.dynamic(
+  //     10000, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
+
+  // EXPECT_FLOAT_EQ(4.4268537, myOut2.theNumLambda);
+  // EXPECT_FLOAT_EQ(4.5731463, myOut2.theNumMu);
+  // EXPECT_EQ(16, myOut2.theNumContainers);
+  // EXPECT_EQ(12, myOut2.theTotCapacity);
+  // EXPECT_FLOAT_EQ(26.546547, myOut2.theLambdaCost);
+  // EXPECT_FLOAT_EQ(18.532532, myOut2.theMuCost);
+  // EXPECT_FLOAT_EQ(4.4994993, myOut2.theMuCloud);
+  // EXPECT_EQ(47, myOut2.theMuMigrations);
 }
 
 } // namespace lambdamusim

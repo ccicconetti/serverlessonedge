@@ -50,14 +50,16 @@ class Node;
 namespace lambdamusim {
 
 struct PerformanceData {
-  double      theNumLambda     = 0; //!< int with S, real with D
-  double      theNumMu         = 0; //!< int with S, real with D
   std::size_t theNumContainers = 0;
   std::size_t theTotCapacity   = 0;
+  double      theNumLambda     = 0; //!< int with S, real with D
+  double      theNumMu         = 0; //!< int with S, real with D
   double      theLambdaCost    = 0; //! average with D
   double      theMuCost        = 0; //! average with D
   double      theMuCloud       = 0; //! int with S, real with D
   std::size_t theMuMigrations  = 0; //! D only
+
+  bool operator==(const PerformanceData& aOther) const noexcept;
 
   std::vector<std::string>               toStrings() const;
   static const std::vector<std::string>& toColumns();
@@ -191,6 +193,7 @@ class Scenario
   static void
               checkArgs(const double aAlpha, const double aBeta, const long aLambdaRequest);
   static Type flip(const Type aType) noexcept;
+  void        clearPreviousAssignments(PerformanceData& aData);
 
  private:
   std::vector<App>    theApps;        // size = A
