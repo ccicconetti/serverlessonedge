@@ -3,4 +3,4 @@
 	url = ../etsimec.git
 [submodule "thirdparty/hungarian-algorithm-cpp"]
 	path = thirdparty/hungarian-algorithm-cpp
-	url = git@github.com:ccicconetti/hungarian-algorithm-cpp.git
+	url = ../hungarian-algorithm-cpp.git
