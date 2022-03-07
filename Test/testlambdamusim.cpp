@@ -306,7 +306,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
   const auto myOut1 = myScenario.dynamic(
-      10000, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
+      10000, 0, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
 
   EXPECT_FLOAT_EQ(4.4268537, myOut1.theNumLambda);
   EXPECT_FLOAT_EQ(4.5731463, myOut1.theNumMu);
@@ -319,24 +319,50 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // repeat identical simulation
   const auto myOut1again = myScenario.dynamic(
-      10000, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
+      10000, 0, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
 
   ASSERT_EQ(myOut1, myOut1again)
       << "\nexpected: " << ::toString(myOut1.toStrings(), ",")
       << "\nactual:   " << ::toString(myOut1again.toStrings(), ",");
 
   // same but all mu-apps go to the cloud
-  // const auto myOut2 = myScenario.dynamic(
-  //     10000, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
+  const auto myOut2 = myScenario.dynamic(
+      10000, 0, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
 
-  // EXPECT_FLOAT_EQ(4.4268537, myOut2.theNumLambda);
-  // EXPECT_FLOAT_EQ(4.5731463, myOut2.theNumMu);
-  // EXPECT_EQ(16, myOut2.theNumContainers);
-  // EXPECT_EQ(12, myOut2.theTotCapacity);
-  // EXPECT_FLOAT_EQ(26.546547, myOut2.theLambdaCost);
-  // EXPECT_FLOAT_EQ(18.532532, myOut2.theMuCost);
-  // EXPECT_FLOAT_EQ(4.4994993, myOut2.theMuCloud);
-  // EXPECT_EQ(47, myOut2.theMuMigrations);
+  EXPECT_EQ(myOut1.theNumLambda, myOut2.theNumLambda);
+  EXPECT_EQ(myOut1.theNumMu, myOut2.theNumMu);
+  EXPECT_EQ(myOut1.theNumContainers, myOut2.theNumContainers);
+  EXPECT_EQ(myOut1.theTotCapacity, myOut2.theTotCapacity);
+  EXPECT_EQ(myOut1.theLambdaCost, myOut2.theLambdaCost);
+  EXPECT_FLOAT_EQ(27.453453, myOut2.theMuCost);
+  EXPECT_FLOAT_EQ(7.4994993, myOut2.theMuCloud);
+  EXPECT_EQ(0, myOut2.theMuMigrations);
+
+  // same but with warm-up
+  const auto myOut3 = myScenario.dynamic(
+      10000, 0.2, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
+
+  EXPECT_EQ(myOut1.theNumLambda, myOut3.theNumLambda);
+  EXPECT_EQ(myOut1.theNumMu, myOut3.theNumMu);
+  EXPECT_EQ(myOut1.theNumContainers, myOut3.theNumContainers);
+  EXPECT_EQ(myOut1.theTotCapacity, myOut3.theTotCapacity);
+  EXPECT_EQ(myOut1.theLambdaCost, myOut3.theLambdaCost);
+  EXPECT_FLOAT_EQ(27.453453, myOut3.theMuCost);
+  EXPECT_FLOAT_EQ(7.4994993, myOut3.theMuCloud);
+  EXPECT_EQ(0, myOut3.theMuMigrations);
+
+  // same but with warm-up == duration
+  const auto myOut4 = myScenario.dynamic(
+      10000, 10000, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
+
+  EXPECT_TRUE(std::isnan(myOut4.theNumLambda));
+  EXPECT_TRUE(std::isnan(myOut4.theNumMu));
+  EXPECT_EQ(myOut1.theNumContainers, myOut4.theNumContainers);
+  EXPECT_EQ(myOut1.theTotCapacity, myOut4.theTotCapacity);
+  EXPECT_TRUE(std::isnan(myOut4.theLambdaCost));
+  EXPECT_TRUE(std::isnan(myOut4.theMuCost));
+  EXPECT_TRUE(std::isnan(myOut4.theMuCloud));
+  EXPECT_EQ(0, myOut4.theMuMigrations);
 }
 
 } // namespace lambdamusim

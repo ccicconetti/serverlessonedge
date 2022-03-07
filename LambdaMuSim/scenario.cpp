@@ -174,6 +174,7 @@ Scenario::Scenario(
 }
 
 PerformanceData Scenario::dynamic(const double                     aDuration,
+                                  const double                     aWarmUp,
                                   const double                     aEpoch,
                                   const dataset::TimestampDataset& aDataset,
                                   const dataset::CostModel&        aCostModel,
@@ -184,26 +185,38 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
                                   const long        aLambdaRequest,
                                   const std::size_t aSeed) {
   struct Accumulator {
-    Accumulator(const double& aClock)
+    Accumulator(const double& aClock, const double aWarmUp)
         : theClock(aClock)
+        , theWarmUp(aWarmUp)
         , theLast(0)
         , theAcc() {
       // noop
     }
     void operator()(const double aValue) {
-      theAcc(aValue, ba::weight = (theClock - theLast));
-      theLast = theClock;
+      if (theClock >= theWarmUp) {
+        theAcc(aValue, ba::weight = (theClock - theLast));
+        theLast = theClock;
+      }
     }
     double mean() {
       return ba::weighted_mean(theAcc);
     }
     const double& theClock;
+    const double  theWarmUp;
     double        theLast;
     ba::accumulator_set<double, ba::stats<ba::tag::weighted_mean>, double>
         theAcc;
   };
 
   checkArgs(aAlpha, aBeta, aLambdaRequest);
+  if (aDuration < 0) {
+    throw std::runtime_error("Invalid simulation duration, must be >= 0: " +
+                             std::to_string(aDuration));
+  }
+  if (aWarmUp < 0) {
+    throw std::runtime_error("Invalid warm-up duration, must be >= 0: " +
+                             std::to_string(aWarmUp));
+  }
 
   PerformanceData ret;
 
@@ -230,16 +243,16 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
           << networkCostToString();
 
   AppPool     myAppPool(aDataset, aCostModel, aMinPeriods, myNumApps, aSeed);
-  double      myClock     = 0;
-  double      myNextEpoch = 0;
-  std::size_t myNumLambda = myNumApps; // all apps start as lambda
-  Accumulator myNumLambdaAcc(myClock);
-  Accumulator myNumMuAcc(myClock);
+  double      myClock      = 0;
+  double      myNextEpoch  = 0;
+  std::size_t myNumLambda  = myNumApps; // all apps start as lambda
   double      myLambdaCost = 0;
   double      myMuCost     = 0;
-  Accumulator myLambdaCostAcc(myClock);
-  Accumulator myMuCostAcc(myClock);
-  Accumulator myMuCloudAcc(myClock);
+  Accumulator myNumLambdaAcc(myClock, aWarmUp);
+  Accumulator myNumMuAcc(myClock, aWarmUp);
+  Accumulator myLambdaCostAcc(myClock, aWarmUp);
+  Accumulator myMuCostAcc(myClock, aWarmUp);
+  Accumulator myMuCloudAcc(myClock, aWarmUp);
   while (myClock < aDuration) {
     assert(myNextEpoch >= 0);
     assert(myAppPool.next() >= 0);
@@ -276,7 +289,9 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
         const auto a = elem.first;  // app id
         const auto e = elem.second; // edge node id
         if (theApps[a].theEdge != e) {
-          ret.theMuMigrations++;
+          if (myClock >= aWarmUp) {
+            ret.theMuMigrations++;
+          }
         }
       }
 

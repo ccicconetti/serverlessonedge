@@ -150,6 +150,7 @@ class Scenario
    * @brief Run a dynamic simulation.
    *
    * @param aDuration The simulation duration.
+   * @param aWarmUp The warm-up duration.
    * @param aEpoch The duration of an epoch.
    * @param aDataset The timestamp dataset of apps.
    * @param aCostModel The cost model to use to determine the periods.
@@ -164,6 +165,7 @@ class Scenario
    * @throw std::runtime_error if the arguments are invalid.
    */
   PerformanceData dynamic(const double                     aDuration,
+                          const double                     aWarmUp,
                           const double                     aEpoch,
                           const dataset::TimestampDataset& aDataset,
                           const dataset::CostModel&        aCostModel,
