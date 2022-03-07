@@ -35,7 +35,6 @@ for m in $mus ; do
     outfile=post/$outmangle.dat
     rm -f $outfile 2> /dev/null
     for a in $alphas ; do
-      inmangle=out-$f-$m
       fingerprint=",2.000000,60000.000000,50,10,50,$m,$a""00000,0.500000,1,"
       value=$(grep $fingerprint $infile | $percentile_script --delimiter , --column ${columns[$i]} --mean | cut -f 1,3 -d ' ')
       echo $a $value >> $outfile
