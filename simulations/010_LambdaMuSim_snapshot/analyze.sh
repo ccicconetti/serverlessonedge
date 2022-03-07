@@ -25,7 +25,7 @@ alphas="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
 
 infile=data/urban0.csv
 
-columns=(8 9 12 13 14)
+columns=(11 12 15 16 17)
 names=("num-containers" "tot-capacity" "lambda-cost" "mu-cost" "mu-cloud")
 
 for m in $mus ; do
@@ -36,7 +36,7 @@ for m in $mus ; do
     rm -f $outfile 2> /dev/null
     for a in $alphas ; do
       inmangle=out-$f-$m
-      fingerprint=",2.000000,50,$m,$a""00000,0.500000,1,"
+      fingerprint=",2.000000,60000.000000,50,10,50,$m,$a""00000,0.500000,1,"
       value=$(grep $fingerprint $infile | $percentile_script --delimiter , --column ${columns[$i]} --mean | cut -f 1,3 -d ' ')
       echo $a $value >> $outfile
     done
