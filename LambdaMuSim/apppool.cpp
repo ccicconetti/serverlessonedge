@@ -80,6 +80,9 @@ AppPool::AppPool(const dataset::TimestampDataset& aDataset,
     myCost.second.theBestNextPeriods.swap(thePeriods.back());
   }
 
+  VLOG(2) << aDataset.size() << " apps in dataset, " << thePeriods.size()
+          << " filtered (>= " << aMinPeriods << " periods)";
+
   if (thePeriods.empty()) {
     throw std::runtime_error("Empty app traces");
   }
@@ -114,16 +117,21 @@ AppPool::AppPool(const dataset::TimestampDataset& aDataset,
 
   for (const auto& myDesc : theDesc) {
     std::stringstream myStream;
-    const auto&       myApp = thePool[myDesc.theAppId];
+    const auto&       myApp      = thePool[myDesc.theAppId];
+    double            myDuration = 0;
     for (auto it = myApp.theCurrent; it != myApp.theEnd; ++it) {
       myStream << ' ' << *it;
+      myDuration += *it;
     }
     for (auto it = myApp.theBegin; it != myApp.theCurrent; ++it) {
       myStream << ' ' << *it;
+      myDuration += *it;
     }
     VLOG(2) << "#" << myDesc.theAppId << ", period id "
             << thePool[myDesc.theAppId].thePeriodId << ", remaining "
-            << myDesc.theRemaining << ", periods [" << myStream.str() << " ]";
+            << myDesc.theRemaining << ", duration " << (myDuration * 1e-6)
+            << "M, periods (size " << thePeriods[myApp.thePeriodId].size()
+            << " ) [" << myStream.str() << " ]";
   }
 }
 
