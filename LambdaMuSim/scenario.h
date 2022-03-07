@@ -31,7 +31,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Dataset/afdb-utils.h"
+#include "LambdaMuSim/appperiods.h"
 #include "Support/macros.h"
 
 #include <cstddef>
@@ -50,14 +50,15 @@ class Node;
 namespace lambdamusim {
 
 struct PerformanceData {
-  std::size_t theNumContainers = 0;
-  std::size_t theTotCapacity   = 0;
-  double      theNumLambda     = 0; //!< int with S, real with D
-  double      theNumMu         = 0; //!< int with S, real with D
-  double      theLambdaCost    = 0; //! average with D
-  double      theMuCost        = 0; //! average with D
-  double      theMuCloud       = 0; //! int with S, real with D
-  std::size_t theMuMigrations  = 0; //! D only
+  std::size_t theNumContainers    = 0;
+  std::size_t theTotCapacity      = 0;
+  double      theNumLambda        = 0; //!< int with S, real with D
+  double      theNumMu            = 0; //!< int with S, real with D
+  double      theLambdaCost       = 0; //!< average with D
+  double      theMuCost           = 0; //!< average with D
+  double      theMuCloud          = 0; //!< int with S, real with D
+  std::size_t theMuMigrations     = 0; //!< D only
+  std::size_t theNumOptimizations = 0; //!< D only
 
   bool operator==(const PerformanceData& aOther) const noexcept;
 
@@ -152,9 +153,7 @@ class Scenario
    * @param aDuration The simulation duration.
    * @param aWarmUp The warm-up duration.
    * @param aEpoch The duration of an epoch.
-   * @param aDataset The timestamp dataset of apps.
-   * @param aCostModel The cost model to use to determine the periods.
-   * @param aMinPeriods Exclude apps with too few periods.
+   * @param aPeriods The application periods.
    * @param aAvgApps The average number of apps.
    * @param aAlpha The lambda reservation factor.
    * @param aBeta  The lambda overprovisioning factor.
@@ -164,17 +163,15 @@ class Scenario
    *
    * @throw std::runtime_error if the arguments are invalid.
    */
-  PerformanceData dynamic(const double                     aDuration,
-                          const double                     aWarmUp,
-                          const double                     aEpoch,
-                          const dataset::TimestampDataset& aDataset,
-                          const dataset::CostModel&        aCostModel,
-                          const std::size_t                aMinPeriods,
-                          const std::size_t                aAvgApps,
-                          const double                     aAlpha,
-                          const double                     aBeta,
-                          const long                       aLambdaRequest,
-                          const std::size_t                aSeed);
+  PerformanceData dynamic(const double                           aDuration,
+                          const double                           aWarmUp,
+                          const double                           aEpoch,
+                          const std::vector<std::deque<double>>& aPeriods,
+                          const std::size_t                      aAvgApps,
+                          const double                           aAlpha,
+                          const double                           aBeta,
+                          const long                             aLambdaRequest,
+                          const std::size_t                      aSeed);
 
  private:
   double&       networkCost(const ID aBroker, const ID aEdge) noexcept;

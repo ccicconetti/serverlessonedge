@@ -31,6 +31,8 @@ SOFTWARE.
 
 #include "LambdaMuSim/simulation.h"
 
+#include "Dataset/afdb-utils.h"
+#include "LambdaMuSim/appperiods.h"
 #include "LambdaMuSim/scenario.h"
 #include "StateSim/network.h"
 #include "StateSim/node.h"
@@ -43,6 +45,7 @@ SOFTWARE.
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace uiiit {
 namespace lambdamusim {
@@ -56,6 +59,9 @@ std::string Desc::toString() const {
 std::vector<std::string> Conf::toStrings() const {
   return std::vector<std::string>({
       std::to_string(theCloudDistanceFactor),
+      std::to_string(theEpoch),
+      std::to_string(theMinPeriods),
+      std::to_string(theAvgApps),
       std::to_string(theAvgLambda),
       std::to_string(theAvgMu),
       std::to_string(theAlpha),
@@ -67,6 +73,9 @@ std::vector<std::string> Conf::toStrings() const {
 const std::vector<std::string>& Conf::toColumns() {
   static const std::vector<std::string> ret({
       "cloud-distance-factor",
+      "epoch",
+      "min-periods",
+      "avg-apps",
       "avg-lambda",
       "avg-mu",
       "alpha",
@@ -105,8 +114,9 @@ void Simulation::Worker::operator()() {
 
       auto myExceptionThrow = true;
       try {
+        PerformanceData myPerformanceData;
         if (myDesc.theConf->theType == Conf::Type::Snapshot) {
-          auto myPerformanceData =
+          myPerformanceData =
               myDesc.theScenario->snapshot(myDesc.theConf->theAvgLambda,
                                            myDesc.theConf->theAvgMu,
                                            myDesc.theConf->theAlpha,
@@ -114,15 +124,31 @@ void Simulation::Worker::operator()() {
                                            myDesc.theConf->theLambdaRequest,
                                            myDesc.theSeed);
 
-          {
-            const std::lock_guard<std::mutex> myLock(theSimulation.theMutex);
-            theSimulation.theData.emplace_back(myDesc.theSeed,
-                                               std::move(myPerformanceData));
-          }
+        } else if (myDesc.theConf->theType == Conf::Type::Dynamic) {
+          assert(myDesc.theAppPeriods != nullptr);
+          myPerformanceData =
+              myDesc.theScenario->dynamic(myDesc.theConf->theDuration,
+                                          myDesc.theConf->theWarmUp,
+                                          myDesc.theConf->theEpoch,
+                                          *myDesc.theAppPeriods,
+                                          myDesc.theConf->theAvgApps,
+                                          myDesc.theConf->theAlpha,
+                                          myDesc.theConf->theBeta,
+                                          myDesc.theConf->theLambdaRequest,
+                                          myDesc.theSeed);
 
         } else {
-          throw std::runtime_error("NOT IMPLEMENTED");
+          throw std::runtime_error("Analysis type not implemented: " +
+                                   myDesc.theConf->type());
         }
+
+        {
+          // add the performance data to the in-memory structure
+          const std::lock_guard<std::mutex> myLock(theSimulation.theMutex);
+          theSimulation.theData.emplace_back(myDesc.theSeed,
+                                             std::move(myPerformanceData));
+        }
+
         myExceptionThrow = false;
       } catch (const std::exception& aErr) {
         LOG(ERROR) << "exception caught (" << aErr.what()
@@ -177,6 +203,15 @@ void Simulation::run(const Conf&  aConf,
   const auto myNetwork = std::make_shared<statesim::Network>(
       aConf.theNodesPath, aConf.theLinksPath, aConf.theEdgesPath);
 
+  // create the apps' periods
+  const auto myAppPeriods =
+      aConf.theType == Conf::Type::Dynamic ?
+          std::make_unique<const AppPeriods>(
+              dataset::loadTimestampDataset(aConf.theAppsPath),
+              dataset::CostModel{0, 0.6, 0.4, 0.5, 6.3e-6, 0, 12, 12},
+              aConf.theMinPeriods) :
+          nullptr;
+
   // create the scenarios
   theDesc.resize(aNumReplications);
   size_t myDescCounter = 0;
@@ -184,7 +219,9 @@ void Simulation::run(const Conf&  aConf,
     assert(myDescCounter < theDesc.size());
     auto& myDesc = theDesc[myDescCounter++];
 
-    myDesc.theConf     = &aConf;
+    myDesc.theConf = &aConf;
+    myDesc.theAppPeriods =
+        myAppPeriods.get() != nullptr ? &myAppPeriods->periods() : nullptr;
     myDesc.theSeed     = myRun + aStartingSeed;
     myDesc.theScenario = std::make_unique<Scenario>(
         *myNetwork,

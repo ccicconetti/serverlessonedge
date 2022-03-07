@@ -38,7 +38,9 @@ SOFTWARE.
 
 #include <boost/filesystem.hpp>
 
+#include <deque>
 #include <mutex>
+#include <vector>
 
 namespace uiiit {
 namespace lambdamusim {
@@ -62,6 +64,17 @@ struct Conf {
   const double theCloudDistanceFactor;
   //! File containing the info about apps (unused with Type::Snapshot)
   const std::string theAppsPath;
+  //! Simulation duration (unused with Type::Snapshot)
+  const double theDuration;
+  //! Warm-up duration (unused with Type::Snapshot)
+  const double theWarmUp;
+  //! Epoch duration (unused with Type::Snapshot)
+  const double theEpoch;
+  //! Only use apps from dataset with at least these periods (unused with
+  //! Type::Snapshot)
+  const std::size_t theMinPeriods;
+  //! Average number of apps (unused with Type::Snapshot)
+  const std::size_t theAvgApps;
   //! Average number of lambda apps (unused with Type::Dynamic)
   const std::size_t theAvgLambda;
   //! Average number of mu apps (unused with Type::Dynamic)
@@ -90,6 +103,9 @@ struct Desc {
 
   // configuration
   const Conf* theConf;
+
+  // apps' periods
+  const std::vector<std::deque<double>>* theAppPeriods;
 
   // simulation scenario
   std::unique_ptr<Scenario> theScenario;

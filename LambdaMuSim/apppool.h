@@ -31,7 +31,6 @@ SOFTWARE.
 
 #pragma once
 
-#include "Dataset/afdb-utils.h"
 #include "Support/macros.h"
 
 #include <cinttypes>
@@ -45,7 +44,7 @@ namespace lambdamusim {
 
 class AppPool final
 {
-  MOVEONLY(AppPool);
+  NONCOPYABLE_NONMOVABLE(AppPool);
 
   using Periods = std::deque<double>;
 
@@ -83,17 +82,13 @@ class AppPool final
   /**
    * @brief Construct a new App Pool object.
    *
-   * @param aDataset The timestamp dataset of apps.
-   * @param aCostModel The cost model to use to determine the periods.
-   * @param aMinPeriods Exclude apps with too few periods.
+   * @param aPeriods The apps' periods.
    * @param aNumApps The number of applications in pool.
    * @param aSeed The RNG seed.
    */
-  explicit AppPool(const dataset::TimestampDataset& aDataset,
-                   const dataset::CostModel&        aCostModel,
-                   const std::size_t                aMinPeriods,
-                   const std::size_t                aNumApps,
-                   const std::size_t                aSeed);
+  AppPool(const std::vector<std::deque<double>>& aPeriods,
+          const std::size_t                      aNumApps,
+          const std::size_t                      aSeed);
 
   //! @return the shortest remaining time.
   double next() const;
@@ -110,9 +105,9 @@ class AppPool final
   void advance(const double aTime);
 
  private:
-  std::vector<Periods> thePeriods;
-  std::vector<App>     thePool;
-  std::list<Desc>      theDesc;
+  const std::vector<std::deque<double>>& thePeriods;
+  std::vector<App>                       thePool;
+  std::list<Desc>                        theDesc;
 };
 
 } // namespace lambdamusim

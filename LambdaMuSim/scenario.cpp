@@ -64,7 +64,8 @@ bool PerformanceData::operator==(const PerformanceData& aOther) const noexcept {
          theTotCapacity == aOther.theTotCapacity and
          theLambdaCost == aOther.theLambdaCost and
          theMuCost == aOther.theMuCost and theMuCloud == aOther.theMuCloud and
-         theMuMigrations == aOther.theMuMigrations;
+         theMuMigrations == aOther.theMuMigrations and
+         theNumOptimizations == aOther.theNumOptimizations;
 }
 
 std::vector<std::string> PerformanceData::toStrings() const {
@@ -77,20 +78,20 @@ std::vector<std::string> PerformanceData::toStrings() const {
       std::to_string(theMuCost),
       std::to_string(theMuCloud),
       std::to_string(theMuMigrations),
+      std::to_string(theNumOptimizations),
   });
 }
 
 const std::vector<std::string>& PerformanceData::toColumns() {
-  static const std::vector<std::string> ret({
-      "num-containers",
-      "tot-capacity",
-      "num-lambda",
-      "num-mu",
-      "lambda-cost",
-      "mu-cost",
-      "mu-cloud",
-      "mu-migrations",
-  });
+  static const std::vector<std::string> ret({"num-containers",
+                                             "tot-capacity",
+                                             "num-lambda",
+                                             "num-mu",
+                                             "lambda-cost",
+                                             "mu-cost",
+                                             "mu-cloud",
+                                             "mu-migrations",
+                                             "num-optimizations"});
   return ret;
 }
 
@@ -173,17 +174,16 @@ Scenario::Scenario(
   }
 }
 
-PerformanceData Scenario::dynamic(const double                     aDuration,
-                                  const double                     aWarmUp,
-                                  const double                     aEpoch,
-                                  const dataset::TimestampDataset& aDataset,
-                                  const dataset::CostModel&        aCostModel,
-                                  const std::size_t                aMinPeriods,
-                                  const std::size_t                aAvgApps,
-                                  const double                     aAlpha,
-                                  const double                     aBeta,
-                                  const long        aLambdaRequest,
-                                  const std::size_t aSeed) {
+PerformanceData
+Scenario::dynamic(const double                           aDuration,
+                  const double                           aWarmUp,
+                  const double                           aEpoch,
+                  const std::vector<std::deque<double>>& aPeriods,
+                  const std::size_t                      aAvgApps,
+                  const double                           aAlpha,
+                  const double                           aBeta,
+                  const long                             aLambdaRequest,
+                  const std::size_t                      aSeed) {
   struct Accumulator {
     Accumulator(const double& aClock, const double aWarmUp)
         : theClock(aClock)
@@ -235,14 +235,14 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
 
   // set the cloud num containers and capacity
   theEdges[CLOUD].theNumContainers     = 1 + myNumApps;
-  theEdges[CLOUD].theContainerCapacity = myNumApps * aLambdaRequest;
+  theEdges[CLOUD].theContainerCapacity = myNumApps * aLambdaRequest / aBeta;
   ret.theNumContainers += theEdges[CLOUD].theNumContainers;
   ret.theTotCapacity += theEdges[CLOUD].theContainerCapacity;
 
   VLOG(2) << "seed " << aSeed << ", " << myNumApps << " apps, network costs:\n"
           << networkCostToString();
 
-  AppPool     myAppPool(aDataset, aCostModel, aMinPeriods, myNumApps, aSeed);
+  AppPool     myAppPool(aPeriods, myNumApps, aSeed);
   double      myClock      = 0;
   double      myNextEpoch  = 0;
   std::size_t myNumLambda  = myNumApps; // all apps start as lambda
@@ -253,6 +253,7 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
   Accumulator myLambdaCostAcc(myClock, aWarmUp);
   Accumulator myMuCostAcc(myClock, aWarmUp);
   Accumulator myMuCloudAcc(myClock, aWarmUp);
+  auto        myOptimize = true; // first time or when apps change
   while (myClock < aDuration) {
     assert(myNextEpoch >= 0);
     assert(myAppPool.next() >= 0);
@@ -260,11 +261,22 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
     double myTimeElapsed = 0;
     if (myNextEpoch <= myAppPool.next()) {
       // perform periodic optimization
-      VLOG(2) << (myClock + myNextEpoch) << " a new epoch begins";
+      VLOG(2) << (myClock + myNextEpoch) << " a new epoch begins "
+              << (myOptimize ? "(optimize)" : " (skip)");
 
       myAppPool.advance(myNextEpoch);
       myTimeElapsed = myNextEpoch;
       myNextEpoch   = aEpoch;
+
+      // if there have not been any changes since last epoch, do nothing
+      if (not myOptimize) {
+        myClock += myTimeElapsed;
+        continue;
+      }
+
+      if (myClock >= aWarmUp) {
+        ret.theNumOptimizations++;
+      }
 
       // save the old mu-app assignment (arbitrary on first epoch)
       std::map<ID, ID> myOldAssignment; // app id -> edge id
@@ -300,6 +312,9 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
       assignLambdaApps(aBeta, aLambdaRequest, myData);
       myLambdaCost = myData.theLambdaCost;
 
+      // the flag will be set to true if there are app changes before next epoch
+      myOptimize = false;
+
       VLOG(2) << "apps after assignment:\n" << appsToString();
 
     } else {
@@ -308,8 +323,9 @@ PerformanceData Scenario::dynamic(const double                     aDuration,
       std::size_t myChanged;
       std::tie(myChanged, myTimeElapsed) = myAppPool.advance();
       myNextEpoch -= myTimeElapsed;
-      auto&      myType    = theApps[myChanged].theType;
-      const auto myNewType = flip(myType);
+      auto&                       myType    = theApps[myChanged].theType;
+      [[maybe_unused]] const auto myNewType = flip(myType);
+      myOptimize                            = true;
 
       // migrate the changed app only
       double myOldCost;
@@ -398,7 +414,7 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
 
   // set the cloud num containers and capacity
   theEdges[CLOUD].theNumContainers     = 1 + myNumMu;
-  theEdges[CLOUD].theContainerCapacity = myNumLambda * aLambdaRequest;
+  theEdges[CLOUD].theContainerCapacity = myNumLambda * aLambdaRequest / aBeta;
   ret.theNumContainers += theEdges[CLOUD].theNumContainers;
   ret.theTotCapacity += theEdges[CLOUD].theContainerCapacity;
 
@@ -580,8 +596,8 @@ void Scenario::assignLambdaApps(const double     aBeta,
   // fill the capacities vector
   Mcfp::Capacities myLambdaCapacities;
   for (const auto& e : myLambdaContainers) {
-    myLambdaCapacities.emplace_back(
-        static_cast<long>(aBeta * theEdges[e].theContainerCapacity));
+    myLambdaCapacities.emplace_back(static_cast<long>(
+        std::floor(aBeta * theEdges[e].theContainerCapacity)));
   }
   VLOG(2) << "capacities: ["
           << ::toString(

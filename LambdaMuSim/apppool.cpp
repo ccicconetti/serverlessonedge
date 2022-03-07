@@ -47,44 +47,12 @@ SOFTWARE.
 namespace uiiit {
 namespace lambdamusim {
 
-AppPool::AppPool(const dataset::TimestampDataset& aDataset,
-                 const dataset::CostModel&        aCostModel,
-                 const std::size_t                aMinPeriods,
-                 const std::size_t                aNumApps,
-                 const std::size_t                aSeed)
-    : thePeriods()
-    , thePool()
-    , theDesc() {
-  if (aMinPeriods == 0) {
-    throw std::runtime_error("Invalid number of min periods, must be > 0");
-  }
+AppPool::AppPool(const std::vector<std::deque<double>>& aPeriods,
+                 const std::size_t                      aNumApps,
+                 const std::size_t                      aSeed)
+    : thePeriods(aPeriods) {
   if (aNumApps == 0) {
     throw std::runtime_error("Invalid number of applications, must be > 0");
-  }
-
-  // compute the mu/lambda periods according to the cost model
-  auto myCosts = dataset::cost(aDataset, aCostModel, true);
-
-  // save periods of functions with at least the given number of
-  // invocations; trim the last period if there is an odd number of them
-  for (auto& myCost : myCosts) {
-    if (myCost.second.theBestNextPeriods.size() % 2 == 1) {
-      // remove last period to make their number even
-      myCost.second.theBestNextPeriods.pop_back();
-    }
-    if (myCost.second.theBestNextPeriods.size() < aMinPeriods) {
-      // skip this app
-      continue;
-    }
-    thePeriods.emplace_back(Periods());
-    myCost.second.theBestNextPeriods.swap(thePeriods.back());
-  }
-
-  VLOG(2) << aDataset.size() << " apps in dataset, " << thePeriods.size()
-          << " filtered (>= " << aMinPeriods << " periods)";
-
-  if (thePeriods.empty()) {
-    throw std::runtime_error("Empty app traces");
   }
 
   // create the pool of applications

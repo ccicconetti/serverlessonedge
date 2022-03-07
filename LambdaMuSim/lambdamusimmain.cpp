@@ -89,6 +89,11 @@ int main(int argc, char* argv[]) {
   std::string myEdgesPath;
   double      myCloudDistanceFactor;
   std::string myAppsPath;
+  double      myDuration;
+  double      myWarmUp;
+  double      myEpoch;
+  std::size_t myMinPeriods;
+  std::size_t myAvgApps;
   std::size_t myAvgLambda;
   std::size_t myAvgMu;
   double      myAlpha;
@@ -126,6 +131,21 @@ int main(int argc, char* argv[]) {
     ("apps-path",
      po::value<std::string>(&myAppsPath)->default_value("apps"),
      "File containing the specifications of applications (dynamic only).")
+    ("duration",
+     po::value<double>(&myDuration)->default_value(300000),
+     "Simulation duration (dynamic only)")
+    ("warm-up",
+     po::value<double>(&myWarmUp)->default_value(5000),
+     "Warm-up duration (dynamic only)")
+    ("epoch",
+     po::value<double>(&myEpoch)->default_value(60000),
+     "Epoch duration (dynamic only)")
+    ("min-periods",
+     po::value<std::size_t>(&myMinPeriods)->default_value(50),
+     "Only use apps from dataset with at least these periods (dynamic only)")
+    ("avg-apps",
+     po::value<std::size_t>(&myAvgApps)->default_value(10),
+     "Average number of apps (dynamic only)")
     ("avg-lambda",
      po::value<std::size_t>(&myAvgLambda)->default_value(10),
      "The average number of lamba-apps (snapshot only).")
@@ -195,6 +215,11 @@ int main(int argc, char* argv[]) {
                       myEdgesPath,
                       myCloudDistanceFactor,
                       myAppsPath,
+                      myDuration,
+                      myWarmUp,
+                      myEpoch,
+                      myMinPeriods,
+                      myAvgApps,
                       myAvgLambda,
                       myAvgMu,
                       myAlpha,

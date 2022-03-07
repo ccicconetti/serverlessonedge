@@ -1,4 +1,5 @@
 add_library(uiiitlambdamusim SHARED
+  ${CMAKE_CURRENT_SOURCE_DIR}/appperiods.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/apppool.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/mcfp.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/scenario.cpp

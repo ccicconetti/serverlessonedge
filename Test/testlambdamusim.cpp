@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Dataset/afdb-utils.h"
+#include "LambdaMuSim/appperiods.h"
 #include "LambdaMuSim/apppool.h"
 #include "LambdaMuSim/scenario.h"
 #include "LambdaMuSim/simulation.h"
@@ -49,6 +50,7 @@ SOFTWARE.
 namespace uiiit {
 namespace lambdamusim {
 
+#include "Test/Data/afdbdataset.h"
 #include "Test/Data/datastatesim.h"
 
 struct TestLambdaMuSim : public ::testing::Test {
@@ -213,6 +215,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         (theTestDir / "edges").string(),
                         2.0,
                         "", // unused with snapshot
+                        0,  // (ibidem)
+                        0,  // (ibidem)
+                        0,  // (ibidem)
+                        0,  // (ibidem)
+                        0,  // (ibidem)
                         10,
                         10,
                         0.5,
@@ -225,11 +232,12 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
 
   std::string myContent;
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
+  VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
-            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000,0\n"
-            "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000,0\n",
+  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,906,268,9."
+            "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
+            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,911,276,13."
+            "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
             myContent);
 
   // run again with same seed
@@ -239,6 +247,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         (theTestDir / "edges").string(),
                         2.0,
                         "", // unused with snapshot
+                        0,  // (ibidem)
+                        0,  // (ibidem)
+                        0,  // (ibidem)
+                        0,  // (ibidem)
+                        0,  // (ibidem)
                         10,
                         10,
                         0.5,
@@ -250,21 +263,21 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                    1);
 
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
+  VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,10,10,0.500000,0.500000,1,"
-            "906,259,9.000000,5.000000,21.000000,13.000000,0.000000,0\n"
-            "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000,0\n"
-            "43,2.000000,10,10,0.500000,0.500000,1,"
-            "911,263,13.000000,10.000000,31.000000,31.000000,0.000000,0\n",
+  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,906,268,9."
+            "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
+            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,911,276,13."
+            "000000,10.000000,31.000000,31.000000,0.000000,0,0\n"
+            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,911,276,13."
+            "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
             myContent);
-
-  VLOG(2) << '\n' << myContent;
 }
 
 TEST_F(TestLambdaMuSim, test_app_pool) {
   const std::size_t     N = 20;
-  AppPool               myAppPool(theDataset, theCostModel, 1, N, 42);
+  AppPeriods            myAppPeriods(theDataset, theCostModel, 1);
+  AppPool               myAppPool(myAppPeriods.periods(), N, 42);
   std::set<std::size_t> myAllApps;
   for (std::size_t i = 0; i < N; i++) {
     myAllApps.insert(i);
@@ -305,21 +318,23 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
+  AppPeriods myAppPeriods(theDataset, theCostModel, 1);
   const auto myOut1 = myScenario.dynamic(
-      10000, 0, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
+      10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 1, 42);
 
   EXPECT_FLOAT_EQ(4.4268537, myOut1.theNumLambda);
   EXPECT_FLOAT_EQ(4.5731463, myOut1.theNumMu);
   EXPECT_EQ(16, myOut1.theNumContainers);
-  EXPECT_EQ(12, myOut1.theTotCapacity);
+  EXPECT_EQ(21, myOut1.theTotCapacity);
   EXPECT_FLOAT_EQ(26.546547, myOut1.theLambdaCost);
   EXPECT_FLOAT_EQ(18.532532, myOut1.theMuCost);
   EXPECT_FLOAT_EQ(4.4994993, myOut1.theMuCloud);
   EXPECT_EQ(47, myOut1.theMuMigrations);
+  EXPECT_EQ(11, myOut1.theNumOptimizations);
 
   // repeat identical simulation
   const auto myOut1again = myScenario.dynamic(
-      10000, 0, 1000, theDataset, theCostModel, 1, 10, 0.5, 0.5, 1, 42);
+      10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 1, 42);
 
   ASSERT_EQ(myOut1, myOut1again)
       << "\nexpected: " << ::toString(myOut1.toStrings(), ",")
@@ -327,7 +342,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // same but all mu-apps go to the cloud
   const auto myOut2 = myScenario.dynamic(
-      10000, 0, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
+      10000, 0, 1000, myAppPeriods.periods(), 10, 0, 0.5, 1, 42);
 
   EXPECT_EQ(myOut1.theNumLambda, myOut2.theNumLambda);
   EXPECT_EQ(myOut1.theNumMu, myOut2.theNumMu);
@@ -337,10 +352,11 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_FLOAT_EQ(27.453453, myOut2.theMuCost);
   EXPECT_FLOAT_EQ(7.4994993, myOut2.theMuCloud);
   EXPECT_EQ(0, myOut2.theMuMigrations);
+  EXPECT_EQ(myOut1.theNumOptimizations, myOut2.theNumOptimizations);
 
   // same but with warm-up
   const auto myOut3 = myScenario.dynamic(
-      10000, 0.2, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
+      10000, 0.2, 1000, myAppPeriods.periods(), 10, 0, 0.5, 1, 42);
 
   EXPECT_EQ(myOut1.theNumLambda, myOut3.theNumLambda);
   EXPECT_EQ(myOut1.theNumMu, myOut3.theNumMu);
@@ -350,10 +366,11 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_FLOAT_EQ(27.453453, myOut3.theMuCost);
   EXPECT_FLOAT_EQ(7.4994993, myOut3.theMuCloud);
   EXPECT_EQ(0, myOut3.theMuMigrations);
+  EXPECT_EQ(10, myOut3.theNumOptimizations);
 
   // same but with warm-up == duration
   const auto myOut4 = myScenario.dynamic(
-      10000, 10000, 1000, theDataset, theCostModel, 1, 10, 0, 0.5, 1, 42);
+      10000, 10000, 1000, myAppPeriods.periods(), 10, 0, 0.5, 1, 42);
 
   EXPECT_TRUE(std::isnan(myOut4.theNumLambda));
   EXPECT_TRUE(std::isnan(myOut4.theNumMu));
@@ -363,6 +380,57 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_TRUE(std::isnan(myOut4.theMuCost));
   EXPECT_TRUE(std::isnan(myOut4.theMuCloud));
   EXPECT_EQ(0, myOut4.theMuMigrations);
+  EXPECT_EQ(0, myOut4.theNumOptimizations);
+}
+
+TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
+  Simulation mySimulation(1);
+  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
+  ASSERT_TRUE(prepareAfdbDatasetFiles(theTestDir));
+
+  Conf myConf{Conf::Type::Dynamic,
+              (theTestDir / "nodes").string(),
+              (theTestDir / "links").string(),
+              (theTestDir / "edges").string(),
+              2.0,
+              (theTestDir / "apps").string(),
+              86400 * 1e3 * 9, // duration: 9 days
+              3600 * 1e3 * 2,  // warm-up:  2 hours
+              3600 * 1e3,      // epoch:    1 hour
+              1,
+              10,
+              0, // unused with dynamic
+              0, // (ibidem)
+              0.5,
+              0.5,
+              1,
+              (theTestDir / "out").string(),
+              true};
+
+  // run one replication
+  mySimulation.run(myConf, 42, 1);
+
+  std::string myContent;
+  std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
+  VLOG(1) << '\n' << myContent;
+
+  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,910,268,7."
+            "926733,1.073267,20.573380,2.645391,0.000000,2,9\n",
+            myContent);
+
+  // run two replications, starting with same seed as before
+  mySimulation.run(myConf, 42, 2);
+
+  std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
+  VLOG(1) << '\n' << myContent;
+
+  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,910,268,7."
+            "926733,1.073267,20.573380,2.645391,0.000000,2,9\n"
+            "42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,910,268,7."
+            "926733,1.073267,20.573380,2.645391,0.000000,2,9\n"
+            "43,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,914,276,"
+            "11.926733,1.073267,30.779422,2.138962,0.000000,0,9\n",
+            myContent);
 }
 
 } // namespace lambdamusim
