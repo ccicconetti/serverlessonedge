@@ -4,8 +4,8 @@ if [ "$DRY" == "" ] ; then
   mkdir data 2> /dev/null
 fi
 
-apps="50 100 200"
-epochs="60e3 300e3 600e3 1200e3 1800e3 3600e3"
+apps="50 100 150 200 250"
+epochs="60000.000000 300000.000000 600000.000000 1200000.000000 1800000.000000"
 
 for e in $epochs ; do
   for a in $apps ; do

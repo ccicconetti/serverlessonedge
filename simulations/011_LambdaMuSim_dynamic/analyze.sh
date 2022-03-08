@@ -20,13 +20,13 @@ if [ ! -d "post" ] ; then
   mkdir post 2> /dev/null
 fi
 
-apps="50 100 200"
-epochs="3.6e4 3.6e5 3.6e6"
+apps="50 100 150 200 250"
+epochs="60000.000000 300000.000000 600000.000000 1200000.000000 1800000.000000"
 
 infile=data/urban0.csv
 
-columns=(11 12 15 16 17)
-names=("num-containers" "tot-capacity" "lambda-cost" "mu-cost" "mu-cloud")
+columns=(11 12 13 14 15 16 17 18 19)
+names=("num-containers" "tot-capacity" "num-lambda" "num-mu" "lambda-cost" "mu-cost" "mu-cloud" "mu-migrations" "num-optimizations")
 
 for a in $apps ; do
   for i in ${!columns[@]}; do
