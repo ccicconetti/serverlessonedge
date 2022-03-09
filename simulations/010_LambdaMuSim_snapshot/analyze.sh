@@ -23,7 +23,7 @@ fi
 mus="25 50 75"
 alphas="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
 
-infile=data/urban0.csv
+infile=data/010-urban0.csv
 
 columns=(11 12 15 16 17)
 names=("num-containers" "tot-capacity" "lambda-cost" "mu-cost" "mu-cloud")

@@ -21,7 +21,7 @@ for m in $mus ; do
           --alpha $a \
           --beta 0.5 \
           --lambda-request 1 \
-          --out-file data/urban0.csv \
+          --out-file data/010-urban0.csv \
           --append \
           --seed-starting 1 \
           --num-replications 6400"
