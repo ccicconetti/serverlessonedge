@@ -53,7 +53,7 @@ If you want to obtain the list of the commands that will be run, without actuall
 The raw results are also available for download:
 
 ```
-wget http://turig.iit.cnr.it/~claudio/public/XXX
+./download-raw.sh
 ```
 
 ## Post-processing
