@@ -23,7 +23,7 @@ fi
 apps="50 100 150 200 250"
 epochs="60000.000000 300000.000000 600000.000000 1200000.000000 1800000.000000"
 
-infile=data/urban0.csv
+infile=data/011-urban0.csv
 
 columns=(11 12 13 14 15 16 17 18 19)
 names=("num-containers" "tot-capacity" "num-lambda" "num-mu" "lambda-cost" "mu-cost" "mu-cloud" "mu-migrations" "num-optimizations")
@@ -37,7 +37,7 @@ for a in $apps ; do
     for e in $epochs ; do
       fingerprint="2.000000,$e,50,$a,10,10,0.500000,0.500000,1"
       value=$(grep $fingerprint $infile | $percentile_script --delimiter , --column ${columns[$i]} --mean | cut -f 1,3 -d ' ')
-      echo $a $value >> $outfile
+      echo $e $value >> $outfile
     done
   done
 done

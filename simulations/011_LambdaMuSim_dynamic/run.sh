@@ -24,7 +24,7 @@ for e in $epochs ; do
           --alpha 0.5 \
           --beta 0.5 \
           --lambda-request 1 \
-          --out-file data/urban0.csv \
+          --out-file data/011-urban0.csv \
           --append \
           --seed-starting 1 \
           --num-replications 6400"
