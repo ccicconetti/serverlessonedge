@@ -168,11 +168,9 @@ set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap 
 GNUTERM = "wxt"
 ## Last datafile plotted: "../post/lambda-cost-lambdas-alpha=0.1.dat"
 plot  \
- '../post/lambda-cost-mix-alpha=0.2.dat' u 1:($2/50) w lp pt 4 title "{/Symbol a} = 0.2",\
- '../post/lambda-cost-mix-alpha=0.4.dat' u 1:($2/50) w lp pt 6 title "{/Symbol a} = 0.4",\
- '../post/lambda-cost-mix-alpha=0.6.dat' u 1:($2/50) w lp pt 8 title "{/Symbol a} = 0.6",\
- '../post/lambda-cost-mix-alpha=0.7.dat' u 1:($2/50) w lp pt 10 title "{/Symbol a} = 0.7",\
- '../post/lambda-cost-mix-alpha=0.8.dat' u 1:($2/50) w lp pt 12 title "{/Symbol a} = 0.8",\
- '../post/lambda-cost-mix-alpha=0.9.dat' u 1:($2/50) w lp pt 14 title "{/Symbol a} = 0.9",\
- '../post/lambda-cost-lambdas-alpha=0.1.dat' u 1:($2/100) w l lw 2 title "Only {/Symbol l}-apps"
+ '../post/lambda-cost-mix-alpha=0.1.dat' u 1:($2/50) w lp pt 4 title "{/Symbol a} = 0",\
+ '../post/lambda-cost-mix-alpha=0.3.dat' u 1:($2/50) w lp pt 6 title "{/Symbol a} = 1/4",\
+ '../post/lambda-cost-mix-alpha=0.5.dat' u 1:($2/50) w lp pt 8 title "{/Symbol a} = 1/2",\
+ '../post/lambda-cost-mix-alpha=0.8.dat' u 1:($2/50) w lp pt 10 title "{/Symbol a} = 3/4",\
+ '../post/lambda-cost-lambdas-alpha=0.1.dat' u 1:($2/100) w l lt -1 lw 3 title "Only {/Symbol l}-apps"
 #    EOF

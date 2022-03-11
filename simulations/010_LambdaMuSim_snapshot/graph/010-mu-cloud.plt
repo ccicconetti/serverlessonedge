@@ -104,6 +104,7 @@ set mrtics default
 set nomttics
 set xtics border in scale 1,0.5 mirror norotate  autojustify
 set xtics  norangelimit autofreq 
+set xtics ("0" 0, "1/8" 1, "1/4" 2, "3/8" 3, "1/2" 4, "5/8" 5, "3/4" 6, "7/8" 7)
 set ytics border in scale 1,0.5 mirror norotate  autojustify
 set ytics  norangelimit autofreq 
 set ztics border in scale 1,0.5 nomirror norotate  autojustify
@@ -168,7 +169,7 @@ set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap 
 GNUTERM = "wxt"
 ## Last datafile plotted: "../post/mu-cloud-50.dat"
 plot \
-'../post/mu-cloud-25.dat' u 1:($2/25) w lp pt 8 title "E[|A^{/Symbol m}|] = 25",\
-'../post/mu-cloud-50.dat' u 1:($2/50) w lp pt 10 title "E[|A^{/Symbol m}|] = 50",\
-'../post/mu-cloud-75.dat' u 1:($2/75) w lp pt 12 title "E[|A^{/Symbol m}|] = 75"
+'< grep -v ^0.6 ../post/mu-cloud-25.dat' u 0:($2/25) w lp pt 8 title "E[|A^{/Symbol m}|] = 25",\
+'< grep -v ^0.6 ../post/mu-cloud-50.dat' u 0:($2/50) w lp pt 10 title "E[|A^{/Symbol m}|] = 50",\
+'< grep -v ^0.6 ../post/mu-cloud-75.dat' u 0:($2/75) w lp pt 12 title "E[|A^{/Symbol m}|] = 75"
 #    EOF
