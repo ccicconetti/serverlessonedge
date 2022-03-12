@@ -168,9 +168,9 @@ set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap 
 GNUTERM = "wxt"
 ## Last datafile plotted: "../post/num-optimizations-50.dat"
 plot  \
- '< paste ../post/num-lambda-50.dat ../post/lambda-cost-50.dat' u ($1/60e3):($5/$2) w lp pt 4 title "E[A(t)] = 50",\
- '< paste ../post/num-lambda-100.dat ../post/lambda-cost-100.dat' u ($1/60e3):($5/$2) w lp pt 6 title "E[A(t)] = 100",\
- '< paste ../post/num-lambda-150.dat ../post/lambda-cost-150.dat' u ($1/60e3):($5/$2) w lp pt 8 title "E[A(t)] = 150",\
- '< paste ../post/num-lambda-200.dat ../post/lambda-cost-200.dat' u ($1/60e3):($5/$2) w lp pt 10 title "E[A(t)] = 200",\
- '< paste ../post/num-lambda-250.dat ../post/lambda-cost-250.dat' u ($1/60e3):($5/$2) w lp pt 12 title "E[A(t)] = 250"
+ '< paste ../post/num-lambda-50.dat ../post/lambda-cost-50.dat' u ($1/60e3):($5/$2) w lp pt 4 title "E[|A|] = 50",\
+ '< paste ../post/num-lambda-100.dat ../post/lambda-cost-100.dat' u ($1/60e3):($5/$2) w lp pt 6 title "E[|A|] = 100",\
+ '< paste ../post/num-lambda-150.dat ../post/lambda-cost-150.dat' u ($1/60e3):($5/$2) w lp pt 8 title "E[|A|] = 150",\
+ '< paste ../post/num-lambda-200.dat ../post/lambda-cost-200.dat' u ($1/60e3):($5/$2) w lp pt 10 title "E[|A|] = 200",\
+ '< paste ../post/num-lambda-250.dat ../post/lambda-cost-250.dat' u ($1/60e3):($5/$2) w lp pt 12 title "E[|A|] = 250"
 #    EOF

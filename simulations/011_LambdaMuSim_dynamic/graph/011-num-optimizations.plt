@@ -168,9 +168,9 @@ set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap 
 GNUTERM = "wxt"
 ## Last datafile plotted: "../post/num-optimizations-50.dat"
 plot  \
- '../post/num-optimizations-50.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 4 title "E[A(t)] = 50",\
- '../post/num-optimizations-100.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 6 title "E[A(t)] = 100",\
- '../post/num-optimizations-150.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 8 title "E[A(t)] = 150",\
- '../post/num-optimizations-200.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 10 title "E[A(t)] = 200",\
- '../post/num-optimizations-250.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 12 title "E[A(t)] = 250"
+ '../post/num-optimizations-50.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 4 title "E[|A|] = 50",\
+ '../post/num-optimizations-100.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 6 title "E[|A|] = 100",\
+ '../post/num-optimizations-150.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 8 title "E[|A|] = 150",\
+ '../post/num-optimizations-200.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 10 title "E[|A|] = 200",\
+ '../post/num-optimizations-250.dat' u ($1/60e3):($2/(8.64e7-$1)*3.6e6) w lp pt 12 title "E[|A|] = 250"
 #    EOF
