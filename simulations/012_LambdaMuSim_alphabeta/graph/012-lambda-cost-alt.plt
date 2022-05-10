@@ -171,5 +171,6 @@ plot  \
  '../post/lambda-cost-mix-alpha=0.1.dat' u 1:($2/50) w lp pt 4 title "{/Symbol a} = 0",\
  '../post/lambda-cost-mix-alpha=0.3.dat' u 1:($2/50) w lp pt 6 title "{/Symbol a} = 1/4",\
  '../post/lambda-cost-mix-alpha=0.5.dat' u 1:($2/50) w lp pt 8 title "{/Symbol a} = 1/2",\
- '../post/lambda-cost-mix-alpha=0.8.dat' u 1:($2/50) w lp pt 10 title "{/Symbol a} = 3/4"
+ '../post/lambda-cost-mix-alpha=0.8.dat' u 1:($2/50) w lp pt 10 title "{/Symbol a} = 3/4",\
+ '../post/lambda-cost-lambdas-alpha=0.1.dat' u 1:($2/100) w l lt -1 lw 3 title "Only {/Symbol l}-apps"
 #    EOF
