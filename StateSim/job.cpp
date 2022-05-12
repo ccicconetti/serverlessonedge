@@ -119,13 +119,77 @@ std::string Job::toString() const {
   return myStream.str();
 }
 
+struct Row {
+  double      theStartTime;
+  std::string theJobName;
+  std::string theTaskName;
+  uint32_t    theDuration;
+  double      theCpu;
+  double      theMem;
+  uint32_t    theNumInstances;
+
+  bool theSkip = false;
+};
+
+Row parseRow(const std::string& aLine, const BatchTaskFormat aFormat) {
+  Row ret;
+  if (aFormat == BatchTaskFormat::Spar) {
+    const auto myTokens = support::split<std::vector<std::string>>(aLine, ",");
+    if (myTokens.size() != 7 or myTokens[1].size() < 2 or
+        myTokens[1].substr(0, 2) != "j_" or myTokens[2].empty()) {
+      VLOG(2) << "skipping invalid task: " << aLine;
+      ret.theSkip = true;
+    } else {
+      ret.theStartTime    = std::stod(myTokens[0]);
+      ret.theJobName      = myTokens[1];
+      ret.theTaskName     = myTokens[2];
+      ret.theDuration     = std::stoul(myTokens[3]);
+      ret.theCpu          = std::stod(myTokens[4]);
+      ret.theMem          = std::stod(myTokens[5]);
+      ret.theNumInstances = std::stoul(myTokens[6]);
+    }
+
+  } else if (aFormat == BatchTaskFormat::Alibaba) {
+    const auto myTokens = support::split<std::vector<std::string>>(aLine, ",");
+    if (myTokens.size() != 9 or myTokens[2].size() < 2 or
+        myTokens[2].substr(0, 2) != "j_" or myTokens[0].empty()) {
+      VLOG(2) << "skipping invalid task: " << aLine;
+      ret.theSkip = true;
+    } else {
+      ret.theStartTime    = std::stod(myTokens[5]);
+      ret.theJobName      = myTokens[2];
+      ret.theTaskName     = myTokens[0];
+      ret.theDuration     = ret.theStartTime - std::stod(myTokens[6]);
+      ret.theCpu          = std::stod(myTokens[7]);
+      ret.theMem          = std::stod(myTokens[8]);
+      ret.theNumInstances = std::stoul(myTokens[1]);
+    }
+
+  } else {
+    throw std::runtime_error("Unknown batch_task.csv trace format");
+  }
+
+  static const std::set<std::string> myStrangeKeywords(
+      {"task_", "MergeTask", "Stg"});
+  for (const auto& myKeyword : myStrangeKeywords) {
+    if (ret.theTaskName.find(myKeyword) != std::string::npos) {
+      VLOG(2) << "skipping strange task: " << aLine;
+      ret.theSkip = true;
+      break;
+    }
+  }
+
+  return ret;
+}
+
 std::vector<Job> loadJobs(const std::string&                   aPath,
                           const double                         aOpsFactor,
                           const double                         aArgFactor,
                           const double                         aStateFactor,
                           const std::map<std::string, double>& aFuncWeights,
                           const size_t                         aSeed,
-                          const bool                           aStatefulOnly) {
+                          const bool                           aStatefulOnly,
+                          const BatchTaskFormat aBatchTaskFormat) {
   if (aFuncWeights.empty()) {
     throw std::runtime_error("Empty function weights");
   }
@@ -168,32 +232,25 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
     if (myLine.empty()) {
       break;
     }
-    const auto myTokens = support::split<std::vector<std::string>>(myLine, ",");
-    if (myTokens.size() != 7 or myTokens[1].size() < 2 or
-        myTokens[1].substr(0, 2) != "j_" or myTokens[2].empty()) {
-      throw std::runtime_error("Invalid task: " + myLine);
-    }
-    const auto myCurJobId =
-        std::stoull(myTokens[1].substr(2, std::string::npos));
+    const auto myRow = parseRow(myLine, aBatchTaskFormat);
 
     // skip strange tasks
-    if (myTokens[2].find("task_") != std::string::npos) {
+    if (myRow.theSkip) {
       continue;
     }
 
+    assert(myRow.theJobName.size() > 2);
+    const auto myCurJobId =
+        std::stoull(myRow.theJobName.substr(2, std::string::npos));
+
     if (myLastJobId != myCurJobId) {
-      myJobsData.emplace_back(JobData{myNextJobId, std::stod(myTokens[0]), {}});
+      myJobsData.emplace_back(JobData{myNextJobId, myRow.theStartTime, {}});
       myNextJobId++;
     }
     myLastJobId = myCurJobId;
 
-    const auto                  myDuration  = std::stoul(myTokens[3]);
-    const auto                  myCpu       = std::stod(myTokens[4]);
-    const auto                  myMem       = std::stod(myTokens[5]);
-    [[maybe_unused]] const auto myInstances = std::stoul(myTokens[6]);
-
     const auto myPrecTokens = support::split<std::vector<std::string>>(
-        myTokens[2].substr(1, std::string::npos), "_");
+        myRow.theTaskName.substr(1, std::string::npos), "_");
     if (myPrecTokens.empty()) {
       throw std::runtime_error("Invalid task: " + myLine);
     }
@@ -210,9 +267,9 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
     for (size_t i = 1; i < myPrecTokens.size(); i++) {
       myTask.thePrecedences.insert(std::stoull(myPrecTokens[i]) - 1);
     }
-    myTask.theOps = static_cast<size_t>(0.5 + 1.0 * myDuration * myCpu / 100.0 *
-                                                  aOpsFactor);
-    myTask.theSize = myMem; // scale factor to be applied later
+    myTask.theOps = static_cast<size_t>(
+        0.5 + 1.0 * myRow.theDuration * myRow.theCpu / 100.0 * aOpsFactor);
+    myTask.theSize = myRow.theMem; // scale factor to be applied later
   }
 
   // add all the jobs

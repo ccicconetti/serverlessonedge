@@ -147,7 +147,8 @@ Scenario::Scenario(const Conf& aConf)
                        aConf.theStateFactor,
                        aConf.theFuncWeights,
                        aConf.theSeed,
-                       aConf.theStatefulOnly))
+                       aConf.theStatefulOnly,
+                       BatchTaskFormat::Spar))
     , theClients(randomClients(theJobs.size(), *theNetwork, theRng))
     , theLoad()
     , theAllocation() {

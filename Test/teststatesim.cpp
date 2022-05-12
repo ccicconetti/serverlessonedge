@@ -43,6 +43,7 @@ SOFTWARE.
 #include <boost/graph/graph_traits.hpp>
 #include <boost/property_map/property_map.hpp>
 
+#include <cstdlib>
 #include <glog/logging.h>
 
 namespace uiiit {
@@ -124,9 +125,15 @@ struct TestStateSim : public ::testing::Test {
     }
   };
 
-  void analyze_tasks(const bool aStatefulOnly) {
-    const auto myJobs = loadJobs(
-        "batch_task.csv", 1000, 100, 10, {{"", 1.0}}, 42, aStatefulOnly);
+  void analyze_tasks(const bool aStatefulOnly, const BatchTaskFormat aFormat) {
+    const auto myJobs = loadJobs("batch_task.csv",
+                                 1000,
+                                 100,
+                                 10,
+                                 {{"", 1.0}},
+                                 42,
+                                 aStatefulOnly,
+                                 aFormat);
     LOG(INFO) << "#jobs " << myJobs.size();
     std::map<size_t, size_t> myChainSizeHisto;
     std::map<size_t, size_t> myNumStatesHisto;
@@ -416,8 +423,14 @@ TEST_F(TestStateSim, test_all_tasks) {
       {"more-often", 10},
   });
 
-  const auto myJobs = loadJobs(
-      (theTestDir / "tasks").string(), 1000, 100, 10, myWeights, 42, false);
+  const auto myJobs = loadJobs((theTestDir / "tasks").string(),
+                               1000,
+                               100,
+                               10,
+                               myWeights,
+                               42,
+                               false,
+                               BatchTaskFormat::Spar);
   ASSERT_EQ(22, myJobs.size());
 
   const auto& myJob = myJobs[10];
@@ -445,8 +458,14 @@ TEST_F(TestStateSim, test_all_tasks) {
 
 TEST_F(TestStateSim, test_stateful_tasks) {
   ASSERT_TRUE(prepareTaskFiles());
-  const auto myJobs = loadJobs(
-      (theTestDir / "tasks").string(), 1000, 100, 10, {{"", 1.0}}, 42, true);
+  const auto myJobs = loadJobs((theTestDir / "tasks").string(),
+                               1000,
+                               100,
+                               10,
+                               {{"", 1.0}},
+                               42,
+                               true,
+                               BatchTaskFormat::Spar);
   ASSERT_EQ(6, myJobs.size());
   for (const auto& myJob : myJobs) {
     auto myAllStateless = true;
@@ -628,11 +647,21 @@ TEST_F(TestStateSim, test_simulation) {
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {
-  analyze_tasks(true);
+  const auto myFormat = getenv("TRACEFORMAT");
+  if (myFormat != nullptr and std::string(myFormat) == "Alibaba") {
+    analyze_tasks(true, BatchTaskFormat::Alibaba);
+  } else {
+    analyze_tasks(true, BatchTaskFormat::Spar);
+  }
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_all) {
-  analyze_tasks(false);
+  const auto myFormat = getenv("TRACEFORMAT");
+  if (myFormat != nullptr and std::string(myFormat) == "Alibaba") {
+    analyze_tasks(false, BatchTaskFormat::Alibaba);
+  } else {
+    analyze_tasks(false, BatchTaskFormat::Spar);
+  }
 }
 
 } // namespace statesim

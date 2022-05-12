@@ -182,7 +182,8 @@ void Simulation::run(const Conf&                  aConf,
                          aConf.theStateFactor,
                          myFuncWeights,
                          0,
-                         true);
+                         true,
+                         BatchTaskFormat::Spar);
 
   LOG_IF(WARNING, myJobs.size() < aConf.theNumJobs)
       << "job pool size (" << myJobs.size()

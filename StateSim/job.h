@@ -40,6 +40,11 @@ SOFTWARE.
 namespace uiiit {
 namespace statesim {
 
+enum class BatchTaskFormat : uint8_t {
+  Spar    = 0,
+  Alibaba = 1,
+};
+
 class Job
 {
  public:
@@ -110,6 +115,8 @@ class Job
  *
  * \param aStatefulOnly Discard jobs that have only stateless tasks
  *
+ * \param aBatchTaskFormat The format of the batch task file.
+ *
  * \return A vector with all the jobs loaded. Can be empty
  *
  * \throw std::runtime_error if aPath cannot be opened or aFuncWeights is empty
@@ -120,7 +127,8 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
                           const double                         aStateFactor,
                           const std::map<std::string, double>& aFuncWeights,
                           const size_t                         aSeed,
-                          const bool                           aStatefulOnly);
+                          const bool                           aStatefulOnly,
+                          const BatchTaskFormat aBatchTaskFormat);
 
 } // namespace statesim
 } // namespace uiiit
