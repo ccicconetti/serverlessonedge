@@ -125,7 +125,9 @@ struct TestStateSim : public ::testing::Test {
     }
   };
 
-  void analyze_tasks(const bool aStatefulOnly, const BatchTaskFormat aFormat) {
+  void analyze_tasks(const bool            aStatefulOnly,
+                     const BatchTaskFormat aFormat,
+                     const bool            aDetails) {
     const auto myJobs = loadJobs("batch_task.csv",
                                  1000,
                                  100,
@@ -144,23 +146,27 @@ struct TestStateSim : public ::testing::Test {
     for (const auto& myJob : myJobs) {
       myChainSizeHisto[myJob.tasks().size()]++;
       myNumStatesHisto[myJob.stateSizes().size()]++;
-      for (const auto myStateSize : myJob.stateSizes()) {
-        myStateSizeHisto[myStateSize]++;
-      }
-      for (const auto& myTask : myJob.tasks()) {
-        myArgSizeHisto[myTask.size()]++;
-        myNumOpsHisto[myTask.ops()]++;
-        myNumDepsHisto[myTask.deps().size()]++;
+      if (aDetails) {
+        for (const auto myStateSize : myJob.stateSizes()) {
+          myStateSizeHisto[myStateSize]++;
+        }
+        for (const auto& myTask : myJob.tasks()) {
+          myArgSizeHisto[myTask.size()]++;
+          myNumOpsHisto[myTask.ops()]++;
+          myNumDepsHisto[myTask.deps().size()]++;
+        }
       }
     }
 
     // save everything to files
     MapSave()("chain-size.dat", myChainSizeHisto);
     MapSave()("num-states.dat", myNumStatesHisto);
-    MapSave()("state-size.dat", myStateSizeHisto);
-    MapSave()("arg-size.dat", myArgSizeHisto);
-    MapSave()("num-ops.dat", myNumOpsHisto);
-    MapSave()("num-deps.dat", myNumDepsHisto);
+    if (aDetails) {
+      MapSave()("state-size.dat", myStateSizeHisto);
+      MapSave()("arg-size.dat", myArgSizeHisto);
+      MapSave()("num-ops.dat", myNumOpsHisto);
+      MapSave()("num-deps.dat", myNumDepsHisto);
+    }
   }
 
   static void printNetwork(const Network& aNetwork) {
@@ -647,21 +653,27 @@ TEST_F(TestStateSim, test_simulation) {
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_stateful) {
-  const auto myFormat = getenv("TRACEFORMAT");
-  if (myFormat != nullptr and std::string(myFormat) == "Alibaba") {
-    analyze_tasks(true, BatchTaskFormat::Alibaba);
-  } else {
-    analyze_tasks(true, BatchTaskFormat::Spar);
-  }
+  const auto myFormat = (getenv("TRACEFORMAT") != nullptr and
+                         std::string(getenv("TRACEFORMAT")) == "Alibaba") ?
+                            BatchTaskFormat::Alibaba :
+                            BatchTaskFormat::Spar;
+  const auto myDetails = (getenv("TRACEDETAILS") != nullptr and
+                          std::string(getenv("TRACEDETAILS")) == "1") ?
+                             true :
+                             false;
+  analyze_tasks(true, myFormat, myDetails);
 }
 
 TEST_F(TestStateSim, DISABLED_analyze_tasks_all) {
-  const auto myFormat = getenv("TRACEFORMAT");
-  if (myFormat != nullptr and std::string(myFormat) == "Alibaba") {
-    analyze_tasks(false, BatchTaskFormat::Alibaba);
-  } else {
-    analyze_tasks(false, BatchTaskFormat::Spar);
-  }
+  const auto myFormat = (getenv("TRACEFORMAT") != nullptr and
+                         std::string(getenv("TRACEFORMAT")) == "Alibaba") ?
+                            BatchTaskFormat::Alibaba :
+                            BatchTaskFormat::Spar;
+  const auto myDetails = (getenv("TRACEDETAILS") != nullptr and
+                          std::string(getenv("TRACEDETAILS")) == "1") ?
+                             true :
+                             false;
+  analyze_tasks(false, myFormat, myDetails);
 }
 
 } // namespace statesim
