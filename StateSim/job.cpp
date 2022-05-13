@@ -214,6 +214,10 @@ std::vector<Job> loadJobs(const std::string&                   aPath,
                           std::list<size_t>&           aChain,
                           const size_t                 aCurTask) {
       for (size_t i = 0; i < aTasks.size(); i++) {
+        if (std::find(aChain.begin(), aChain.end(), i) != aChain.end()) {
+          // avoid loops
+          continue;
+        }
         if (aTasks[i].thePrecedences.count(aCurTask) == 1) {
           aChain.emplace_back(i);
           findChain(aTasks, aChain, i);
