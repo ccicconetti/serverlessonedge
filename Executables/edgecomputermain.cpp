@@ -77,7 +77,8 @@ int main(int argc, char* argv[]) {
    "Companion server end-point, required to serve function chains. Makes the computer asynchronous.")
   ("state-endpoint",
    po::value<std::string>(&myStateEndpoint)->default_value(""),
-   "If not empty create a state server listening to that end-point, which is required to serve function chains with remote states.")
+   "Use the given end-point to get/set the states. If the --no-state-server option is not specified, then a state server is also created listening at this end-point.")
+  ("no-state-server", "Do not create a state server. Only makes sense if --state-endpoint is not empty.")
   ("conf",
    po::value<std::string>(&myConf)->default_value(
      "type=raspberry,"
@@ -102,6 +103,11 @@ int main(int argc, char* argv[]) {
       throw std::runtime_error("Empty end-point: " + myCli.serverEndpoint());
     }
 
+    if (myStateEndpoint.empty() and myCli.varMap().count("no-state-server")) {
+      throw std::runtime_error(
+          "Cannot specify --no-state-server without --state-endpoint");
+    }
+
     ec::Computer::UtilCallback              myUtilCallback;
     std::unique_ptr<ec::EdgeComputerServer> myUtilServer;
     if (not myUtilServerEndpoint.empty()) {
@@ -124,11 +130,12 @@ int main(int argc, char* argv[]) {
     }
 
     std::unique_ptr<ec::StateServer> myStateServer;
-    if (not myStateEndpoint.empty()) {
+    if (not myStateEndpoint.empty() and
+        myCli.varMap().count("no-state-server") == 0) {
       myStateServer = std::make_unique<ec::StateServer>(myStateEndpoint);
       myStateServer->run(false);
-      myServer.state(myStateEndpoint);
     }
+    myServer.state(myStateEndpoint); // end-point can be empty
 
     const auto myServerImpl =
         ec::EdgeServerImplFactory::make(myServer,

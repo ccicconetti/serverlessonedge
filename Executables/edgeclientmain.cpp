@@ -182,7 +182,8 @@ int main(int argc, char* argv[]) {
      "Callback to receive the return of the function/chain in an asynchronous manner. Mandatory with function chains.")
     ("state-endpoint",
      po::value<std::string>(&myStateEndpoint)->default_value(""),
-     "Create a state server listening at the given end-point.")
+     "Use the given end-point to get/set the states. If the --no-state-server option is not specified, then a state server is also created listening at this end-point.")
+    ("no-state-server", "Do not create a state server. Only makes sense if --state-endpoint is not empty.")
     ("append", "Append to the output file instead of overwriting results.")
     ("dry", "Do not execute the lambda requests, just ask for an estimate of the time required.")
     ("seed",
@@ -207,6 +208,11 @@ int main(int argc, char* argv[]) {
 
     if (not myChainConf.empty() and not myDagConf.empty()) {
       throw std::runtime_error("Cannot specify both a chain and a DAG");
+    }
+
+    if (myStateEndpoint.empty() and myVarMap.count("no-state-server")) {
+      throw std::runtime_error(
+          "Cannot specify --no-state-server without --state-endpoint");
     }
 
     std::unique_ptr<ec::model::Chain> myChain;
@@ -261,7 +267,8 @@ int main(int argc, char* argv[]) {
         << "Using a custom content for all lambda requests: " << myContent;
 
     std::unique_ptr<ec::StateServer> myStateServer;
-    if (not myStateEndpoint.empty()) {
+    if (not myStateEndpoint.empty() and
+        myVarMap.count("no-state-server") == 0) {
       myStateServer = std::make_unique<ec::StateServer>(myStateEndpoint);
       myStateServer->run(false);
     }
@@ -297,7 +304,7 @@ int main(int argc, char* argv[]) {
       if (myDag.get() != nullptr) {
         myNewClient->setDag(*myDag, myStateSizes);
       }
-      myNewClient->setStateServer(myStateEndpoint);
+      myNewClient->setStateServer(myStateEndpoint); // end-point can be empty
       myClients.push_back(myNewClient.get());
       myPool.add(std::move(myNewClient));
     }
