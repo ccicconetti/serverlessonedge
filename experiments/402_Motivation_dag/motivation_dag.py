@@ -68,9 +68,10 @@ class MotivationDag(experiment.Experiment):
     def __init__(self, **kwargs):
         experiment.Experiment.__init__(self, **kwargs)
 
-        self.experiment_id = "e={}.s={}.{}".format(
+        self.experiment_id = "e={}.s={}.i={}.{}".format(
             self.confopts["experiment"],
             self.confopts["statesize"],
+            self.confopts["inputsize"],
             self.confopts["seed"]
         )
 
@@ -121,13 +122,23 @@ class MotivationDag(experiment.Experiment):
                 cur_lambdas,
                 speed=float(1e12),
                 num_cores=2,
-                op_coeff=float(1e3),
+                op_coeff=float(1e2),
                 op_offset=0,
             )
 
             # assign the computer's end-points
             lambda_proc_endpoint = "{}:10000".format(h.IP())
             util_collector_endpoint = "{}:20000".format(h.IP())
+
+            # if the node is an edge server, a state server is usually co-located
+            # and used to keep the state of functions (when needed); however,
+            # with "cloud" experiment, the state server located in the cloud is
+            # used instead by all the edge nodes
+            state_option = "--state-endpoint {}:30000".format(h.IP())
+            if self.confopts["experiment"] == "cloud" and \
+                    self.edge_min <= i < (self.edge_min + self.num_edges):
+                state_option = "--state-endpoint {}:30000 --no-state-server".format(
+                    self.hosts[self.cloud].IP())
 
             # run the edgecomputer
             self.cmd.run(
@@ -140,14 +151,14 @@ class MotivationDag(experiment.Experiment):
                     "--utilization-endpoint {} "
                     "--asynchronous "
                     "--companion-endpoint {}:6473 "
-                    "--state-endpoint {}:30000 "
+                    "{} "
                     "{}"
                 ).format(
                     conf_file_name,
                     lambda_proc_endpoint,
                     util_collector_endpoint,
                     h.IP(),
-                    h.IP(),
+                    state_option,
                     self.controller_conf),
                 is_background=True
             )
@@ -202,7 +213,7 @@ class MotivationDag(experiment.Experiment):
                     "--num-threads 1 "
                     "--inter-request-time 0 "
                     "--max-requests 1 "
-                    "--sizes 1000000 "
+                    "--sizes {} "
                     "{} "
                     "{} "
                     "--seed {} "
@@ -210,11 +221,13 @@ class MotivationDag(experiment.Experiment):
                     "--output-file {} "
                 ).format(
                     h.IP(),
+                    self.confopts["inputsize"] * 1000,
                     "--callback {}:6480".format(
                         h.IP()) if self.confopts["experiment"] in [
                             "edge", "cloud"] else "",
                     "--state-endpoint {}:6481".format(
-                        h.IP()) if self.confopts["experiment"] == "edge" else "",
+                        h.IP()) if self.confopts["experiment"] in [
+                            "edge", "cloud"] else "",
                     self.confopts["seed"],
                     result_file
                 ),
@@ -231,6 +244,7 @@ if __name__ == "__main__":
                 "experiment type, one of: client, edge, cloud",
             ],
             "statesize": [int, 1000, "state size, in kB"],
+            "inputsize": [int, 1000, "input size, in kB"],
         },
         {
             "cpu_limit": -1.0,

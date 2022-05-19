@@ -7,9 +7,7 @@ function run {
   fi
 
   for x in $seed ; do
-  for s in $states ; do
-  for l in $lengths ; do
-  for b in $bw ; do
+  for s in $statesizes ; do
   for i in $inputsizes ; do
   for e in $experiments ; do
 
@@ -17,9 +15,9 @@ function run {
       continue
     fi
 
-    mangle="e=$e.b=$b.s=$s.l=$l.i=$i.$x"
+    mangle="e=$e.s=$s.i=$i.$x"
     
-    cmd="python $script_name --experiment $e --bw $b --states $s --length $l --inputsize $i --duration $duration --seed $x"
+    cmd="python $script_name --experiment $e --inputsize $i --statesize $s --duration $duration --seed $x"
 
     echo $cmd
     if [ $dryrun -ne 1 ] ; then
@@ -31,10 +29,8 @@ function run {
     fi
 
   done
-  done 
   done
   done 
-  done
   done
 }
 
@@ -54,34 +50,26 @@ function analyze {
 
   rm -f $oldpwd/$meandir/ 2> /dev/null
 
-  for s in $states ; do
-  for l in $lengths ; do
   for i in $inputsizes ; do
   for e in $experiments ; do
 
-    if [[ $s -eq $l ]] ; then
-      continue
-    fi
-
-    mangle_out="e=$e.s=$s.l=$l.i=$i"
+    mangle_out="e=$e.i=$i"
     echo $mangle_out
 
-    for b in $bw ; do
+    for s in $statesizes ; do
 
-      mangle_in="e=$e.b=$b.s=$s.l=$l.i=$i"
+      mangle_in="e=$e.s=$s.i=$i"
 
-      ret=$(cat out.$mangle_in.* | $percentile --col 2 --mean --quantiles 0.90 0.95 0.99)
-      echo "$b $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-avg.dat
-      echo "$b $(grep ^"0.9 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-090.dat
-      echo "$b $(grep ^"0.95 " <<< $ret | cut -f 2 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-095.dat
+      ret=$(tail -n 95 out.$mangle_in.* | $percentile --col 2 --mean)
+      echo "$s $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/out-$mangle_out-avg.dat
 
-      ret=$(cat ovsstat.$mangle_in.* | $percentile --col -1 --mean)
-      echo "$b $(grep "+-" <<< $ret | cut -f 1 -d ' ') $(grep "+-" <<< $ret | cut -f 3 -d ' ')" >> $oldpwd/$meandir/tpt-$mangle_out-avg.dat
+      ret=$(cat ovsstat.$mangle_in.* | $percentile --col -1 --mean --count)
+      tot=$(grep "+-" <<< $ret | cut -f 1 -d ' ')
+      num=$(grep "records" <<< $ret | cut -f 1 -d ' ')
+      echo "$s $(echo "$tot * $num" | bc)" >> $oldpwd/$meandir/tpt-$mangle_out-avg.dat
 
     done
 
-  done
-  done
   done
   done
 
@@ -127,15 +115,13 @@ dryrun=0 # set automatically if command 'enumerate' is given
 #
 # configuration starts here
 #
-seed="1 2 3 4 5"
-duration=120
-percentile="percentile.py --warmup_col 1 --warmup 0 --duration $duration"
+seed="1"
+duration=100
+percentile="percentile.py --warmup_col -1"
 confidence="confidence.py --alpha 0.05"
-script_name="simple_function_dag.py"
+script_name="motivation_dag.py"
 
-states="4"
-lengths="7"
-bw="1.0 2.0 5.0 10.0 20.0 50.0 100.0"
-inputsizes="10000 100000"
-experiments="embedded hopbyhop remotestate"
+statesizes="1 2 5 10 20 50 100 200 500 1000"
+inputsizes="2000"
+experiments="client edge cloud"
 $1
