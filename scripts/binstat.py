@@ -13,8 +13,8 @@ parser.add_argument("--time_column", type=int, default=1,
                     help="Which column contains the experiment time, 1-based indexing")
 parser.add_argument("--x_column", type=int, default=1,
                     help="Which column contains x values, 1-based indexing")
-parser.add_argument("--y_column", type=int, default=2,
-                    help="Which column contains the y values, 1-based indexing")
+parser.add_argument("--y_column", type=int, default=0,
+                    help="Which column contains the y values, 1-based indexing. If < 1 then use a constant value (1)")
 parser.add_argument("--bin_size", type=float, default=1.0,
                     help="Bin duration")
 parser.add_argument("--quantile", type=float, default=0.95,
@@ -22,15 +22,14 @@ parser.add_argument("--quantile", type=float, default=0.95,
 parser.add_argument("--bin_print", type=int, default=0,
                     help="Index of the bin to print values, used only with --type=print")
 parser.add_argument("--metric", type=str, default="mean",
-                    help="One of: mean, quantile, print")
+                    help="One of: mean, sum, quantile, print")
 args = parser.parse_args()
 
 assert args.time_column >= 1
 assert args.x_column >= 1
-assert args.y_column >= 1
 assert args.bin_size > 0
 assert args.bin_print >= 0
-assert args.metric in ['mean', 'quantile', 'print']
+assert args.metric in ['mean', 'sum', 'quantile', 'print']
 
 data_sum = []
 data_all = []
@@ -39,7 +38,7 @@ for line in sys.stdin:
     assert len(tokens) >= max(args.x_column, args.y_column, args.time_column)
     time = float(tokens[args.time_column - 1])
     key = float(tokens[args.x_column - 1])
-    value = float(tokens[args.y_column - 1])
+    value = float(tokens[args.y_column - 1]) if args.y_column >= 1 else 1.0
     if time < args.warmup or (args.duration > 0 and time > args.duration):
         continue
 
@@ -60,6 +59,8 @@ for t,s,values in zip(range(len(data_sum)), data_sum, data_all):
         x = 0.0
         if args.metric == 'mean':
             x = s / N
+        elif args.metric == 'sum':
+            x = s
         elif args.metric == 'quantile':
             values.sort()
             q = min(int(N * args.quantile), N-1)
