@@ -168,7 +168,6 @@ set fit brief errorvariables nocovariancevariables errorscaling prescale nowrap 
 GNUTERM = "wxt"
 ## Last datafile plotted: "../post/num-optimizations-50.dat"
 unset grid
-unset key
 plot  \
  '< paste ../post/num-mu-50.dat ../post/mu-cost-50.dat' u ($1/60e3):($5/$2) w l lw 3 lt 1 title "{/Symbol m}",\
  '< paste ../post/num-lambda-50.dat ../post/lambda-cost-50.dat' u ($1/60e3):($5/$2) w l lw 3 lt 2 title "{/Symbol l}"
