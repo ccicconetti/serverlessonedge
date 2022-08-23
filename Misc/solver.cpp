@@ -72,7 +72,7 @@ void solve(const std::vector<double>& aLoads,
   // make all latencies finite
   //
 
-  for (auto myStep = 0u;; myStep++) {
+  while (true) {
     fillLatencies(aLoads, aCapacities, aMatrix, myLatencies);
 
     auto myMaxIt = std::max_element(myLatencies.begin(), myLatencies.end());
