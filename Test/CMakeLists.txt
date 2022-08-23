@@ -151,7 +151,6 @@ add_executable(testtopology testmain.cpp testtopology.cpp)
 target_link_libraries(testtopology ${LIBS})
 gtest_discover_tests(testtopology)
 
-
 if(WITH_QUIC)
   add_executable(testedgeserverquic testmain.cpp testedgeserverquic.cpp)
   target_link_libraries(testedgeserverquic uiiitedgequic ${LIBS})
@@ -164,6 +163,16 @@ endif()
 
 if(WITH_MVFST)
   add_executable(testmvfst testmain.cpp testmvfst.cpp)
-  target_link_libraries(testmvfst ${LIBS})
+  target_link_libraries(testmvfst
+    mvfst_codec_types
+    mvfst_constants
+    mvfst_exception
+    fizz
+    folly
+    fmt
+    iberty
+    double-conversion
+    ${LIBS}
+  )
   gtest_discover_tests(testmvfst)
 endif()

@@ -306,6 +306,7 @@ class LogQuicStatsFactory : public quic::QuicTransportStatsCallbackFactory
 struct TestMvfst : public ::testing::Test {};
 
 TEST_F(TestMvfst, DISABLED_test_echo_client) {
+  LogQuicStats myLog("testmvfst");
 }
 
 } // namespace mvfst
