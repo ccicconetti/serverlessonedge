@@ -47,5 +47,6 @@ rbuild
 workspace.code-workspace
 thirdparty/include
 thirdparty/libs
+thirdparty/mvfst
 compile_commands.json
 .cache

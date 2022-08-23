@@ -1,4 +1,4 @@
-add_library(uiiitdetectutils SHARED
+add_library(uiiitdetectutils STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/detectutils.cpp
 )
 

@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
-project(edge_computing VERSION 0.1.6 LANGUAGES CXX)
+project(serverlessonedge VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
 # Cmake find modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/etsimec/rest/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/etsimec/rest/support/cmake")
 
 if(APPLE)
   set(OPENSSL_LIBRARIES /usr/local/opt/openssl/lib/libssl.dylib /usr/local/opt/openssl/lib/libcrypto.dylib)
@@ -18,9 +19,11 @@ endif()
 find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 set(Boost_USE_MULTITHREADED TRUE)
+set(Boost_NO_BOOST_CMAKE TRUE)
 find_package(Boost
   REQUIRED
   COMPONENTS program_options filesystem system chrono thread
+  HINTS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/mvfst/_build/
 )
 find_package(CppREST REQUIRED) # populates CPP_REST_INCLUDE_DIR and CPP_REST_LIBRARY
 if(WITH_OPENCV)
@@ -29,6 +32,9 @@ if(WITH_OPENCV)
 endif()
 if(WITH_QUIC)
   MESSAGE("Compiling with QUIC support")
+endif()
+if(WITH_MVFST)
+  MESSAGE("Compiling with mvfst support")
 endif()
 
 set(PROXYGEN_ROOT "${PROJECT_SOURCE_DIR}/thirdparty/proxygen")
@@ -54,6 +60,9 @@ MESSAGE("CppREST Library:          ${CPP_REST_LIBRARY}")
 MESSAGE("CppREST Includes Path:    ${CPP_REST_INCLUDE_DIR}")
 MESSAGE("OpenSSL Libraries:        ${OPENSSL_LIBRARIES}")
 MESSAGE("OpenSSL Includes Path:    ${OPENSSL_INCLUDE_DIR}")
+MESSAGE("Boost Version:            ${Boost_VERSION}")
+MESSAGE("Boost Includes Path:      ${Boost_INCLUDE_DIRS}")
+MESSAGE("Boost Libraries Path:     ${Boost_LIBRARY_DIRS}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -76,12 +85,16 @@ include_directories(${PROTO_SRC_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
 
-# optional library
+# optional libraries
 set(LIBEDGEQUIC "")
 if(WITH_QUIC)
   include_directories(SYSTEM "thirdparty/include")
   link_directories("thirdparty/libs")
   set(LIBEDGEQUIC uiiitedgequic)
+endif()
+if(WITH_MVFST)
+  include_directories(SYSTEM "thirdparty/mvfst/_build/include")
+  link_directories("thirdparty/mvfst/_build/lib")
 endif()
 
 # executables
@@ -118,6 +131,7 @@ if (${CMAKE_BUILD_TYPE_LOWER} STREQUAL "debug")
 endif()
 
 if (${COMPILE_UNIT_TESTS})
+  enable_testing()
   message("Compiling unit tests")
   add_subdirectory(Test)
   set(skip_google_test TRUE)

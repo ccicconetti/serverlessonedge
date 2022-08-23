@@ -1,4 +1,4 @@
-add_library(uiiitedge SHARED
+add_library(uiiitedge STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/Detail/printtable.cpp
 
   ${CMAKE_CURRENT_SOURCE_DIR}/Entries/entry.cpp

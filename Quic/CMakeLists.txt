@@ -1,4 +1,4 @@
-add_library(uiiitedgequic SHARED
+add_library(uiiitedgequic STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeserverquic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientquic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/hqserver.cpp

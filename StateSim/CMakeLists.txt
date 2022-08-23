@@ -1,4 +1,4 @@
-add_library(uiiitstatesim SHARED
+add_library(uiiitstatesim STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/affinity.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/element.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/job.cpp
