@@ -37,6 +37,9 @@
 # Vim plug-ins
 .clang
 
+# Vim swap
+*.swp
+
 # build artifacts
 build
 .vscode
