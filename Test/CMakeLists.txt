@@ -35,6 +35,8 @@ add_library(testedgelib STATIC
   trivialedgecontrollerinstaller.cpp
 )
 
+add_dependencies(testedgelib uiiitrpc)
+
 set(LIBS
   testedgelib
   uiiitedge
