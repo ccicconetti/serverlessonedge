@@ -37,8 +37,9 @@ SOFTWARE.
 
 #include "gtest/gtest.h"
 
-#include <glog/logging.h>
+#include "Support/queue.h"
 
+#include <chrono>
 #include <quic/QuicConstants.h>
 #include <quic/QuicException.h>
 #include <quic/api/QuicSocket.h>
@@ -46,11 +47,20 @@ SOFTWARE.
 #include <quic/codec/Types.h>
 #include <quic/common/BufUtil.h>
 #include <quic/fizz/client/handshake/FizzClientQuicHandshakeContext.h>
+#include <quic/server/QuicServer.h>
+#include <quic/server/QuicServerTransport.h>
+#include <quic/server/QuicSharedUDPSocketFactory.h>
 #include <quic/state/QuicTransportStatsCallback.h>
 
 #include <fizz/protocol/CertificateVerifier.h>
+
 #include <folly/fibers/Baton.h>
+#include <folly/io/async/EventBase.h>
 #include <folly/io/async/ScopedEventBaseThread.h>
+#include <folly/ssl/OpenSSLCertUtils.h>
+#include <folly/ssl/OpenSSLPtrTypes.h>
+
+#include <glog/logging.h>
 
 #include <iostream>
 #include <string>
@@ -305,6 +315,16 @@ class LogQuicStats : public quic::QuicTransportStatsCallback
   std::string prefix_;
 };
 
+class LogQuicStatsFactory : public quic::QuicTransportStatsCallbackFactory
+{
+ public:
+  ~LogQuicStatsFactory() override = default;
+
+  std::unique_ptr<quic::QuicTransportStatsCallback> make() override {
+    return std::make_unique<LogQuicStats>("server");
+  }
+};
+
 class TestCertificateVerifier : public fizz::CertificateVerifier
 {
  public:
@@ -322,6 +342,29 @@ class TestCertificateVerifier : public fizz::CertificateVerifier
   }
 };
 
+static constexpr folly::StringPiece kP256Certificate = R"(
+-----BEGIN CERTIFICATE-----
+MIIB7jCCAZWgAwIBAgIJAMVp7skBzobZMAoGCCqGSM49BAMCMFQxCzAJBgNVBAYT
+AlVTMQswCQYDVQQIDAJOWTELMAkGA1UEBwwCTlkxDTALBgNVBAoMBEZpenoxDTAL
+BgNVBAsMBEZpenoxDTALBgNVBAMMBEZpenowHhcNMTcwNDA0MTgyOTA5WhcNNDEx
+MTI0MTgyOTA5WjBUMQswCQYDVQQGEwJVUzELMAkGA1UECAwCTlkxCzAJBgNVBAcM
+Ak5ZMQ0wCwYDVQQKDARGaXp6MQ0wCwYDVQQLDARGaXp6MQ0wCwYDVQQDDARGaXp6
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnYe8rdtl2Nz234sUipZ5tbcQ2xnJ
+Wput//E0aMs1i04h0kpcgmESZY67ltZOKYXftBwZSDNDkaSqgbZ4N+Lb8KNQME4w
+HQYDVR0OBBYEFDxbi6lU2XUvrzyK1tGmJEncyqhQMB8GA1UdIwQYMBaAFDxbi6lU
+2XUvrzyK1tGmJEncyqhQMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwIDRwAwRAIg
+NJt9NNcTL7J1ZXbgv6NsvhcjM3p6b175yNO/GqfvpKUCICXFCpHgqkJy8fUsPVWD
+p9fO4UsXiDUnOgvYFDA+YtcU
+-----END CERTIFICATE-----
+)";
+constexpr folly::StringPiece        kP256Key         = R"(
+-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIHMPeLV/nP/gkcgU2weiXl198mEX8RbFjPRoXuGcpxMXoAoGCCqGSM49
+AwEHoUQDQgAEnYe8rdtl2Nz234sUipZ5tbcQ2xnJWput//E0aMs1i04h0kpcgmES
+ZY67ltZOKYXftBwZSDNDkaSqgbZ4N+Lb8A==
+-----END EC PRIVATE KEY-----
+)";
+
 class EchoClient : public quic::QuicSocket::ConnectionSetupCallback,
                    public quic::QuicSocket::ConnectionCallback,
                    public quic::QuicSocket::ReadCallback,
@@ -329,9 +372,12 @@ class EchoClient : public quic::QuicSocket::ConnectionSetupCallback,
                    public quic::QuicSocket::DatagramCallback
 {
  public:
-  EchoClient(const std::string& host, uint16_t port)
+  EchoClient(const std::string&      host,
+             uint16_t                port,
+             std::list<std::string>& responses)
       : host_(host)
-      , port_(port) {
+      , port_(port)
+      , responses_(responses) {
     // noop
   }
 
@@ -347,7 +393,8 @@ class EchoClient : public quic::QuicSocket::ConnectionSetupCallback,
     } else {
       recvOffsets_[streamId] += copy->length();
     }
-    LOG(INFO) << "Client received data=" << copy->moveToFbString().toStdString()
+    responses_.emplace_back(copy->moveToFbString().toStdString());
+    LOG(INFO) << "Client received data=" << responses_.back()
               << " on stream=" << streamId;
   }
 
@@ -423,7 +470,7 @@ class EchoClient : public quic::QuicSocket::ConnectionSetupCallback,
     }
   }
 
-  void start(std::string token) {
+  void start(std::string token, support::Queue<std::string>* msgQueue) {
     folly::ScopedEventBaseThread networkThread("EchoClientThread");
     auto                         evb = networkThread.getEventBase();
     folly::SocketAddress         addr(host_.c_str(), port_);
@@ -476,12 +523,27 @@ class EchoClient : public quic::QuicSocket::ConnectionSetupCallback,
       sendMessage(streamId, pendingOutput_[streamId]);
     };
 
-    // loop until Ctrl+D
-    while (!closed && std::getline(std::cin, message)) {
-      if (message.empty()) {
-        continue;
+    if (msgQueue == nullptr) {
+      // loop until Ctrl+D
+      while (!closed && std::getline(std::cin, message)) {
+        if (message.empty()) {
+          continue;
+        }
+        evb->runInEventBaseThreadAndWait([=] { sendMessageInStream(); });
       }
-      evb->runInEventBaseThreadAndWait([=] { sendMessageInStream(); });
+    } else {
+      auto queueClosed = false;
+      while (!closed && !queueClosed) {
+        try {
+          message = msgQueue->pop();
+          if (message.empty()) {
+            continue;
+          }
+          evb->runInEventBaseThreadAndWait([=] { sendMessageInStream(); });
+        } catch (const support::QueueClosed&) {
+          queueClosed = true;
+        }
+      }
     }
     LOG(INFO) << "EchoClient stopping client";
   }
@@ -509,22 +571,322 @@ class EchoClient : public quic::QuicSocket::ConnectionSetupCallback,
   std::map<quic::StreamId, quic::BufQueue>   pendingOutput_;
   std::map<quic::StreamId, uint64_t>         recvOffsets_;
   folly::fibers::Baton                       startDone_;
+  std::list<std::string>&                    responses_;
 };
 
-class LogQuicStatsFactory : public quic::QuicTransportStatsCallbackFactory
+class EchoHandler : public quic::QuicSocket::ConnectionSetupCallback,
+                    public quic::QuicSocket::ConnectionCallback,
+                    public quic::QuicSocket::ReadCallback,
+                    public quic::QuicSocket::WriteCallback,
+                    public quic::QuicSocket::DatagramCallback
 {
  public:
-  ~LogQuicStatsFactory() override = default;
+  using StreamData = std::pair<quic::BufQueue, bool>;
 
-  std::unique_ptr<quic::QuicTransportStatsCallback> make() override {
-    return std::make_unique<LogQuicStats>("server");
+  explicit EchoHandler(folly::EventBase*            evbIn,
+                       support::Queue<std::string>& commands)
+      : evb(evbIn)
+      , commands_(commands) {
+    // noop
   }
+
+  void setQuicSocket(std::shared_ptr<quic::QuicSocket> socket) {
+    sock = socket;
+  }
+
+  void onNewBidirectionalStream(quic::StreamId id) noexcept override {
+    LOG(INFO) << "Got bidirectional stream id=" << id;
+    sock->setReadCallback(id, this);
+  }
+
+  void onNewUnidirectionalStream(quic::StreamId id) noexcept override {
+    LOG(INFO) << "Got unidirectional stream id=" << id;
+    sock->setReadCallback(id, this);
+  }
+
+  void onStopSending(quic::StreamId             id,
+                     quic::ApplicationErrorCode error) noexcept override {
+    LOG(INFO) << "Got StopSending stream id=" << id << " error=" << error;
+  }
+
+  void onConnectionEnd() noexcept override {
+    LOG(INFO) << "Socket closed";
+  }
+
+  void onConnectionSetupError(quic::QuicError error) noexcept override {
+    onConnectionError(std::move(error));
+  }
+
+  void onConnectionError(quic::QuicError error) noexcept override {
+    LOG(ERROR) << "Socket error=" << toString(error.code) << " "
+               << error.message;
+  }
+
+  void readAvailable(quic::StreamId id) noexcept override {
+    LOG(INFO) << "read available for stream id=" << id;
+
+    auto res = sock->read(id, 0);
+    if (res.hasError()) {
+      LOG(ERROR) << "Got error=" << toString(res.error());
+      return;
+    }
+    if (input_.find(id) == input_.end()) {
+      input_.emplace(id, std::make_pair(quic::BufQueue(), false));
+    }
+    quic::Buf  data    = std::move(res.value().first);
+    bool       eof     = res.value().second;
+    auto       dataLen = (data ? data->computeChainDataLength() : 0);
+    const auto dataStr =
+        (data) ? data->clone()->moveToFbString().toStdString() : std::string();
+    commands_.push(dataStr);
+    LOG(INFO) << "Got len=" << dataLen << " eof=" << uint32_t(eof)
+              << " total=" << input_[id].first.chainLength() + dataLen
+              << " data=" << dataStr;
+    input_[id].first.append(std::move(data));
+    input_[id].second = eof;
+    if (eof) {
+      echo(id, input_[id]);
+    }
+  }
+
+  void readError(quic::StreamId id, quic::QuicError error) noexcept override {
+    LOG(ERROR) << "Got read error on stream=" << id
+               << " error=" << toString(error);
+    // A read error only terminates the ingress portion of the stream state.
+    // Your application should probably terminate the egress portion via
+    // resetStream
+  }
+
+  void readErrorWithGroup(quic::StreamId      id,
+                          quic::StreamGroupId groupId,
+                          quic::QuicError     error) noexcept override {
+    LOG(ERROR) << "Got read error on stream=" << id << "; group=" << groupId
+               << " error=" << toString(error);
+  }
+
+  void onDatagramsAvailable() noexcept override {
+    auto res = sock->readDatagrams();
+    if (res.hasError()) {
+      LOG(ERROR) << "readDatagrams() error: " << res.error();
+      return;
+    }
+    LOG(WARNING) << "received " << res->size() << " datagrams: ignored";
+  }
+
+  void onStreamWriteReady(quic::StreamId id,
+                          uint64_t       maxToSend) noexcept override {
+    LOG(INFO) << "socket is write ready with maxToSend=" << maxToSend;
+    echo(id, input_[id]);
+  }
+
+  void onStreamWriteError(quic::StreamId  id,
+                          quic::QuicError error) noexcept override {
+    LOG(ERROR) << "write error with stream=" << id
+               << " error=" << toString(error);
+  }
+
+  folly::EventBase* getEventBase() {
+    return evb;
+  }
+
+  folly::EventBase*                 evb;
+  std::shared_ptr<quic::QuicSocket> sock;
+  support::Queue<std::string>&      commands_;
+
+ private:
+  void echo(quic::StreamId id, StreamData& data) {
+    if (!data.second) {
+      // only echo when eof is present
+      return;
+    }
+    auto echoedData = folly::IOBuf::copyBuffer("echo ");
+    echoedData->prependChain(data.first.move());
+    auto res = sock->writeChain(id, std::move(echoedData), true, nullptr);
+    if (res.hasError()) {
+      LOG(ERROR) << "write error=" << toString(res.error());
+    } else {
+      // echo is done, clear EOF
+      data.second = false;
+    }
+  }
+
+  std::map<quic::StreamId, StreamData> input_;
+};
+
+class EchoServerTransportFactory : public quic::QuicServerTransportFactory
+{
+ public:
+  EchoServerTransportFactory(support::Queue<std::string>& commands)
+      : commands_(commands) {
+    // noop
+  }
+
+  ~EchoServerTransportFactory() override {
+    while (!echoHandlers_.empty()) {
+      auto& handler = echoHandlers_.back();
+      handler->getEventBase()->runImmediatelyOrRunInEventBaseThreadAndWait(
+          [this] {
+            // The evb should be performing a sequential consistency atomic
+            // operation already, so we can bank on that to make sure the writes
+            // propagate to all threads.
+            echoHandlers_.pop_back();
+          });
+    }
+  }
+
+  quic::QuicServerTransport::Ptr
+  make(folly::EventBase*                      evb,
+       std::unique_ptr<folly::AsyncUDPSocket> sock,
+       const folly::SocketAddress&,
+       quic::QuicVersion,
+       std::shared_ptr<const fizz::server::FizzServerContext> ctx) noexcept
+      override {
+    CHECK_EQ(evb, sock->getEventBase());
+    auto echoHandler = std::make_unique<EchoHandler>(evb, commands_);
+    auto transport   = quic::QuicServerTransport::make(
+        evb, std::move(sock), echoHandler.get(), echoHandler.get(), ctx);
+    echoHandler->setQuicSocket(transport);
+    echoHandlers_.push_back(std::move(echoHandler));
+    return transport;
+  }
+
+ private:
+  std::vector<std::unique_ptr<EchoHandler>> echoHandlers_;
+  support::Queue<std::string>&              commands_;
+};
+
+class EchoServer
+{
+ public:
+  explicit EchoServer(const std::string& host, const uint16_t port)
+      : host_(host)
+      , port_(port)
+      , server_(quic::QuicServer::createQuicServer()) {
+    server_->setQuicServerTransportFactory(
+        std::make_unique<EchoServerTransportFactory>(commands_));
+    server_->setTransportStatsCallbackFactory(
+        std::make_unique<LogQuicStatsFactory>());
+    auto serverCtx = createServerCtx();
+    server_->setFizzContext(serverCtx);
+
+    auto settingsCopy                        = server_->getTransportSettings();
+    settingsCopy.datagramConfig.enabled      = false;
+    settingsCopy.selfActiveConnectionIdLimit = 10;
+    settingsCopy.disableMigration            = true;
+    server_->setTransportSettings(std::move(settingsCopy));
+  }
+
+  void start() {
+    // Create a SocketAddress and the default or passed in host.
+    folly::SocketAddress addr1(host_.c_str(), port_);
+    addr1.setFromHostPort(host_, port_);
+    server_->start(addr1, 0);
+    LOG(INFO) << "Echo server started at: " << addr1.describe();
+    eventbase_.loopForever();
+  }
+
+  void stop() {
+    eventbase_.terminateLoopSoon();
+  }
+
+  support::Queue<std::string>& commands() {
+    return commands_;
+  }
+
+ private:
+  static std::shared_ptr<fizz::server::FizzServerContext> createServerCtx() {
+    // read certificate
+    folly::ssl::BioUniquePtr bioCert(BIO_new(BIO_s_mem()));
+    BIO_write(bioCert.get(), kP256Certificate.data(), kP256Certificate.size());
+    folly::ssl::X509UniquePtr certificate(
+        PEM_read_bio_X509(bioCert.get(), nullptr, nullptr, nullptr));
+
+    // read private key
+    folly::ssl::BioUniquePtr bioKey(BIO_new(BIO_s_mem()));
+    BIO_write(bioKey.get(), kP256Key.data(), kP256Key.size());
+    folly::ssl::EvpPkeyUniquePtr privKey(
+        PEM_read_bio_PrivateKey(bioKey.get(), nullptr, nullptr, nullptr));
+
+    // build the certificate manager
+    std::vector<folly::ssl::X509UniquePtr> certs;
+    certs.emplace_back(std::move(certificate));
+    auto certManager = std::make_unique<fizz::server::CertManager>();
+    certManager->addCert(
+        std::make_shared<fizz::SelfCertImpl<fizz::KeyType::P256>>(
+            std::move(privKey), std::move(certs)),
+        true);
+    auto serverCtx = std::make_shared<fizz::server::FizzServerContext>();
+    serverCtx->setFactory(std::make_shared<quic::QuicFizzFactory>());
+    serverCtx->setCertManager(std::move(certManager));
+    serverCtx->setOmitEarlyRecordLayer(true);
+    serverCtx->setClock(std::make_shared<fizz::SystemClock>());
+    return serverCtx;
+  }
+
+ private:
+  std::string                       host_;
+  uint16_t                          port_;
+  folly::EventBase                  eventbase_;
+  std::shared_ptr<quic::QuicServer> server_;
+  support::Queue<std::string>       commands_;
 };
 
 struct TestMvfst : public ::testing::Test {};
 
-TEST_F(TestMvfst, DISABLED_test_echo_client) {
-  LogQuicStats myLog("testmvfst");
+TEST_F(TestMvfst, DISABLED_echo_server) {
+  EchoServer myServer("::1", 10000);
+  myServer.start();
+}
+
+TEST_F(TestMvfst, DISABLED_echo_client) {
+  std::list<std::string> responses; // unused
+  EchoClient             myClient("::1", 10000, responses);
+  myClient.start("my-token", nullptr);
+}
+
+TEST_F(TestMvfst, test_echo_client_server) {
+  const auto                  N = 10;
+  support::Queue<std::string> queue;
+
+  std::list<std::thread>      threads;
+  std::unique_ptr<EchoServer> echoServer;
+  std::list<std::string>      responsesExpected;
+  std::list<std::string>      responsesActual;
+  std::list<std::string>      commandsExpected;
+  threads.emplace_back([&echoServer]() {
+    echoServer = std::make_unique<EchoServer>("::1", 10000);
+    echoServer->start();
+  });
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  threads.emplace_back(std::thread([&queue, &responsesActual]() {
+    EchoClient echoClient("::1", 10000, responsesActual);
+    echoClient.start("my-token", &queue);
+  }));
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+  for (auto i = 0; i < N; i++) {
+    commandsExpected.emplace_back("hello-" + std::to_string(i));
+    queue.push(commandsExpected.back());
+    responsesExpected.emplace_back("echo " + commandsExpected.back());
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  queue.push("/closed");
+  queue.close();
+  echoServer->stop();
+
+  // wait for all the threads to finish
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  ASSERT_EQ(responsesExpected, responsesActual);
+  ASSERT_EQ(N, echoServer->commands().size());
+
+  std::list<std::string> commandsActual;
+  for (auto i = 0; i < N; i++) {
+    commandsActual.emplace_back(echoServer->commands().pop());
+  }
+  ASSERT_EQ(commandsExpected, commandsActual);
 }
 
 } // namespace mvfst

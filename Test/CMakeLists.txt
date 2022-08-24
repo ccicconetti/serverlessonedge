@@ -166,16 +166,53 @@ endif()
 if(WITH_MVFST)
   add_executable(testmvfst testmain.cpp testmvfst.cpp)
   target_link_libraries(testmvfst
+    folly
+    mvfst_buf_accessor
+    mvfst_bufutil
+    mvfst_cc_algo
+    mvfst_client
+    mvfst_codec
+    mvfst_codec_decode
+    mvfst_fizz_handshake
+    mvfst_codec_packet_number_cipher
+    mvfst_codec_pktbuilder
+    mvfst_codec_pktrebuilder
     mvfst_codec_types
     mvfst_constants
+    mvfst_d6d_state_functions
+    mvfst_d6d_types
+    mvfst_dsr_frontend
+    mvfst_dsr_types
     mvfst_exception
+    mvfst_fizz_client
+    mvfst_flowcontrol
+    mvfst_handshake
+    mvfst_happyeyeballs
+    mvfst_loss
+    mvfst_observer
+    mvfst_qlogger
+    mvfst_server
+    mvfst_server_state
+    mvfst_socketutil
+    mvfst_state_ack_handler
+    mvfst_state_datagram_handler
+    mvfst_state_functions
+    mvfst_state_machine
+    mvfst_state_pacing_functions
+    mvfst_state_simple_frame_functions
+    mvfst_state_stream
+    mvfst_state_stream_functions
+    mvfst_transport
+    mvfst_transport_knobs
     fizz
+    mvfst_looper
     folly
     fmt
     iberty
     double-conversion
     gflags
     event
+    sodium
     ${LIBS}
   )
   gtest_discover_tests(testmvfst)
