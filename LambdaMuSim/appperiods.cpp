@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include "Support/tostring.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 #include <glog/logging.h>
@@ -65,6 +66,8 @@ AppPeriods::AppPeriods(const dataset::TimestampDataset& aDataset,
     thePeriods.emplace_back(Periods());
     myCost.second.theBestNextPeriods.swap(thePeriods.back());
   }
+
+  std::sort(thePeriods.begin(), thePeriods.end());
 
   VLOG(2) << aDataset.size() << " apps in dataset, " << thePeriods.size()
           << " filtered (>= " << aMinPeriods << " periods)";

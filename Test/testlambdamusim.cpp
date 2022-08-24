@@ -340,14 +340,14 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
       10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 1, 42);
 
   if (myCheckFloat) {
-    EXPECT_FLOAT_EQ(4.4268537, myOut1.theNumLambda);
-    EXPECT_FLOAT_EQ(4.5731463, myOut1.theNumMu);
+    EXPECT_FLOAT_EQ(6.1521521, myOut1.theNumLambda);
+    EXPECT_FLOAT_EQ(2.8478479, myOut1.theNumMu);
     EXPECT_EQ(16, myOut1.theNumContainers);
     EXPECT_EQ(21, myOut1.theTotCapacity);
-    EXPECT_FLOAT_EQ(26.546547, myOut1.theLambdaCost);
-    EXPECT_FLOAT_EQ(18.532532, myOut1.theMuCost);
-    EXPECT_FLOAT_EQ(4.4994993, myOut1.theMuCloud);
-    EXPECT_EQ(47, myOut1.theMuMigrations);
+    EXPECT_FLOAT_EQ(36.930931, myOut1.theLambdaCost);
+    EXPECT_FLOAT_EQ(8.8438435, myOut1.theMuCost);
+    EXPECT_FLOAT_EQ(0.6986987, myOut1.theMuCloud);
+    EXPECT_EQ(15, myOut1.theMuMigrations);
     EXPECT_EQ(11, myOut1.theNumOptimizations);
   }
 
@@ -369,8 +369,8 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_EQ(myOut1.theTotCapacity, myOut2.theTotCapacity);
   EXPECT_EQ(myOut1.theLambdaCost, myOut2.theLambdaCost);
   if (myCheckFloat) {
-    EXPECT_FLOAT_EQ(27.453453, myOut2.theMuCost);
-    EXPECT_FLOAT_EQ(7.4994993, myOut2.theMuCloud);
+    EXPECT_FLOAT_EQ(17.069069, myOut2.theMuCost);
+    EXPECT_FLOAT_EQ(2.6006007, myOut2.theMuCloud);
   }
   EXPECT_EQ(0, myOut2.theMuMigrations);
   EXPECT_EQ(myOut1.theNumOptimizations, myOut2.theNumOptimizations);
@@ -385,8 +385,8 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_EQ(myOut1.theTotCapacity, myOut3.theTotCapacity);
   EXPECT_EQ(myOut1.theLambdaCost, myOut3.theLambdaCost);
   if (myCheckFloat) {
-    EXPECT_FLOAT_EQ(27.453453, myOut3.theMuCost);
-    EXPECT_FLOAT_EQ(7.4994993, myOut3.theMuCloud);
+    EXPECT_FLOAT_EQ(17.069069, myOut3.theMuCost);
+    EXPECT_FLOAT_EQ(2.6006007, myOut3.theMuCloud);
   }
   EXPECT_EQ(0, myOut3.theMuMigrations);
   EXPECT_EQ(10, myOut3.theNumOptimizations);
