@@ -37,6 +37,7 @@ SOFTWARE.
 #include "StateSim/link.h"
 #include "StateSim/network.h"
 #include "StateSim/node.h"
+#include "Support/random.h"
 #include "Support/tostring.h"
 
 #include "gtest/gtest.h"
@@ -307,6 +308,22 @@ TEST_F(TestLambdaMuSim, test_app_pool) {
 }
 
 TEST_F(TestLambdaMuSim, test_example_dynamic) {
+  auto myCheckFloat = false;
+  {
+    support::UniformIntRv<std::size_t> myTestRv(0, 1000, 1, 2, 3);
+    std::vector<std::size_t>           myTestNumbers(10);
+    for (std::size_t i = 0; i < myTestNumbers.size(); i++) {
+      myTestNumbers[i] = myTestRv();
+    }
+    std::vector<std::size_t> myExpectedNumbers(
+        {398, 164, 146, 902, 617, 622, 988, 690, 204, 136});
+    if (myTestNumbers == myExpectedNumbers) {
+      myCheckFloat = true;
+      LOG(INFO) << "also checking instance-specific numbers";
+    }
+  }
+  LOG_IF(INFO, not myCheckFloat) << "only checking invariants";
+
   statesim::Network myNetwork(
       theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
 
@@ -322,15 +339,17 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   const auto myOut1 = myScenario.dynamic(
       10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 1, 42);
 
-  EXPECT_FLOAT_EQ(4.4268537, myOut1.theNumLambda);
-  EXPECT_FLOAT_EQ(4.5731463, myOut1.theNumMu);
-  EXPECT_EQ(16, myOut1.theNumContainers);
-  EXPECT_EQ(21, myOut1.theTotCapacity);
-  EXPECT_FLOAT_EQ(26.546547, myOut1.theLambdaCost);
-  EXPECT_FLOAT_EQ(18.532532, myOut1.theMuCost);
-  EXPECT_FLOAT_EQ(4.4994993, myOut1.theMuCloud);
-  EXPECT_EQ(47, myOut1.theMuMigrations);
-  EXPECT_EQ(11, myOut1.theNumOptimizations);
+  if (myCheckFloat) {
+    EXPECT_FLOAT_EQ(4.4268537, myOut1.theNumLambda);
+    EXPECT_FLOAT_EQ(4.5731463, myOut1.theNumMu);
+    EXPECT_EQ(16, myOut1.theNumContainers);
+    EXPECT_EQ(21, myOut1.theTotCapacity);
+    EXPECT_FLOAT_EQ(26.546547, myOut1.theLambdaCost);
+    EXPECT_FLOAT_EQ(18.532532, myOut1.theMuCost);
+    EXPECT_FLOAT_EQ(4.4994993, myOut1.theMuCloud);
+    EXPECT_EQ(47, myOut1.theMuMigrations);
+    EXPECT_EQ(11, myOut1.theNumOptimizations);
+  }
 
   // repeat identical simulation
   const auto myOut1again = myScenario.dynamic(
@@ -349,8 +368,10 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_EQ(myOut1.theNumContainers, myOut2.theNumContainers);
   EXPECT_EQ(myOut1.theTotCapacity, myOut2.theTotCapacity);
   EXPECT_EQ(myOut1.theLambdaCost, myOut2.theLambdaCost);
-  EXPECT_FLOAT_EQ(27.453453, myOut2.theMuCost);
-  EXPECT_FLOAT_EQ(7.4994993, myOut2.theMuCloud);
+  if (myCheckFloat) {
+    EXPECT_FLOAT_EQ(27.453453, myOut2.theMuCost);
+    EXPECT_FLOAT_EQ(7.4994993, myOut2.theMuCloud);
+  }
   EXPECT_EQ(0, myOut2.theMuMigrations);
   EXPECT_EQ(myOut1.theNumOptimizations, myOut2.theNumOptimizations);
 
@@ -363,8 +384,10 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_EQ(myOut1.theNumContainers, myOut3.theNumContainers);
   EXPECT_EQ(myOut1.theTotCapacity, myOut3.theTotCapacity);
   EXPECT_EQ(myOut1.theLambdaCost, myOut3.theLambdaCost);
-  EXPECT_FLOAT_EQ(27.453453, myOut3.theMuCost);
-  EXPECT_FLOAT_EQ(7.4994993, myOut3.theMuCloud);
+  if (myCheckFloat) {
+    EXPECT_FLOAT_EQ(27.453453, myOut3.theMuCost);
+    EXPECT_FLOAT_EQ(7.4994993, myOut3.theMuCloud);
+  }
   EXPECT_EQ(0, myOut3.theMuMigrations);
   EXPECT_EQ(10, myOut3.theNumOptimizations);
 
