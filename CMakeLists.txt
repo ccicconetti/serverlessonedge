@@ -22,7 +22,7 @@ set(Boost_USE_MULTITHREADED TRUE)
 set(Boost_NO_BOOST_CMAKE TRUE)
 find_package(Boost
   REQUIRED
-  COMPONENTS program_options filesystem system chrono thread
+  COMPONENTS program_options filesystem system chrono thread context
   HINTS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/mvfst/_build/
 )
 find_package(CppREST REQUIRED) # populates CPP_REST_INCLUDE_DIR and CPP_REST_LIBRARY
@@ -62,7 +62,7 @@ MESSAGE("OpenSSL Libraries:        ${OPENSSL_LIBRARIES}")
 MESSAGE("OpenSSL Includes Path:    ${OPENSSL_INCLUDE_DIR}")
 MESSAGE("Boost Version:            ${Boost_VERSION}")
 MESSAGE("Boost Includes Path:      ${Boost_INCLUDE_DIRS}")
-MESSAGE("Boost Libraries Path:     ${Boost_LIBRARY_DIRS}")
+MESSAGE("Boost Libraries:          ${Boost_LIBRARIES}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

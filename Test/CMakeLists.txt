@@ -174,6 +174,8 @@ if(WITH_MVFST)
     fmt
     iberty
     double-conversion
+    gflags
+    event
     ${LIBS}
   )
   gtest_discover_tests(testmvfst)
