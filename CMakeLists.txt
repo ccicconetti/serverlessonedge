@@ -132,6 +132,7 @@ endif()
 
 if (${COMPILE_UNIT_TESTS})
   enable_testing()
+  set(WITH_TEST_RPC ON)
   message("Compiling unit tests")
   add_subdirectory(Test)
   set(skip_google_test TRUE)
