@@ -59,7 +59,7 @@ namespace es = uiiit::simulation;
 class ResponseSaver final
 {
  public:
-  ResponseSaver(const std::string& aCallback)
+  explicit ResponseSaver(const std::string& aCallback)
       : theQueue()
       , theCallbackServer(aCallback, theQueue)
       , theTerminating(false)
