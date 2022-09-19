@@ -105,6 +105,10 @@ add_executable(testedgemessages testmain.cpp testedgemessages.cpp)
 target_link_libraries(testedgemessages ${LIBS})
 gtest_discover_tests(testedgemessages)
 
+add_executable(testedgeservergrpc testmain.cpp testedgeservergrpc.cpp)
+target_link_libraries(testedgeservergrpc ${LIBS})
+gtest_discover_tests(testedgeservergrpc)
+
 add_executable(testetsitransaction testmain.cpp testetsitransaction.cpp)
 target_link_libraries(testetsitransaction ${LIBS})
 gtest_discover_tests(testetsitransaction)
