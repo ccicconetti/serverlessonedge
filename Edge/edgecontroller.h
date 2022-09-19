@@ -124,47 +124,36 @@ class EdgeController
   class Routers
   {
    public:
-    struct AddStatus {
-      AddStatus()
-          : theMatching()
-          , theAlreadyPresent(false) {
-      }
-
-      std::set<RouterEndpoints> theMatching;
-      bool                      theAlreadyPresent;
-    };
-
     /**
      * Add a new router, identified by its two end-points, i.e. for the lambda
      * processor and forwarding table servers, respectively.
      *
      * \param aEdgeServerEndpoint The lambda processor server end-point.
      * \param aEdgeRouterEndpoint The forwarding table server end-point.
-     *
-     * \return a structure specifying if pair of end-points is already present
-     *         and, if yes, if there are other pairs matching in the data
-     *         structure already (in which case the call to this method
-     *         does not perform any changes).
      */
-    AddStatus add(const std::string& aEdgeServerEndpoint,
-                  const std::string& aEdgeRouterEndpoint);
+    void add(const std::string& aEdgeServerEndpoint,
+             const std::string& aEdgeRouterEndpoint);
 
     /**
-     * Remove a router identified by its end-points.
+     * Remove a router identified by its lambda processor end-point.
      *
      * \return true if actually removed.
      */
-    bool remove(const RouterEndpoints& aRouter);
+    bool remove(const std::string& aEdgeServerEndpoint);
 
     //! \return all router end-points.
-    const std::list<RouterEndpoints>& routers() const noexcept;
+    const std::map<std::string, std::string>& routers() const noexcept;
+
+    //! \return the forwarding server end-point or an empty string if unlisted.
+    std::string
+    forwardingServerEndpoint(const std::string& aEdgeServerEndpoint) const;
 
     //! Print a ASCII representation of the routers..
     void print(std::ostream& aStream) const;
 
    private:
-    // edge server end-point, edge router end-point
-    std::list<RouterEndpoints> theRouters;
+    // key: edge server end-point, value: forwarding server end-point
+    std::map<std::string, std::string> theRouters;
   };
 
   // #0: lambda name
@@ -212,7 +201,7 @@ class EdgeController
    * Called because the router did not respond on the forwarding table
    * interface during a table update.
    */
-  void removeRouter(const RouterEndpoints& aRouterEndpoints);
+  void removeRouter(const std::string& aRouterEndpoint);
 
   //! Invoked as a new computer is added.
   virtual void addComputer(const std::string&            aEndpoint,
@@ -247,7 +236,7 @@ class EdgeController
                         const std::list<std::string>& aLambdas) = 0;
 
   //! Implemented by derived classes to implement logic to remove a router.
-  virtual void privateRemoveRouter(const RouterEndpoints& aRouterEndpoints) = 0;
+  virtual void privateRemoveRouter(const std::string& aRouterEndpoint) = 0;
 
  protected:
   using LambdaMap = std::map<std::string, std::set<std::string>>;

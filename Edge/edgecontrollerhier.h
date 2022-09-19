@@ -135,7 +135,7 @@ class EdgeControllerHier : public EdgeController,
    * interface during a table update.
    * This function calls the reset() method.
    */
-  void privateRemoveRouter(const RouterEndpoints& aRouterEndpoints) override;
+  void privateRemoveRouter(const std::string& aRouterEndpoint) override;
 
   /**
    * We use the following formula to rank the routers' addresses.
@@ -166,13 +166,13 @@ class EdgeControllerHier : public EdgeController,
   std::string findClosest(const std::string& aComputerAddress);
 
   /**
-   * \return the end-points of the router located at the given address.
+   * \return the end-point of the router located at the given address.
    *         If there are multiple edge routers co-located at the same
    *         address, then a random one is returned.
    *
    * \pre aRouterAddress is known as a router.
    */
-  RouterEndpoints routerEndpoints(const std::string& aRouterAddress) const;
+  std::string routerEndpoint(const std::string& aRouterAddress) const;
 
   /**
    * Reset all the forwarding tables of all the known routers.
@@ -193,7 +193,7 @@ class EdgeControllerHier : public EdgeController,
 
   // key:   edge router address
   // value: vector of edge router end-points at that address
-  std::map<std::string, std::vector<RouterEndpoints>> theRouterAddresses;
+  std::map<std::string, std::vector<std::string>> theRouterAddresses;
 
   // key:   computer address
   // value: router address

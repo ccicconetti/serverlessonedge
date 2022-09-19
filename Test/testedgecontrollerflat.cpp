@@ -173,7 +173,8 @@ TEST_F(TestEdgeControllerFlat, test_add_duplicates) {
 
   myController.theLog = std::string();
   myController.announceRouter("host1:6473", "host1:6474");
-  EXPECT_EQ("", myController.theLog);
+  EXPECT_EQ("host1:6474: lambda0,host0:6473,1,F lambda1,host0:6473,1,F\n",
+            myController.theLog);
 
   myController.theLog = std::string();
   myController.announceRouter("host1:6473", "host1:6475");

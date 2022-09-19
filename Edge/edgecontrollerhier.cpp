@@ -94,10 +94,8 @@ void EdgeControllerHier::privateAnnounceComputer(
   const auto myHomeRouterAddress = findClosest(address(aEdgeServerEndpoint));
   assert(not myHomeRouterAddress.empty());
 
-  const auto myRouterEndpoints = routerEndpoints(myHomeRouterAddress);
-  assert(not myRouterEndpoints.theEdgeServer.empty());
-  assert(address(myRouterEndpoints.theEdgeServer) ==
-         address(myRouterEndpoints.theForwardingTableServer));
+  const auto myRouterEndpoint = routerEndpoint(myHomeRouterAddress);
+  assert(not myRouterEndpoint.empty());
 
   //
   // announce the new computer as the final destination on the home router
@@ -108,19 +106,23 @@ void EdgeControllerHier::privateAnnounceComputer(
         myContainer.theLambda, aEdgeServerEndpoint, 1.0f, true));
   }
 
-  if (not changeRoutes(myRouterEndpoints.theForwardingTableServer, myEntries)) {
-    removeRouter(myRouterEndpoints);
-    // no need to continue the body of the function since the call
-    // to removeRouter() will also cause all the forwarding tables
-    // to be reset
-    return;
+  const auto myForwardingServerEndpoint =
+      theRouters.forwardingServerEndpoint(myRouterEndpoint);
+  if (not myForwardingServerEndpoint.empty()) {
+    if (not changeRoutes(myForwardingServerEndpoint, myEntries)) {
+      removeRouter(myRouterEndpoint);
+      // no need to continue the body of the function since the call
+      // to removeRouter() will also cause all the forwarding tables
+      // to be reset
+      return;
+    }
   }
 
   //
   // announce the home router as the intermediate destination to
   // reach the new computer, unless already announced
   //
-  auto& myLambdas = theAnnouncedLambdas[myRouterEndpoints.theEdgeServer];
+  auto& myLambdas = theAnnouncedLambdas[myRouterEndpoint];
   for (auto it = myEntries.begin(); it != myEntries.end(); /* incr in loop */) {
     const auto& myLambda    = std::get<0>(*it);
     auto&       myComputers = myLambdas[myLambda];
@@ -146,7 +148,7 @@ void EdgeControllerHier::privateAnnounceComputer(
       // router, then we change the destination from the computer to the
       // edge server end-point of the router, clear the final flag and
       // announce it to all the other routers
-      std::get<1>(*it) = myRouterEndpoints.theEdgeServer;
+      std::get<1>(*it) = myRouterEndpoint;
       // std::get<2> is the weight: it remains set to the default value 1.0
       std::get<3>(*it) = false;
       ++it;
@@ -156,11 +158,11 @@ void EdgeControllerHier::privateAnnounceComputer(
   // notify the lambdas to all the routers, except the home router
   for (const auto& myRouter : theRouters.routers()) {
     // skip home router and do not announce an empty list of routes
-    if (myRouter == myRouterEndpoints or myEntries.empty()) {
+    if (myRouter.first == myRouterEndpoint or myEntries.empty()) {
       continue;
     }
-    if (not changeRoutes(myRouter.theForwardingTableServer, myEntries)) {
-      removeRouter(myRouter);
+    if (not changeRoutes(myRouter.second, myEntries)) {
+      removeRouter(myRouter.first);
       // no need to continue the loop: the call to removeRouter() will also
       // cause all the forwarding tables to be reset
       return;
@@ -175,14 +177,14 @@ void EdgeControllerHier::privateAnnounceRouter(
 
   // add the router to the map of address -> endpoints
   auto it = theRouterAddresses.emplace(address(aEdgeServerEndpoint),
-                                       std::vector<RouterEndpoints>());
+                                       std::vector<std::string>());
 
   // invalidate theClosest data structure if a new address has been added
   if (it.second) {
     theClosest.clear();
   }
 
-  it.first->second.emplace_back(aEdgeServerEndpoint, aEdgeRouterEndpoint);
+  it.first->second.emplace_back(aEdgeServerEndpoint);
 
   // add the router to the map of edge server -> forwarding table end-points
   [[maybe_unused]] const auto myInserted =
@@ -292,8 +294,7 @@ void EdgeControllerHier::privateRemoveComputer(
     if (not removeRoutes(myRemoveElem.theForwardingTableServer,
                          myRemoveElem.theEdgeServer,
                          {myRemoveElem.theLambda})) {
-      removeRouter(RouterEndpoints(myRemoveElem.theLambdaProcessorServer,
-                                   myRemoveElem.theForwardingTableServer));
+      removeRouter(myRemoveElem.theLambdaProcessorServer);
       // no need to continue the loop: the call to removeRouter() will also
       // cause all the forwarding tables to be reset
       return;
@@ -389,8 +390,8 @@ EdgeControllerHier::findClosest(const std::string& aComputerAddress) {
   return myMinElem->theAddress;
 }
 
-EdgeControllerHier::RouterEndpoints
-EdgeControllerHier::routerEndpoints(const std::string& aRouterAddress) const {
+std::string
+EdgeControllerHier::routerEndpoint(const std::string& aRouterAddress) const {
   ASSERT_IS_LOCKED(theMutex);
 
   const auto it = theRouterAddresses.find(aRouterAddress);
@@ -420,18 +421,17 @@ std::string EdgeControllerHier::address(const std::string& aEndpoint) {
 }
 
 void EdgeControllerHier::privateRemoveRouter(
-    const RouterEndpoints& aRouterEndpoints) {
+    const std::string& aRouterEndpoint) {
   ASSERT_IS_LOCKED(theMutex);
 
   //
   // update theRouterAddresses
   //
-  const auto myAddress = address(aRouterEndpoints.theEdgeServer);
-  assert(myAddress == address(aRouterEndpoints.theForwardingTableServer));
-  auto it = theRouterAddresses.find(myAddress);
+  const auto myAddress = address(aRouterEndpoint);
+  auto       it        = theRouterAddresses.find(myAddress);
   assert(it != theRouterAddresses.end());
   for (auto jt = it->second.begin(); jt != it->second.end(); ++jt) {
-    if (*jt == aRouterEndpoints) {
+    if (*jt == aRouterEndpoint) {
       it->second.erase(jt);
       break;
     }
@@ -447,10 +447,9 @@ void EdgeControllerHier::privateRemoveRouter(
   //
   // update theForwardingTableEndpoints
   //
-  const auto myErased =
-      theForwardingTableEndpoints.erase(aRouterEndpoints.theEdgeServer);
+  [[maybe_unused]] const auto myErased =
+      theForwardingTableEndpoints.erase(aRouterEndpoint);
   assert(myErased == 1);
-  std::ignore = myErased;
 
   //
   // reset the forwarding tables in all the routers
@@ -464,7 +463,7 @@ void EdgeControllerHier::reset() {
   // flush all entries of all routers
   for (const auto& myRouter : theForwardingTableEndpoints) {
     if (not flushRoutes(myRouter.second)) {
-      removeRouter(RouterEndpoints(myRouter.first, myRouter.second));
+      removeRouter(myRouter.first);
       // no need to continue the loop: the call to removeRouter() will also
       // cause all the forwarding tables to be reset
       return;

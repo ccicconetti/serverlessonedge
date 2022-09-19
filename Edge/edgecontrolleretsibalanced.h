@@ -134,7 +134,7 @@ class EdgeControllerEtsiBalanced final : public EdgeController
   void privateRemoveComputer(const std::string&,
                              const std::list<std::string>&) override {
   }
-  void privateRemoveRouter(const RouterEndpoints&) override {
+  void privateRemoveRouter(const std::string&) override {
   }
 
   //! Run periodically to optimize individual edge client computer associations.

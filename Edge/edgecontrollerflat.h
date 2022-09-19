@@ -75,7 +75,8 @@ class EdgeControllerFlat : public EdgeController,
   void privateRemoveComputer(const std::string&            aEdgeServerEndpoint,
                              const std::list<std::string>& aLambdas) override;
 
-  void privateRemoveRouter(const RouterEndpoints& aRouterEndpoints) override;
+  void privateRemoveRouter(const std::string& aRouterEndpoint) override {
+  }
 };
 
 } // namespace edge

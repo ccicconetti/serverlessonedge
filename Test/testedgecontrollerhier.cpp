@@ -136,8 +136,8 @@ struct TestEdgeControllerHier : public ::testing::Test {
     myController.announceComputer("host0:10000", makeContainers(2, 0));
 
     ASSERT_EQ("host2:6474: lambda0,host0:10000,1,F lambda1,host0:10000,1,F\n"
-              "host4:6474: lambda0,host2:6473,1, lambda1,host2:6473,1,\n"
-              "host4:16474: lambda0,host2:6473,1, lambda1,host2:6473,1,\n",
+              "host4:16474: lambda0,host2:6473,1, lambda1,host2:6473,1,\n"
+              "host4:6474: lambda0,host2:6473,1, lambda1,host2:6473,1,\n",
               myController.logGetAndClear());
 
     myController.announceComputer("host0:10001", makeContainers(1, 0));
@@ -165,14 +165,13 @@ struct TestEdgeControllerHier : public ::testing::Test {
     myController.theLog.clear();
 
     // now we force the removal of a router by disconnecting a forwarding table
-    // server and announcing a new computer: we except all the forwarding tables
+    // server and announcing a new computer: we expect all the forwarding tables
     // to be flushed and re-created from scratch
     myController.theDisconnected = "host4:16474";
 
     myController.announceComputer("host0:10002", makeContainers(1, 2));
 
     ASSERT_EQ("host2:6474: lambda2,host0:10002,1,F\n"
-              "host4:6474: lambda2,host2:6473,1,\n"
               "flush host2:6474\n"
               "flush host4:6474\n"
               "host2:6474: lambda0,host0:10000,1,F lambda1,host0:10000,1,F\n"
@@ -193,18 +192,18 @@ struct TestEdgeControllerHier : public ::testing::Test {
               "flush host2:6474\n"
               "flush host4:6474\n"
               "host2:6474: lambda0,host0:10000,1,F lambda1,host0:10000,1,F\n"
-              "host4:6474: lambda0,host2:6473,1, lambda1,host2:6473,1,\n"
               "host1:6474: lambda0,host2:6473,1, lambda1,host2:6473,1,\n"
+              "host4:6474: lambda0,host2:6473,1, lambda1,host2:6473,1,\n"
               "host2:6474: lambda0,host0:10001,1,F\n"
               "host2:6474: lambda2,host0:10002,1,F\n"
-              "host4:6474: lambda2,host2:6473,1,\n"
               "host1:6474: lambda2,host2:6473,1,\n"
+              "host4:6474: lambda2,host2:6473,1,\n"
               "host1:6474: lambda1,host1:10000,1,F\n"
               "host2:6474: lambda1,host1:6473,1,\n"
               "host4:6474: lambda1,host1:6473,1,\n"
               "host4:6474: lambda0,host4:10000,1,F lambda1,host4:10000,1,F\n"
-              "host2:6474: lambda0,host4:6473,1, lambda1,host4:6473,1,\n"
-              "host1:6474: lambda0,host4:6473,1, lambda1,host4:6473,1,\n",
+              "host1:6474: lambda0,host4:6473,1, lambda1,host4:6473,1,\n"
+              "host2:6474: lambda0,host4:6473,1, lambda1,host4:6473,1,\n",
               myController.logGetAndClear());
 
     // now let's remove the computers one at a time

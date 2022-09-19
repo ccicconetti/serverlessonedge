@@ -92,51 +92,40 @@ void EdgeController::Computers::print(std::ostream& aStream) const {
   }
 }
 
-EdgeController::Routers::AddStatus
-EdgeController::Routers::add(const std::string& aEdgeServerEndpoint,
-                             const std::string& aEdgeRouterEndpoint) {
-  AddStatus myRet;
-  for (auto it = theRouters.begin(); it != theRouters.end(); ++it) {
-    const auto myEdgeServerMatch = it->theEdgeServer == aEdgeServerEndpoint;
-    const auto myEdgeRouterMatch =
-        it->theForwardingTableServer == aEdgeRouterEndpoint;
-    if (myEdgeServerMatch or myEdgeRouterMatch) {
-      myRet.theAlreadyPresent = true;
-    }
-    if (myEdgeServerMatch xor myEdgeRouterMatch) {
-      myRet.theMatching.insert(*it);
-    }
+void EdgeController::Routers::add(const std::string& aEdgeServerEndpoint,
+                                  const std::string& aEdgeRouterEndpoint) {
+  const auto res = theRouters.emplace(aEdgeServerEndpoint, aEdgeRouterEndpoint);
+  if (not res.second) {
+    res.first->second = aEdgeRouterEndpoint;
   }
-  assert(myRet.theMatching.size() <= 2);
-  if (not myRet.theAlreadyPresent and myRet.theMatching.empty()) {
-    theRouters.emplace_back(aEdgeServerEndpoint, aEdgeRouterEndpoint);
-  }
-  return myRet;
+  VLOG_IF(1, not res.second) << "duplicate edge router " << aEdgeServerEndpoint
+                             << "|" << aEdgeRouterEndpoint << " added";
 }
 
-bool EdgeController::Routers::remove(const RouterEndpoints& aRouter) {
-  for (auto it = theRouters.begin(); it != theRouters.end(); ++it) {
-    if (*it == aRouter) {
-      LOG(INFO) << "removing edge-server " << it->theEdgeServer
-                << " edge-router " << it->theForwardingTableServer
-                << " from the known routers";
-      theRouters.erase(it);
-      return true;
-    }
-  }
-  return false;
+bool EdgeController::Routers::remove(const std::string& aEdgeServerEndpoint) {
+  LOG(INFO) << "removing edge router " << aEdgeServerEndpoint
+            << " from the known routers";
+  return theRouters.erase(aEdgeServerEndpoint) > 0;
 }
 
-const std::list<EdgeController::RouterEndpoints>&
+std::string EdgeController::Routers::forwardingServerEndpoint(
+    const std::string& aEdgeServerEndpoint) const {
+  const auto it = theRouters.find(aEdgeServerEndpoint);
+  if (it == theRouters.end()) {
+    return std::string();
+  }
+  return it->second;
+}
+
+const std::map<std::string, std::string>&
 EdgeController::Routers::routers() const noexcept {
   return theRouters;
 }
 
 void EdgeController::Routers::print(std::ostream& aStream) const {
-  for (const auto& myRouter : theRouters) {
-    aStream << "edge-server " << myRouter.theEdgeServer << ", edge-router "
-            << myRouter.theForwardingTableServer;
-  }
+  aStream << toString(theRouters, ",", [](const auto& pair) {
+    return pair.first + "|" + pair.second;
+  });
 }
 
 EdgeController::EdgeController()
@@ -197,27 +186,9 @@ void EdgeController::announceComputer(const std::string&   aEdgeServerEndpoint,
 void EdgeController::announceRouter(const std::string& aEdgeServerEndpoint,
                                     const std::string& aEdgeRouterEndpoint) {
   const std::lock_guard<std::mutex> myLock(theMutex);
-  const auto                        myStatus =
-      theRouters.add(aEdgeServerEndpoint, aEdgeRouterEndpoint);
+  theRouters.add(aEdgeServerEndpoint, aEdgeRouterEndpoint);
   LOG(INFO) << "router announce from " << aEdgeServerEndpoint
             << " with forwarding table server " << aEdgeRouterEndpoint;
-
-  // router already present with same end-points: nothing to do
-  if (myStatus.theAlreadyPresent and myStatus.theMatching.empty()) {
-    return;
-  }
-
-  // router already present but end-points are different: remove them first
-  if (myStatus.theAlreadyPresent and not myStatus.theMatching.empty()) {
-    for (const auto& myRouterEndpoints : myStatus.theMatching) {
-      removeRouter(myRouterEndpoints);
-    }
-
-    // now the new router can be announced without clashing with existing ones
-    [[maybe_unused]] const auto myNewStatus =
-        theRouters.add(aEdgeServerEndpoint, aEdgeRouterEndpoint);
-    assert(not myNewStatus.theAlreadyPresent);
-  }
 
   privateAnnounceRouter(aEdgeServerEndpoint, aEdgeRouterEndpoint);
 }
@@ -266,12 +237,12 @@ void EdgeController::privateRemoveComputer(
   privateRemoveComputer(aEdgeServerEndpoint, myLambdas);
 }
 
-void EdgeController::removeRouter(const RouterEndpoints& aRouterEndpoints) {
+void EdgeController::removeRouter(const std::string& aRouterEndpoint) {
   ASSERT_IS_LOCKED(theMutex);
 
-  theRouters.remove(aRouterEndpoints);
+  theRouters.remove(aRouterEndpoint);
 
-  privateRemoveRouter(aRouterEndpoints);
+  privateRemoveRouter(aRouterEndpoint);
 }
 
 void EdgeController::print(std::ostream& aStream) const {

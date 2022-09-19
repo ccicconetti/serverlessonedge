@@ -56,10 +56,10 @@ void EdgeControllerFlat::privateAnnounceComputer(
   }
 
   // notify the lambdas to all the routers
-  std::list<RouterEndpoints> myRemoveList;
+  std::list<std::string> myRemoveList;
   for (const auto& myRouter : theRouters.routers()) {
-    if (not changeRoutes(myRouter.theForwardingTableServer, myEntries)) {
-      myRemoveList.push_back(myRouter);
+    if (not changeRoutes(myRouter.second, myEntries)) {
+      myRemoveList.emplace_back(myRouter.first);
     }
   }
 
@@ -84,7 +84,7 @@ void EdgeControllerFlat::privateAnnounceRouter(
   // announce those routes (if any) to the new router
   if (not myEntries.empty()) {
     if (not changeRoutes(aEdgeRouterEndpoint, myEntries)) {
-      removeRouter(RouterEndpoints(aEdgeServerEndpoint, aEdgeRouterEndpoint));
+      removeRouter(aEdgeServerEndpoint);
     }
   }
 }
@@ -99,15 +99,10 @@ void EdgeControllerFlat::privateRemoveComputer(
   // by removeRouter(), invalidating the iterators
   const auto myRoutersCopy = theRouters.routers();
   for (const auto& myRouter : myRoutersCopy) {
-    if (not removeRoutes(
-            myRouter.theForwardingTableServer, aEdgeServerEndpoint, aLambdas)) {
-      removeRouter(myRouter);
+    if (not removeRoutes(myRouter.second, aEdgeServerEndpoint, aLambdas)) {
+      removeRouter(myRouter.first);
     }
   }
-}
-
-void EdgeControllerFlat::privateRemoveRouter(
-    const RouterEndpoints& aRouterEndpoints) {
 }
 
 } // namespace edge
