@@ -137,11 +137,8 @@ int main(int argc, char* argv[]) {
     ec::EdgeComputerWsk myServer(
         myCli.serverEndpoint(), myWskApiRoot, myWskAuth);
 
-    const auto myServerImpl =
-        ec::EdgeServerImplFactory::make(myServer,
-                                        myCli.serverEndpoint(),
-                                        myCli.numThreads(),
-                                        uiiit::support::Conf(myServerConf));
+    const auto myServerImpl = ec::EdgeServerImplFactory::make(
+        myServer, myCli.numThreads(), uiiit::support::Conf(myServerConf));
 
     myServerImpl->run();
     mySignalHandler.wait(); // blocking

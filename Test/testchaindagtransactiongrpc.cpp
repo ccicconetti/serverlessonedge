@@ -89,7 +89,7 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
                     support::Conf("type=random"),
                     support::Conf("type=trivial,period=10,stat=mean"),
                     support::Conf("type=grpc,persistence=0.05"))
-        , theRouterImpl(theRouter, theRouterEndpoint, theNumThreads)
+        , theRouterImpl(theRouter, theNumThreads)
         , theRouterCommand(theRouterCommandEndpoint,
                            *theRouter.tables()[0],
                            *theRouter.tables()[1])
@@ -120,7 +120,7 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
             Lambda("f" + myId, ProportionalRequirements(1e6, 4 * 1e6, 100, 0)),
             2);
         theComputerImpls.emplace_back(std::make_unique<EdgeServerGrpc>(
-            *theComputers.back(), theComputerEndpoints[i], theNumThreads));
+            *theComputers.back(), theNumThreads));
         theComputerStateServers.emplace_back(
             std::make_unique<StateServer>(theComputerStateServerEndpoints[i]));
         theCompanions.emplace_back(std::make_unique<EdgeRouter>(
@@ -132,7 +132,7 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
             support::Conf("type=trivial,period=10,stat=mean"),
             support::Conf("type=grpc,persistence=0.05")));
         theCompanionImpls.emplace_back(std::make_unique<EdgeServerGrpc>(
-            *theCompanions.back(), theCompanionEndpoints[i], theNumThreads));
+            *theCompanions.back(), theNumThreads));
         theCompanionCommands.emplace_back(
             std::make_unique<ForwardingTableServer>(
                 theCompanionCommandEndpoints[i],

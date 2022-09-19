@@ -92,8 +92,7 @@ TEST_F(TestEdgeClientMulti, test_grpc_one_destination) {
 
   // start computer: now lambda exec succeeds
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl;
-  myComputerEdgeServerImpl.reset(
-      new EdgeServerGrpc(*myComputer, theEndpoint1, 1));
+  myComputerEdgeServerImpl.reset(new EdgeServerGrpc(*myComputer, 1));
   myComputerEdgeServerImpl->run();
 
   ASSERT_TRUE(support::waitFor<std::string>(
@@ -121,12 +120,9 @@ TEST_F(TestEdgeClientMulti, test_grpc_three_destinations) {
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl2;
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl3;
 
-  myComputerEdgeServerImpl1.reset(
-      new EdgeServerGrpc(*myComputer1, theEndpoint1, 1));
-  myComputerEdgeServerImpl2.reset(
-      new EdgeServerGrpc(*myComputer2, theEndpoint2, 1));
-  myComputerEdgeServerImpl3.reset(
-      new EdgeServerGrpc(*myComputer3, theEndpoint3, 1));
+  myComputerEdgeServerImpl1.reset(new EdgeServerGrpc(*myComputer1, 1));
+  myComputerEdgeServerImpl2.reset(new EdgeServerGrpc(*myComputer2, 1));
+  myComputerEdgeServerImpl3.reset(new EdgeServerGrpc(*myComputer3, 1));
 
   myComputerEdgeServerImpl1->run();
   myComputerEdgeServerImpl2->run();

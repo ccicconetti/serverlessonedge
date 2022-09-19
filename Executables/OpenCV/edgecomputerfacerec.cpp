@@ -148,11 +148,8 @@ int main(int argc, char* argv[]) {
                                     myProcessLoadCallback);
 
     // create transport layer
-    const auto myServerImpl =
-        ec::EdgeServerImplFactory::make(myServer,
-                                        myCli.serverEndpoint(),
-                                        myCli.numThreads(),
-                                        uiiit::support::Conf(myServerConf));
+    const auto myServerImpl = ec::EdgeServerImplFactory::make(
+        myServer, myCli.numThreads(), uiiit::support::Conf(myServerConf));
 
     // announce the edge computer to the edge controller, if known
     if (myCli.controllerEndpoint().empty()) {

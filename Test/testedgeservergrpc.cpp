@@ -92,14 +92,12 @@ struct TestEdgeServerGrpc : public ::testing::Test {
 TEST_F(TestEdgeServerGrpc, test_invalid_endpoint) {
   {
     TrivialEdgeServer myEdgeServer("localhost:100", "my-lambda", "my-bomb");
-    EdgeServerGrpc    myEdgeServerGrpc(
-        myEdgeServer, myEdgeServer.serverEndpoint(), 1);
+    EdgeServerGrpc    myEdgeServerGrpc(myEdgeServer, 1);
     ASSERT_THROW(myEdgeServerGrpc.run(), std::runtime_error);
   }
   {
     TrivialEdgeServer myEdgeServer("1.2.3.4:10000", "my-lambda", "my-bomb");
-    EdgeServerGrpc    myEdgeServerGrpc(
-        myEdgeServer, myEdgeServer.serverEndpoint(), 1);
+    EdgeServerGrpc    myEdgeServerGrpc(myEdgeServer, 1);
     ASSERT_THROW(myEdgeServerGrpc.run(), std::runtime_error);
   }
 }
@@ -107,8 +105,7 @@ TEST_F(TestEdgeServerGrpc, test_invalid_endpoint) {
 void TestEdgeServerGrpc::runLambda() {
   // create the server
   TrivialEdgeServer myEdgeServer(theEndpoint, "my-lambda", "my-bomb");
-  EdgeServerGrpc    myEdgeServerGrpc(
-      myEdgeServer, myEdgeServer.serverEndpoint(), 1);
+  EdgeServerGrpc    myEdgeServerGrpc(myEdgeServer, 1);
   myEdgeServerGrpc.run();
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 

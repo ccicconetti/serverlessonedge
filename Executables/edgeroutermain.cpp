@@ -92,11 +92,8 @@ int main(int argc, char* argv[]) {
                                 uiiit::support::Conf(myOptimizerConf),
                                 myServerImplConf);
 
-    const auto myServerImpl =
-        ec::EdgeServerImplFactory::make(myEdgeRouter,
-                                        myCli.serverEndpoint(),
-                                        myCli.numThreads(),
-                                        uiiit::support::Conf(myServerConf));
+    const auto myServerImpl = ec::EdgeServerImplFactory::make(
+        myEdgeRouter, myCli.numThreads(), uiiit::support::Conf(myServerConf));
 
     auto myTables = myEdgeRouter.tables();
     assert(myTables.size() == 2);

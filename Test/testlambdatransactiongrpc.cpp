@@ -114,15 +114,14 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
 
       // start all the servers (in a non-blocking fashion, obviously)
       theComputerServerImpl.reset(
-          new EdgeServerGrpc(theComputer, theComputerEndpoint, theNumThreads));
+          new EdgeServerGrpc(theComputer, theNumThreads));
 
       theController.run(false);
       theUtilServer.run(false);
       theComputerServerImpl->run();
 
       if (theRouter) {
-        theEdgeServerImpl.reset(
-            new EdgeServerGrpc(*theRouter, theRouterEndpoint, theNumThreads));
+        theEdgeServerImpl.reset(new EdgeServerGrpc(*theRouter, theNumThreads));
         theEdgeServerImpl->run();
         theForwardingTableServer.reset(
             new ForwardingTableServer(theForwardingEndpoint,
@@ -130,8 +129,8 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
                                       *theRouter->tables()[1]));
       }
       if (theDispatcher) {
-        theEdgeServerImpl.reset(new EdgeServerGrpc(
-            *theDispatcher, theRouterEndpoint, theNumThreads));
+        theEdgeServerImpl.reset(
+            new EdgeServerGrpc(*theDispatcher, theNumThreads));
         theEdgeServerImpl->run();
         theForwardingTableServer.reset(new ForwardingTableServer(
             theForwardingEndpoint, *theDispatcher->tables()[0]));

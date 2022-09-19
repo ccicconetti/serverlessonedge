@@ -137,11 +137,8 @@ int main(int argc, char* argv[]) {
     }
     myServer.state(myStateEndpoint); // end-point can be empty
 
-    const auto myServerImpl =
-        ec::EdgeServerImplFactory::make(myServer,
-                                        myCli.serverEndpoint(),
-                                        myCli.numThreads(),
-                                        uiiit::support::Conf(myServerConf));
+    const auto myServerImpl = ec::EdgeServerImplFactory::make(
+        myServer, myCli.numThreads(), uiiit::support::Conf(myServerConf));
 
     ec::Composer()(uiiit::support::Conf(myConf), myServer.computer());
 

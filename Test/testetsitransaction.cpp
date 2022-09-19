@@ -92,10 +92,8 @@ struct TestEtsiTransaction : public ::testing::Test {
       theController.subscribe(std::move(myEdgeControllerEtsi));
 
       // create the EdgeServerGrpc to handle lambda requests
-      theServerImpl1.reset(
-          new EdgeServerGrpc(theComputer1, theComputer1Endpoint, 1));
-      theServerImpl2.reset(
-          new EdgeServerGrpc(theComputer2, theComputer2Endpoint, 1));
+      theServerImpl1.reset(new EdgeServerGrpc(theComputer1, 1));
+      theServerImpl2.reset(new EdgeServerGrpc(theComputer2, 1));
 
       // then, start the edge servers (non-blocking)
       theController.run(false);

@@ -100,9 +100,7 @@ class EdgeServerGrpc final : public EdgeServerImpl
   NONCOPYABLE_NONMOVABLE(EdgeServerGrpc);
 
   //! Create an edge server with a given number of threads.
-  explicit EdgeServerGrpc(EdgeServer&        aEdgeServer,
-                          const std::string& aServerEndpoint,
-                          const size_t       aNumThreads);
+  explicit EdgeServerGrpc(EdgeServer& aEdgeServer, const size_t aNumThreads);
 
   virtual ~EdgeServerGrpc();
 

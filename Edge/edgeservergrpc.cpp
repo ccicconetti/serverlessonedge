@@ -119,12 +119,11 @@ void EdgeServerGrpc::CallData::Proceed() {
   }
 }
 
-EdgeServerGrpc::EdgeServerGrpc(EdgeServer&        aEdgeServer,
-                               const std::string& aServerEndpoint,
-                               const size_t       aNumThreads)
+EdgeServerGrpc::EdgeServerGrpc(EdgeServer&  aEdgeServer,
+                               const size_t aNumThreads)
     : EdgeServerImpl(aEdgeServer)
     , theMutex()
-    , theServerEndpoint(aServerEndpoint)
+    , theServerEndpoint(aEdgeServer.serverEndpoint())
     , theNumThreads(aNumThreads)
     , theCq()
     , theService()
@@ -133,7 +132,7 @@ EdgeServerGrpc::EdgeServerGrpc(EdgeServer&        aEdgeServer,
   if (aNumThreads == 0) {
     throw std::runtime_error("Cannot spawn 0 threads");
   }
-  if (aServerEndpoint.empty()) {
+  if (theServerEndpoint.empty()) {
     throw std::runtime_error("Invalid request to bind to an empty end-point");
   }
 }

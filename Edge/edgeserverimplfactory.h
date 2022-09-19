@@ -52,13 +52,11 @@ class EdgeServerImplFactory final
    * @brief Create a transport layer object for a given edge server.
    *
    * @param aEdgeServer The edge server.
-   * @param aEndpoint The end-point of the server.
    * @param aNumThreads The number of threads to spawn.
    * @param aConf The configuration.
    * @return std::unique_ptr<EdgeServerImpl>
    */
   static std::unique_ptr<EdgeServerImpl> make(EdgeServer&          aEdgeServer,
-                                              const std::string&   aEndpoints,
                                               const size_t         aNumThreads,
                                               const support::Conf& aConf);
 }; // end class EdgeClient

@@ -90,7 +90,6 @@ int main(int argc, char* argv[]) {
 
     const auto myServerImpl =
         ec::EdgeServerImplFactory::make(myEdgeDispatcher,
-                                        myCli.serverEndpoint(),
                                         myCli.numThreads(),
                                         uiiit::support::Conf(myServerConf));
 

@@ -46,17 +46,16 @@ namespace edge {
 
 std::unique_ptr<EdgeServerImpl>
 EdgeServerImplFactory::make(EdgeServer&          aEdgeServer,
-                            const std::string&   aEndpoint,
                             const size_t         aNumThreads,
                             const support::Conf& aConf) {
   if (aConf("type") == "grpc") {
-    return std::make_unique<EdgeServerGrpc>(
-        aEdgeServer, aEndpoint, aNumThreads);
+    return std::make_unique<EdgeServerGrpc>(aEdgeServer, aNumThreads);
 #ifdef WITH_QUIC
   } else if (aConf("type") == "quic") {
     return std::make_unique<EdgeServerQuic>(
         aEdgeServer,
-        QuicParamsBuilder::buildServerHQParams(aConf, aEndpoint, aNumThreads));
+        QuicParamsBuilder::buildServerHQParams(
+            aConf, aEdgeServer.serverEndpoint(), aNumThreads));
 #endif
   }
   throw std::runtime_error("Unknown edge server transport: " + aConf("type"));
