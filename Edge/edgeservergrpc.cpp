@@ -34,7 +34,9 @@ SOFTWARE.
 #include "Support/chrono.h"
 #include "edgemessages.h"
 
+#include <exception>
 #include <glog/logging.h>
+#include <stdexcept>
 
 // #define TRACE_TASKS
 
@@ -87,7 +89,15 @@ void EdgeServerGrpc::CallData::Proceed() {
     new CallData(theService, theCq, theEdgeServer);
 
     // The actual processing.
-    theResponse = theEdgeServer.process(theRequest);
+    try {
+      theResponse = theEdgeServer.process(theRequest);
+    } catch (const std::exception& aErr) {
+      theResponse.set_retcode("invalid '" + theRequest.name() +
+                              "' request: " + aErr.what());
+    } catch (...) {
+      theResponse.set_retcode("invalid '" + theRequest.name() +
+                              "' request: unknown reasons");
+    }
 
 #ifdef TRACE_TASKS
     std::cout << theRequest.name() << " took " << myChrono.stop()
@@ -139,6 +149,9 @@ void EdgeServerGrpc::run() {
   myBuilder.RegisterService(&theService);
   theCq     = myBuilder.AddCompletionQueue();
   theServer = myBuilder.BuildAndStart();
+  if (theServer == nullptr) {
+    throw std::runtime_error("Could not bind to: " + theServerEndpoint);
+  }
   LOG(INFO) << "Server listening on " << theServerEndpoint << " (spawning "
             << theNumThreads << " threads)";
 
