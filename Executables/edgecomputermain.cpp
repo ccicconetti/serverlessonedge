@@ -124,6 +124,7 @@ int main(int argc, char* argv[]) {
 
     ec::EdgeComputer myServer(myAsynchronous ? myCli.numThreads() : 0,
                               myCli.serverEndpoint(),
+                              myCli.secure(),
                               myUtilCallback);
     if (not myCompanionEndpoint.empty()) {
       myServer.companion(myCompanionEndpoint);
@@ -137,8 +138,11 @@ int main(int argc, char* argv[]) {
     }
     myServer.state(myStateEndpoint); // end-point can be empty
 
-    const auto myServerImpl = ec::EdgeServerImplFactory::make(
-        myServer, myCli.numThreads(), uiiit::support::Conf(myServerConf));
+    const auto myServerImpl =
+        ec::EdgeServerImplFactory::make(myServer,
+                                        myCli.numThreads(),
+                                        myCli.secure(),
+                                        uiiit::support::Conf(myServerConf));
 
     ec::Composer()(uiiit::support::Conf(myConf), myServer.computer());
 

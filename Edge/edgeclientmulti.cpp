@@ -49,6 +49,7 @@ namespace uiiit {
 namespace edge {
 
 EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
+                                 const bool                   aSecure,
                                  const support::Conf&         aClientConf)
     : EdgeClientInterface()
     , thePersistenceProb(aClientConf.getDouble("persistence"))
@@ -79,7 +80,7 @@ EdgeClientMulti::EdgeClientMulti(const std::set<std::string>& aServerEndpoints,
     myDesc.theEndpoint = myEndpoint;
 
     if (myClientType == "grpc") {
-      myDesc.theClient.reset(new EdgeClientGrpc(myEndpoint));
+      myDesc.theClient.reset(new EdgeClientGrpc(myEndpoint, aSecure));
 #ifdef WITH_QUIC
     } else if (myClientType == "quic") {
       myDesc.theClient.reset(new EdgeClientQuic(

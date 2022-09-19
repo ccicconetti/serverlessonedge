@@ -70,12 +70,16 @@ class EdgeClientPool
   /**
    * Create a pool with no clients that can host up to a max.
    *
+   * \param aSecure If true then use SSL/TLS authentication.
+   *
    * \param aConf The edge client configuration.
    *
    * \param aMaxClients The maximum number of clients per destination. 0 means
    * unlimited.
    */
-  explicit EdgeClientPool(const support::Conf& aConf, const size_t aMaxClients);
+  explicit EdgeClientPool(const bool           aSecure,
+                          const support::Conf& aConf,
+                          const size_t         aMaxClients);
 
   /**
    * Execute a lambda on a given edge computer identified by its end-point.
@@ -105,6 +109,7 @@ class EdgeClientPool
  private:
   const size_t                      theMaxClients;
   mutable std::mutex                theMutex;
+  const bool                        theSecure;
   const support::Conf               theConf;
   std::map<std::string, Descriptor> thePool;
 };

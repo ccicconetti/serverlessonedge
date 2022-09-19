@@ -52,6 +52,8 @@ class EdgeServerOptions final : public support::CliOptions
   const std::string& controllerEndpoint() const noexcept;
   //! \return the number of threads.
   size_t numThreads() const noexcept;
+  //! \return true if SSL/TLS should be used to authenticate the server.
+  bool secure() const noexcept;
 
  private:
   std::string theServerEndpoint;

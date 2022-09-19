@@ -49,7 +49,8 @@ class PtimeEstimatorFactory final
 {
  public:
   //! \throw std::runtime_error if the configuration is invalid.
-  static std::shared_ptr<PtimeEstimator> make(const support::Conf& aConf);
+  static std::shared_ptr<PtimeEstimator> make(const bool           aSecure,
+                                              const support::Conf& aConf);
 
   static std::set<std::string> types();
 

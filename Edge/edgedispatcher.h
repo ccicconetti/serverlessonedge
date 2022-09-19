@@ -68,6 +68,8 @@ class EdgeDispatcher final : public EdgeLambdaProcessor
    * \param aControllerEndpoint the end-point of the edge controller. Can be
    * empty, in which case it is assumed that there is no controller.
    *
+   * \param aSecure if true then use SSL/TLS authentication.
+   *
    * \param aProcessorConf the configuration of the parent object.
    *
    * \param aPtimeEstimatorConf the configuration of the processing time
@@ -79,6 +81,7 @@ class EdgeDispatcher final : public EdgeLambdaProcessor
   explicit EdgeDispatcher(const std::string&   aLambdaEndpoint,
                           const std::string&   aCommandsEndpoint,
                           const std::string&   aControllerEndpoint,
+                          const bool           aSecure,
                           const support::Conf& aProcessorConf,
                           const support::Conf& aPtimeEstimatorConf,
                           const support::Conf& aClientConf);

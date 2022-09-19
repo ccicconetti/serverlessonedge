@@ -189,6 +189,7 @@ int main(int argc, char* argv[]) {
     ("seed",
      po::value<size_t>(&mySeedUser)->default_value(0),
      "Seed generator.")
+     ("secure", "If specified use SSL/TLS authentication.")
     ;
   // clang-format on
 
@@ -290,6 +291,7 @@ int main(int argc, char* argv[]) {
           i,
           myMaxRequests,
           uiiit::support::split<std::set<std::string>>(myServerEndpoints, ","),
+          myVarMap.count("secure") == 1,
           myEdgeClientConf,
           (myChain.get() == nullptr and myDag.get() == nullptr) ? myLambda : "",
           mySaver,

@@ -92,8 +92,10 @@ class EtsiEdgeClient final : public EdgeClientInterface
  public:
   /**
    * \param aAppContextManager The ETSI application context manager.
+   * \param aSecure If true use SSL/TLS authentication towards the edge server.
    */
-  explicit EtsiEdgeClient(etsimec::AppContextManager& aAppContextManager);
+  explicit EtsiEdgeClient(etsimec::AppContextManager& aAppContextManager,
+                          const bool                  aSecure);
 
   ~EtsiEdgeClient();
 
@@ -127,6 +129,7 @@ class EtsiEdgeClient final : public EdgeClientInterface
 
  private:
   etsimec::AppContextManager& theAppContextManager;
+  const bool                  theSecure;
 
   // key: lambda name
   // value: descriptor of the lambda

@@ -53,11 +53,13 @@ class EdgeServerImplFactory final
    *
    * @param aEdgeServer The edge server.
    * @param aNumThreads The number of threads to spawn.
+   * @param aSecure If true then use server authentication with SSL/TLS.
    * @param aConf The configuration.
    * @return std::unique_ptr<EdgeServerImpl>
    */
   static std::unique_ptr<EdgeServerImpl> make(EdgeServer&          aEdgeServer,
                                               const size_t         aNumThreads,
+                                              const bool           aSecure,
                                               const support::Conf& aConf);
 }; // end class EdgeClient
 

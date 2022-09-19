@@ -159,6 +159,7 @@ int main(int argc, char* argv[]) {
      ("client-conf", 
      po::value<std::string>(&myClientConf)->default_value("type=grpc,persistence=0.05"),
      "Client configuration.")
+    ("secure", "If specified use SSL/TLS authentication.")
     ;
   // clang-format on
 
@@ -185,7 +186,8 @@ int main(int argc, char* argv[]) {
     uiiit::support::Chrono      myChrono(true);
     const uiiit::support::Saver mySaver(myOutputFile, true, false, false);
     uiiit::support::SummaryStat myStat;
-    ec::EdgeClientPool          myClientPool(uiiit::support::Conf(myClientConf),
+    ec::EdgeClientPool          myClientPool(myVarMap.count("secure") == 1,
+                                    uiiit::support::Conf(myClientConf),
                                     0); // unlimited clients
 
     std::list<Consumer>    myConsumers;

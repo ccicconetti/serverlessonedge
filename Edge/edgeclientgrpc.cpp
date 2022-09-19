@@ -39,13 +39,11 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-EdgeClientGrpc::EdgeClientGrpc(const std::string& aServerEndpoint)
+EdgeClientGrpc::EdgeClientGrpc(const std::string& aServerEndpoint,
+                               const bool         aSecure)
     : EdgeClientInterface()
-    , SimpleClient(aServerEndpoint) {
-}
-
-EdgeClientGrpc::~EdgeClientGrpc() {
-  // nihil
+    , SimpleClient(aServerEndpoint, aSecure) {
+  // noop
 }
 
 LambdaResponse EdgeClientGrpc::RunLambda(const LambdaRequest& aReq,

@@ -84,6 +84,7 @@ int main(int argc, char* argv[]) {
         myCli.serverEndpoint(),
         myCli.forwardingEndpoint(),
         myCli.controllerEndpoint(),
+        myCli.secure(),
         uiiit::support::Conf(myCli.routerConf()),
         uiiit::support::Conf(myPtimeEstimatorConf),
         myServerImplConf);
@@ -91,6 +92,7 @@ int main(int argc, char* argv[]) {
     const auto myServerImpl =
         ec::EdgeServerImplFactory::make(myEdgeDispatcher,
                                         myCli.numThreads(),
+                                        myCli.secure(),
                                         uiiit::support::Conf(myServerConf));
 
     auto myTables = myEdgeDispatcher.tables();

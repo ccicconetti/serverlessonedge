@@ -41,7 +41,7 @@ namespace uiiit {
 namespace edge {
 
 std::shared_ptr<PtimeEstimator>
-PtimeEstimatorFactory::make(const support::Conf& aConf) {
+PtimeEstimatorFactory::make(const bool aSecure, const support::Conf& aConf) {
   std::unique_ptr<PtimeEstimator> myRet;
 
   const auto myType = aConf("type");
@@ -67,8 +67,8 @@ PtimeEstimatorFactory::make(const support::Conf& aConf) {
                                           aConf.getDouble("util-window-size"),
                                           aConf("output")));
     } else if (myType == "probe") {
-      myRet.reset(new PtimeEstimatorProbe(aConf.getUint("max-clients"),
-                                          aConf("output")));
+      myRet.reset(new PtimeEstimatorProbe(
+          aSecure, aConf.getUint("max-clients"), aConf("output")));
     } else {
       assert(false);
     }

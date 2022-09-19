@@ -54,6 +54,8 @@ EdgeServerOptions::EdgeServerOptions(
    boost::program_options::value<size_t>(&theNumThreads)
      ->default_value(5),
    "Number of threads spawned in the edge router.")
+  ("secure",
+   "If specified use SSL/TLS authentication.")
   ;
   // clang-format on
   parse();
@@ -69,6 +71,10 @@ const std::string& EdgeServerOptions::controllerEndpoint() const noexcept {
 
 size_t EdgeServerOptions::numThreads() const noexcept {
   return theNumThreads;
+}
+
+bool EdgeServerOptions::secure() const noexcept {
+  return varMap().count("secure") == 1;
 }
 
 } // namespace edge

@@ -44,11 +44,11 @@ struct TestEdgeClient : public ::testing::Test {
 };
 
 TEST_F(TestEdgeClient, test_ctor) {
-  ASSERT_NO_THROW(EdgeClientGrpc{theEndpoint});
+  ASSERT_NO_THROW((EdgeClientGrpc{theEndpoint, false}));
 }
 
 TEST_F(TestEdgeClient, test_no_server) {
-  EdgeClientGrpc myClient(theEndpoint);
+  EdgeClientGrpc myClient(theEndpoint, false);
   LambdaRequest  myReq("lambda1", "");
   ASSERT_THROW(myClient.RunLambda(myReq, true), std::runtime_error);
   ASSERT_THROW(myClient.RunLambda(myReq, false), std::runtime_error);

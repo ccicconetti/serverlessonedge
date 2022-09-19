@@ -31,8 +31,9 @@ SOFTWARE.
 
 #include "edgeservergrpc.h"
 
+#include "Edge/edgemessages.h"
+#include "RpcSupport/utils.h"
 #include "Support/chrono.h"
-#include "edgemessages.h"
 
 #include <exception>
 #include <glog/logging.h>
@@ -120,11 +121,13 @@ void EdgeServerGrpc::CallData::Proceed() {
 }
 
 EdgeServerGrpc::EdgeServerGrpc(EdgeServer&  aEdgeServer,
-                               const size_t aNumThreads)
+                               const size_t aNumThreads,
+                               const bool   aSecure)
     : EdgeServerImpl(aEdgeServer)
     , theMutex()
     , theServerEndpoint(aEdgeServer.serverEndpoint())
     , theNumThreads(aNumThreads)
+    , theSecure(aSecure)
     , theCq()
     , theService()
     , theServer()
@@ -142,9 +145,21 @@ void EdgeServerGrpc::run() {
     throw std::runtime_error("Method run() must be invoked only once");
   }
 
+  struct Env {
+    std::string operator()(const std::string& aName,
+                           const std::string& aFallback) const {
+      if (getenv(aName.c_str()) == nullptr) {
+        return aFallback;
+      }
+      return std::string(getenv(aName.c_str()));
+    }
+  };
+
   grpc::ServerBuilder myBuilder;
-  myBuilder.AddListeningPort(theServerEndpoint,
-                             grpc::InsecureServerCredentials());
+  myBuilder.AddListeningPort(
+      theServerEndpoint,
+      theSecure ? grpc::SslServerCredentials(rpc::sslServerCredOpts()) :
+                  grpc::InsecureServerCredentials());
   myBuilder.RegisterService(&theService);
   theCq     = myBuilder.AddCompletionQueue();
   theServer = myBuilder.BuildAndStart();

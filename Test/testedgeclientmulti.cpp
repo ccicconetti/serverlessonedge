@@ -57,8 +57,8 @@ struct TestEdgeClientMulti : public ::testing::Test {
 
   static std::unique_ptr<EdgeComputer>
   makeComputer(const std::string& aEndpoint, const double aCpuSpeed = 1e9) {
-    auto ret =
-        std::make_unique<EdgeComputer>(aEndpoint, Computer::UtilCallback());
+    auto ret = std::make_unique<EdgeComputer>(
+        aEndpoint, false, Computer::UtilCallback());
     ret->computer().addProcessor(
         "cpu", ProcessorType::GenericCpu, aCpuSpeed, 1, 1);
     ret->computer().addContainer(
@@ -76,12 +76,13 @@ struct TestEdgeClientMulti : public ::testing::Test {
 };
 
 TEST_F(TestEdgeClientMulti, test_ctor) {
-  ASSERT_NO_THROW(EdgeClientMulti({theEndpoint1}, theGrpcClientConf));
-  ASSERT_THROW(EdgeClientMulti({}, theGrpcClientConf), std::runtime_error);
+  ASSERT_NO_THROW(EdgeClientMulti({theEndpoint1}, false, theGrpcClientConf));
+  ASSERT_THROW(EdgeClientMulti({}, false, theGrpcClientConf),
+               std::runtime_error);
 }
 
 TEST_F(TestEdgeClientMulti, test_grpc_one_destination) {
-  EdgeClientMulti myGrpcClient({theEndpoint1}, theGrpcClientConf);
+  EdgeClientMulti myGrpcClient({theEndpoint1}, false, theGrpcClientConf);
 
   auto myComputer = makeComputer(theEndpoint1);
 
@@ -92,7 +93,7 @@ TEST_F(TestEdgeClientMulti, test_grpc_one_destination) {
 
   // start computer: now lambda exec succeeds
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl;
-  myComputerEdgeServerImpl.reset(new EdgeServerGrpc(*myComputer, 1));
+  myComputerEdgeServerImpl.reset(new EdgeServerGrpc(*myComputer, 1, false));
   myComputerEdgeServerImpl->run();
 
   ASSERT_TRUE(support::waitFor<std::string>(
@@ -120,17 +121,17 @@ TEST_F(TestEdgeClientMulti, test_grpc_three_destinations) {
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl2;
   std::unique_ptr<EdgeServerImpl> myComputerEdgeServerImpl3;
 
-  myComputerEdgeServerImpl1.reset(new EdgeServerGrpc(*myComputer1, 1));
-  myComputerEdgeServerImpl2.reset(new EdgeServerGrpc(*myComputer2, 1));
-  myComputerEdgeServerImpl3.reset(new EdgeServerGrpc(*myComputer3, 1));
+  myComputerEdgeServerImpl1.reset(new EdgeServerGrpc(*myComputer1, 1, false));
+  myComputerEdgeServerImpl2.reset(new EdgeServerGrpc(*myComputer2, 1, false));
+  myComputerEdgeServerImpl3.reset(new EdgeServerGrpc(*myComputer3, 1, false));
 
   myComputerEdgeServerImpl1->run();
   myComputerEdgeServerImpl2->run();
   myComputerEdgeServerImpl3->run();
 
   // create the multi-client
-  EdgeClientMulti myClient({theEndpoint1, theEndpoint2, theEndpoint3},
-                           theGrpcClientConf);
+  EdgeClientMulti myClient(
+      {theEndpoint1, theEndpoint2, theEndpoint3}, false, theGrpcClientConf);
 
   // wait for the fast computers to be ready and set
   std::set<std::string> myResponders;
@@ -149,7 +150,7 @@ TEST_F(TestEdgeClientMulti, test_grpc_three_destinations) {
   ASSERT_EQ(std::set<std::string>({theEndpoint1, theEndpoint2}), myResponders);
 
   // make sure also the slow computer is ready
-  EdgeClientMulti myAnotherClient({theEndpoint3}, theGrpcClientConf);
+  EdgeClientMulti myAnotherClient({theEndpoint3}, false, theGrpcClientConf);
   ASSERT_TRUE(support::waitFor<std::string>(
       [&]() { return myAnotherClient.RunLambda(myReq, false).theRetCode; },
       "OK",

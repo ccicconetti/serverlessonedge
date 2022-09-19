@@ -76,6 +76,8 @@ class EdgeLambdaProcessorOptions final : public support::CliOptions
   size_t fakeNumDestinations() const noexcept {
     return theFakeNumDestinations;
   }
+  //! \return true if SSL/TLS should be used to authenticate the server.
+  bool secure() const noexcept;
 
  private:
   std::string theServerEndpoint;

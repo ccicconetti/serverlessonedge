@@ -67,6 +67,8 @@ class EdgeLambdaProcessor : public EdgeServer
    * \param aControllerEndpoint the end-point of the edge controller. Can be
    * empty, in which case it is assumed that there is no controller.
    *
+   * \param aSecure if true then use SSL/TLS authentication.
+   *
    * \param aRouterConf the configuration of this object.
    *
    * The configuration consists of the following parameters:
@@ -86,6 +88,7 @@ class EdgeLambdaProcessor : public EdgeServer
   explicit EdgeLambdaProcessor(const std::string&   aLambdaEndpoint,
                                const std::string&   aCommandsEndpoint,
                                const std::string&   aControllerEndpoint,
+                               const bool           aSecure,
                                const support::Conf& aRouterConf,
                                const support::Conf& aClientConf);
 

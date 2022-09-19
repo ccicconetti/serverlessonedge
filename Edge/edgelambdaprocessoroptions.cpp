@@ -76,9 +76,15 @@ EdgeLambdaProcessorOptions::EdgeLambdaProcessorOptions(
    boost::program_options::value<size_t>(&theFakeNumDestinations)
      ->default_value(0),
    "Number of fake destinations per lambda to pre-load.")
+  ("secure",
+   "If specified use SSL/TLS authentication.")
   ;
   // clang-format on
   parse();
+}
+
+bool EdgeLambdaProcessorOptions::secure() const noexcept {
+  return varMap().count("secure") == 1;
 }
 
 } // namespace edge

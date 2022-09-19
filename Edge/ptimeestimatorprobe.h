@@ -53,7 +53,8 @@ class PtimeEstimatorProbe final : public PtimeEstimator
   struct Descriptor {};
 
  public:
-  explicit PtimeEstimatorProbe(const size_t       aMaxClients,
+  explicit PtimeEstimatorProbe(const bool         aSecure,
+                               const size_t       aMaxClients,
                                const std::string& aOutput);
 
   /**

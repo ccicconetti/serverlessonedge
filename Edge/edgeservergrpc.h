@@ -99,8 +99,16 @@ class EdgeServerGrpc final : public EdgeServerImpl
  public:
   NONCOPYABLE_NONMOVABLE(EdgeServerGrpc);
 
-  //! Create an edge server with a given number of threads.
-  explicit EdgeServerGrpc(EdgeServer& aEdgeServer, const size_t aNumThreads);
+  /**
+   * @brief Construct a new Edge Server Grpc object
+   *
+   * @param aEdgeServer The EdgeServer that implements the logic.
+   * @param aNumThreads The number of threads to spawn.
+   * @param aSecure If true then use server authentication with SSL/TLS.
+   */
+  explicit EdgeServerGrpc(EdgeServer&  aEdgeServer,
+                          const size_t aNumThreads,
+                          const bool   aSecure);
 
   virtual ~EdgeServerGrpc();
 
@@ -130,6 +138,7 @@ class EdgeServerGrpc final : public EdgeServerImpl
   mutable std::mutex theMutex;
   const std::string  theServerEndpoint;
   const size_t       theNumThreads;
+  const bool         theSecure;
 
  private:
   std::unique_ptr<grpc::ServerCompletionQueue> theCq;

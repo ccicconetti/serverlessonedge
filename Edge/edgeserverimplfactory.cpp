@@ -47,9 +47,10 @@ namespace edge {
 std::unique_ptr<EdgeServerImpl>
 EdgeServerImplFactory::make(EdgeServer&          aEdgeServer,
                             const size_t         aNumThreads,
+                            const bool           aSecure,
                             const support::Conf& aConf) {
   if (aConf("type") == "grpc") {
-    return std::make_unique<EdgeServerGrpc>(aEdgeServer, aNumThreads);
+    return std::make_unique<EdgeServerGrpc>(aEdgeServer, aNumThreads, aSecure);
 #ifdef WITH_QUIC
   } else if (aConf("type") == "quic") {
     return std::make_unique<EdgeServerQuic>(

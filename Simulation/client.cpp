@@ -51,6 +51,7 @@ Client::Client(const size_t                 aSeedUser,
                const size_t                 aSeedInc,
                const size_t                 aNumRequests,
                const std::set<std::string>& aServers,
+               const bool                   aSecure,
                const support::Conf&         aClientConf,
                const std::string&           aLambda,
                const support::Saver&        aSaver,
@@ -64,7 +65,7 @@ Client::Client(const size_t                 aSeedUser,
     , theFinishedFlag(false)
     , theNotStartedFlag(true)
     , theLambdaChrono(false)
-    , theClient(edge::EdgeClientFactory::make(aServers, aClientConf))
+    , theClient(edge::EdgeClientFactory::make(aServers, aSecure, aClientConf))
     , theNumRequests(aNumRequests)
     , theLambda(aLambda)
     , theSaver(aSaver)

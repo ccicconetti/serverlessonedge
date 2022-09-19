@@ -43,6 +43,7 @@ namespace edge {
 EdgeRouter::EdgeRouter(const std::string&   aLambdaEndpoint,
                        const std::string&   aCommandsEndpoint,
                        const std::string&   aControllerEndpoint,
+                       const bool           aSecure,
                        const support::Conf& aProcessorConf,
                        const support::Conf& aTableConf,
                        const support::Conf& aLocalOptimizerConf,
@@ -50,6 +51,7 @@ EdgeRouter::EdgeRouter(const std::string&   aLambdaEndpoint,
     : EdgeLambdaProcessor(aLambdaEndpoint,
                           aCommandsEndpoint,
                           aControllerEndpoint,
+                          aSecure,
                           aProcessorConf,
                           aClientConf)
     , theOverallTable(ForwardingTableFactory::make(aTableConf))

@@ -48,6 +48,7 @@ namespace edge {
 
 std::unique_ptr<EdgeClientInterface>
 EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
+                        const bool                   aSecure,
                         const support::Conf&         aConf) {
   if (aEndpoints.empty()) {
     throw std::runtime_error(
@@ -57,7 +58,7 @@ EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
   const auto myType = aConf("type");
   if (aEndpoints.size() == 1) {
     if (myType == "grpc") {
-      return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin());
+      return std::make_unique<EdgeClientGrpc>(*aEndpoints.begin(), aSecure);
 #ifdef WITH_QUIC
     } else if (myType == "quic") {
       return std::make_unique<EdgeClientQuic>(
@@ -68,7 +69,7 @@ EdgeClientFactory::make(const std::set<std::string>& aEndpoints,
     }
   }
 
-  return std::make_unique<EdgeClientMulti>(aEndpoints, aConf);
+  return std::make_unique<EdgeClientMulti>(aEndpoints, aSecure, aConf);
 }
 
 } // end namespace edge

@@ -50,6 +50,8 @@ class WskProxy final : public rest::Server
   /**
    * \param aApiRoot the API root URL.
    *
+   * \param aSecure if true use SSL/TLS authentication.
+   *
    * \param aEndpoint the end-point of the edge server.
    *
    * \param aConcurrency the maximum number of clients per destination.
@@ -57,6 +59,7 @@ class WskProxy final : public rest::Server
    */
   explicit WskProxy(const std::string& aApiRoot,
                     const std::string& aEndpoint,
+                    const bool         aSecure,
                     const size_t       aConcurrency);
 
  private:

@@ -68,6 +68,7 @@ class UnifClient final : public Client
                       const size_t                 aSeedInc,
                       const size_t                 aNumRequests,
                       const std::set<std::string>& aServers,
+                      const bool                   aSecure,
                       const support::Conf&         aClientConf,
                       const std::string&           aLambda,
                       const support::Saver&        aSaver,

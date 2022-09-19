@@ -49,6 +49,7 @@ namespace edge {
 EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
                                          const std::string& aCommandsEndpoint,
                                          const std::string& aControllerEndpoint,
+                                         const bool         aSecure,
                                          const support::Conf& aRouterConf,
                                          const support::Conf& aClientConf)
     : EdgeServer(aLambdaEndpoint)
@@ -56,7 +57,8 @@ EdgeLambdaProcessor::EdgeLambdaProcessor(const std::string& aLambdaEndpoint,
     , theControllerEndpoint(aControllerEndpoint)
     , theFakeProcessor(aRouterConf.count("fake") > 0 and
                        aRouterConf.getBool("fake"))
-    , theClientPool(aClientConf, aRouterConf.getUint("max-pending-clients"))
+    , theClientPool(
+          aSecure, aClientConf, aRouterConf.getUint("max-pending-clients"))
     , theControllerClient(aControllerEndpoint.empty() ?
                               nullptr :
                               new EdgeControllerClient(aControllerEndpoint))

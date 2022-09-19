@@ -37,10 +37,11 @@ namespace edge {
 
 WskProxy::WskProxy(const std::string& aApiRoot,
                    const std::string& aEndpoint,
+                   const bool         aSecure,
                    const size_t       aConcurrency)
     : rest::Server(aApiRoot)
     , theEndpoint(aEndpoint)
-    , theClientPool(support::Conf("type=grpc"), aConcurrency) {
+    , theClientPool(aSecure, support::Conf("type=grpc"), aConcurrency) {
   (*this)(web::http::methods::POST,
           "/api/v1/namespaces/(.*)",
           [this](web::http::http_request aReq) { handleInvocation(aReq); });

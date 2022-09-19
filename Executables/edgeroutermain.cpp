@@ -87,13 +87,17 @@ int main(int argc, char* argv[]) {
     ec::EdgeRouter myEdgeRouter(myCli.serverEndpoint(),
                                 myCli.forwardingEndpoint(),
                                 myCli.controllerEndpoint(),
+                                myCli.secure(),
                                 uiiit::support::Conf(myCli.routerConf()),
                                 uiiit::support::Conf(myTableConf),
                                 uiiit::support::Conf(myOptimizerConf),
                                 myServerImplConf);
 
-    const auto myServerImpl = ec::EdgeServerImplFactory::make(
-        myEdgeRouter, myCli.numThreads(), uiiit::support::Conf(myServerConf));
+    const auto myServerImpl =
+        ec::EdgeServerImplFactory::make(myEdgeRouter,
+                                        myCli.numThreads(),
+                                        myCli.secure(),
+                                        uiiit::support::Conf(myServerConf));
 
     auto myTables = myEdgeRouter.tables();
     assert(myTables.size() == 2);

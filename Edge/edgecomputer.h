@@ -132,6 +132,8 @@ class EdgeComputer final : public EdgeServer
    *
    * \param aServerEndpoint the listening end-point of this server.
    *
+   * \param aSecure if true use SSL/TLS authentication.
+   *
    * \param aCallback the function called as new load values are available.
    *
    * The companion end-point is empty by default. If needed, i.e., if this
@@ -140,10 +142,12 @@ class EdgeComputer final : public EdgeServer
    */
   explicit EdgeComputer(const size_t        aNumThreads,
                         const std::string&  aServerEndpoint,
+                        const bool          aSecure,
                         const UtilCallback& aCallback);
 
   //! Create an edge computer that only supports synchronous calls.
   explicit EdgeComputer(const std::string&  aServerEndpoint,
+                        const bool          aSecure,
                         const UtilCallback& aCallback);
 
   ~EdgeComputer() override;
@@ -251,6 +255,8 @@ class EdgeComputer final : public EdgeServer
   static std::string makeHash(const rpc::LambdaRequest& aRequest);
 
  private:
+  const bool theSecure;
+
   Computer                                        theComputer;
   std::condition_variable                         theDescriptorsCv;
   std::map<uint64_t, std::unique_ptr<Descriptor>> theDescriptors;

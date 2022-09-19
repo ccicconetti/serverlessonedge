@@ -49,7 +49,9 @@ class EdgeClientFactory final
 {
  public:
   static std::unique_ptr<EdgeClientInterface>
-  make(const std::set<std::string>& aEndpoints, const support::Conf& aConf);
+  make(const std::set<std::string>& aEndpoints,
+       const bool                   aSecure,
+       const support::Conf&         aConf);
 }; // end class EdgeClient
 
 } // end namespace edge

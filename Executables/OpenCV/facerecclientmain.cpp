@@ -140,11 +140,14 @@ int main(int argc, char* argv[]) {
     ("seed",
      po::value<size_t>(&mySeed)->default_value(std::chrono::system_clock::now().time_since_epoch().count()),
      "Seed generator. If not specified use the number of seconds since Jan 1, 1970.")
+     ("secure", "If specified use SSL/TLS authentication.")
     ;
   // clang-format on
 
   try {
     uiiit::etsimec::EtsiMecOptions myCli(argc, argv, "", false, myDesc);
+
+    const auto mySecure = myCli.varMap().count("secure") == 1;
 
     if (myServerEndpoint.empty() and myCli.apiRoot().empty()) {
       throw std::runtime_error(
@@ -166,11 +169,11 @@ int main(int argc, char* argv[]) {
       myContextManager.reset(new uiiit::etsimec::AppContextManager(
           myEtsiNotificationUri, myCli.apiRoot()));
       myContextManager->start();
-      myEdgeClient.reset(new ec::EtsiEdgeClient(*myContextManager));
+      myEdgeClient.reset(new ec::EtsiEdgeClient(*myContextManager, mySecure));
 
     } else {
       // establish direct connection with the edge computer/router
-      myEdgeClient.reset(new ec::EdgeClientGrpc(myServerEndpoint));
+      myEdgeClient.reset(new ec::EdgeClientGrpc(myServerEndpoint, mySecure));
     }
 
     if (((myCli.varMap().count("camera") > 0) +

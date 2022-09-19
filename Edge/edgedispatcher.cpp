@@ -44,15 +44,19 @@ namespace edge {
 EdgeDispatcher::EdgeDispatcher(const std::string&   aLambdaEndpoint,
                                const std::string&   aCommandsEndpoint,
                                const std::string&   aControllerEndpoint,
+                               const bool           aSecure,
                                const support::Conf& aProcessorConf,
                                const support::Conf& aPtimeEstimatorConf,
                                const support::Conf& aClientConf)
     : EdgeLambdaProcessor(aLambdaEndpoint,
                           aCommandsEndpoint,
                           aControllerEndpoint,
+                          aSecure,
                           aProcessorConf,
                           aClientConf)
-    , thePtimeEstimator(PtimeEstimatorFactory::make(aPtimeEstimatorConf)) {
+    , thePtimeEstimator(
+          PtimeEstimatorFactory::make(aSecure, aPtimeEstimatorConf)) {
+  // noop
 }
 
 std::vector<ForwardingTableInterface*> EdgeDispatcher::tables() {

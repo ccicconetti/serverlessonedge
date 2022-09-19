@@ -76,6 +76,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
         , theUtilServer(theUtilEndpoint)
         , theComputer(5,
                       theComputerEndpoint,
+                      false,
                       [this](const std::map<std::string, double>& aUtil) {
                         theUtilServer.add(aUtil);
                       })
@@ -84,6 +85,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
                             theRouterEndpoint,
                             theForwardingEndpoint,
                             theControllerEndpoint,
+                            false,
                             support::Conf(EdgeLambdaProcessor::defaultConf()),
                             support::Conf("type=random"),
                             support::Conf("type=trivial,period=10,stat=mean"),
@@ -95,6 +97,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
                       theRouterEndpoint,
                       theForwardingEndpoint,
                       theControllerEndpoint,
+                      false,
                       support::Conf(EdgeLambdaProcessor::defaultConf()),
                       support::Conf(
                           PtimeEstimatorFactory::defaultConf(aSubtype)),
@@ -114,14 +117,15 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
 
       // start all the servers (in a non-blocking fashion, obviously)
       theComputerServerImpl.reset(
-          new EdgeServerGrpc(theComputer, theNumThreads));
+          new EdgeServerGrpc(theComputer, theNumThreads, false));
 
       theController.run(false);
       theUtilServer.run(false);
       theComputerServerImpl->run();
 
       if (theRouter) {
-        theEdgeServerImpl.reset(new EdgeServerGrpc(*theRouter, theNumThreads));
+        theEdgeServerImpl.reset(
+            new EdgeServerGrpc(*theRouter, theNumThreads, false));
         theEdgeServerImpl->run();
         theForwardingTableServer.reset(
             new ForwardingTableServer(theForwardingEndpoint,
@@ -130,7 +134,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
       }
       if (theDispatcher) {
         theEdgeServerImpl.reset(
-            new EdgeServerGrpc(*theDispatcher, theNumThreads));
+            new EdgeServerGrpc(*theDispatcher, theNumThreads, false));
         theEdgeServerImpl->run();
         theForwardingTableServer.reset(new ForwardingTableServer(
             theForwardingEndpoint, *theDispatcher->tables()[0]));
@@ -209,7 +213,7 @@ TEST_F(TestLambdaTransactionGrpc, test_router_dispatcher) {
 
       System mySystem(myType, mySubtype);
 
-      EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+      EdgeClientGrpc myClient(mySystem.theRouterEndpoint, false);
       LambdaRequest  myReq("clambda0", std::string(1000, 'A'));
 
       support::Chrono myChrono(false);
@@ -234,7 +238,7 @@ TEST_F(TestLambdaTransactionGrpc, test_asynchronous) {
   const std::string myCallbackEndpoint = "127.0.0.1:6480";
   System            mySystem(System::ROUTER, "");
 
-  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint, false);
   LambdaRequest  myReq("clambda0", std::string(10, 'A'));
   myReq.theCallback = myCallbackEndpoint;
   myReq.states().emplace("s0", State::fromContent("content-state-0"));

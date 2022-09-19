@@ -45,10 +45,11 @@ class EdgeClientGrpc final : public EdgeClientInterface,
 {
  public:
   /**
-   * \param aServerEndpoint the edge server
+   * \param aServerEndpoint the edge server's end-point.
+   * \param aSecure If true then use SSL/TLS authentication.
    */
-  explicit EdgeClientGrpc(const std::string& aServerEndpoint);
-  ~EdgeClientGrpc() override;
+  explicit EdgeClientGrpc(const std::string& aServerEndpoint,
+                          const bool         aSecure);
 
   LambdaResponse RunLambda(const LambdaRequest& aReq, const bool aDry) override;
 }; // end class EdgeClientGrpc

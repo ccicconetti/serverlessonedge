@@ -71,8 +71,10 @@ struct TestEtsiTransaction : public ::testing::Test {
         , theProxyServer(theProxyEndpoint, theProxy)
         , theController(theControllerEndpoint)
         , theComputer1(theComputer1Endpoint,
+                       false,
                        [](const std::map<std::string, double>&) {})
         , theComputer2(theComputer2Endpoint,
+                       false,
                        [](const std::map<std::string, double>&) {}) {
       // configure the computers
       Composer()(
@@ -92,8 +94,8 @@ struct TestEtsiTransaction : public ::testing::Test {
       theController.subscribe(std::move(myEdgeControllerEtsi));
 
       // create the EdgeServerGrpc to handle lambda requests
-      theServerImpl1.reset(new EdgeServerGrpc(theComputer1, 1));
-      theServerImpl2.reset(new EdgeServerGrpc(theComputer2, 1));
+      theServerImpl1.reset(new EdgeServerGrpc(theComputer1, 1, false));
+      theServerImpl2.reset(new EdgeServerGrpc(theComputer2, 1, false));
 
       // then, start the edge servers (non-blocking)
       theController.run(false);
@@ -155,7 +157,7 @@ TEST_F(TestEtsiTransaction, test_endtoend) {
   auto myContextManager = std::make_unique<uiiit::etsimec::AppContextManager>(
       myNotificationUri, mySystem.theApiRoot);
   myContextManager->start();
-  EtsiEdgeClient myClient(*myContextManager);
+  EtsiEdgeClient myClient(*myContextManager, false);
 
   // run a lambda
   LambdaRequest myReq("clambda0", std::string(1000, 'A'));

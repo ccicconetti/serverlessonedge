@@ -49,7 +49,6 @@ SOFTWARE.
 #include <thread>
 
 namespace po = boost::program_options;
-namespace ec = uiiit::edge;
 namespace es = uiiit::simulation;
 
 int main(int argc, char* argv[]) {
@@ -142,6 +141,7 @@ int main(int argc, char* argv[]) {
     ("seed",
      po::value<size_t>(&mySeedUser)->default_value(0),
      "Seed generator.")
+    ("secure", "If specified use SSL/TLS authentication.")
     ;
   // clang-format on
 
@@ -165,6 +165,7 @@ int main(int argc, char* argv[]) {
       std::cout << std::endl;
       return EXIT_FAILURE;
     }
+    const auto mySecure = myVarMap.count("secure") == 1;
 
     const auto mySizeSet =
         uiiit::support::split<std::vector<size_t>>(mySizes, ",");
@@ -194,6 +195,7 @@ int main(int argc, char* argv[]) {
                                   myMaxRequests,
                                   uiiit::support::split<std::set<std::string>>(
                                       myServerEndpoints, ","),
+                                  mySecure,
                                   uiiit::support::Conf(myClientConf),
                                   myLambda,
                                   mySaver,
@@ -208,6 +210,7 @@ int main(int argc, char* argv[]) {
                                   myMaxRequests,
                                   uiiit::support::split<std::set<std::string>>(
                                       myServerEndpoints, ","),
+                                  mySecure,
                                   uiiit::support::Conf(myClientConf),
                                   myLambda,
                                   mySaver,
@@ -229,6 +232,7 @@ int main(int argc, char* argv[]) {
                                myMaxRequests,
                                uiiit::support::split<std::set<std::string>>(
                                    myServerEndpoints, ","),
+                               mySecure,
                                uiiit::support::Conf(myClientConf),
                                myLambda,
                                mySaver,
@@ -244,6 +248,7 @@ int main(int argc, char* argv[]) {
                                myMaxRequests,
                                uiiit::support::split<std::set<std::string>>(
                                    myServerEndpoints, ","),
+                               mySecure,
                                uiiit::support::Conf(myClientConf),
                                myLambda,
                                mySaver,

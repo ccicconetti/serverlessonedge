@@ -79,6 +79,8 @@ class EdgeRouter final : public EdgeLambdaProcessor
    * \param aControllerEndpoint the end-point of the edge controller. Can be
    * empty, in which case it is assumed that there is no controller.
    *
+   * \param aSecure if true then use SSL/TLS authentication.
+   *
    * \param aProcessorConf the configuration of the parent object.
    *
    * \param aTableConf the configuration of the ForwardingTable object.
@@ -91,6 +93,7 @@ class EdgeRouter final : public EdgeLambdaProcessor
   explicit EdgeRouter(const std::string&   aLambdaEndpoint,
                       const std::string&   aCommandsEndpoint,
                       const std::string&   aControllerEndpoint,
+                      const bool           aSecure,
                       const support::Conf& aProcessorConf,
                       const support::Conf& aTableConf,
                       const support::Conf& aLocalOptimizerConf,

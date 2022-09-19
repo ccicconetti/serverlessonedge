@@ -159,15 +159,18 @@ void EdgeComputer::AsyncWorker::stop() {
 }
 
 EdgeComputer::EdgeComputer(const std::string&  aServerEndpoint,
+                           const bool          aSecure,
                            const UtilCallback& aUtilCallback)
-    : EdgeComputer(0, aServerEndpoint, aUtilCallback) {
+    : EdgeComputer(0, aServerEndpoint, aSecure, aUtilCallback) {
   // noop
 }
 
 EdgeComputer::EdgeComputer(const size_t        aNumThreads,
                            const std::string&  aServerEndpoint,
+                           const bool          aSecure,
                            const UtilCallback& aUtilCallback)
     : EdgeServer(aServerEndpoint)
+    , theSecure(aSecure)
     , theComputer(
           "computer@" + aServerEndpoint,
           [this](const uint64_t                               aId,
@@ -235,7 +238,8 @@ void EdgeComputer::companion(const std::string& aCompanionEndpoint) {
                  << " from " << theCompanionClient->serverEndpoint() << " to "
                  << aCompanionEndpoint;
   }
-  theCompanionClient = std::make_unique<EdgeClientGrpc>(aCompanionEndpoint);
+  theCompanionClient =
+      std::make_unique<EdgeClientGrpc>(aCompanionEndpoint, theSecure);
 }
 
 void EdgeComputer::state(const std::string& aStateEndpoint) {

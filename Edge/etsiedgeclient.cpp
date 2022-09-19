@@ -59,10 +59,13 @@ EtsiEdgeClient::Desc::Desc(Desc&& aOther)
 EtsiEdgeClient::Desc::~Desc() {
 }
 
-EtsiEdgeClient::EtsiEdgeClient(etsimec::AppContextManager& aAppContextManager)
+EtsiEdgeClient::EtsiEdgeClient(etsimec::AppContextManager& aAppContextManager,
+                               const bool                  aSecure)
     : EdgeClientInterface()
     , theAppContextManager(aAppContextManager)
+    , theSecure(aSecure)
     , theClients() {
+  // noop
 }
 
 EtsiEdgeClient::~EtsiEdgeClient() {
@@ -122,7 +125,7 @@ EdgeClientGrpc& EtsiEdgeClient::find(const std::string& aLambda) {
         aLambda,
         Desc(myContext.first,
              myContext.second,
-             std::make_unique<EdgeClientGrpc>(myContext.second)));
+             std::make_unique<EdgeClientGrpc>(myContext.second, theSecure)));
     assert(myEmplaceRet.second);
     it = myEmplaceRet.first; // overrides outer iterator
   }
@@ -138,7 +141,8 @@ EdgeClientGrpc& EtsiEdgeClient::find(const std::string& aLambda) {
     LOG(INFO) << "Reference URI for " << aLambda << " updated from "
               << it->second.theReferenceUri << " to " << myNewReferenceUri;
     it->second.theReferenceUri = myNewReferenceUri;
-    it->second.theClient.reset(new EdgeClientGrpc(myNewReferenceUri));
+    it->second.theClient.reset(
+        new EdgeClientGrpc(myNewReferenceUri, theSecure));
   }
 
   assert(it->second.theClient.get() != nullptr);

@@ -41,14 +41,19 @@ SOFTWARE.
 namespace uiiit {
 namespace edge {
 
-PtimeEstimatorProbe::PtimeEstimatorProbe(const size_t       aMaxClients,
+PtimeEstimatorProbe::PtimeEstimatorProbe(const bool         aSecure,
+                                         const size_t       aMaxClients,
                                          const std::string& aOutput)
     : PtimeEstimator(Type::Probe)
-    , theClients(support::Conf("type=grpc"), aMaxClients)
+    , theClients(aSecure, support::Conf("type=grpc"), aMaxClients)
     , theDestinations([](const std::string&, const std::string&) {
       return std::make_unique<Descriptor>();
-    }) // with timestap, with per-line flushing, truncate
-    , theSaver(aOutput, true, true, false) {
+    })
+    , theSaver(aOutput,
+               true,
+               true,
+               false) // with timestap, per-line flushing, truncate
+{
   LOG_IF(INFO, not aOutput.empty())
       << "saving measurements to output file " << aOutput;
 }

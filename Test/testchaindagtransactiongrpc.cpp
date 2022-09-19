@@ -85,11 +85,12 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
         , theRouter(theRouterEndpoint,
                     theRouterCommandEndpoint,
                     theControllerEndpoint,
+                    false,
                     support::Conf(EdgeLambdaProcessor::defaultConf()),
                     support::Conf("type=random"),
                     support::Conf("type=trivial,period=10,stat=mean"),
                     support::Conf("type=grpc,persistence=0.05"))
-        , theRouterImpl(theRouter, theNumThreads)
+        , theRouterImpl(theRouter, theNumThreads, false)
         , theRouterCommand(theRouterCommandEndpoint,
                            *theRouter.tables()[0],
                            *theRouter.tables()[1])
@@ -111,7 +112,7 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
         const auto myId = std::to_string(i);
 
         theComputers.emplace_back(std::make_unique<EdgeComputer>(
-            theNumThreads, theComputerEndpoints[i], [](const auto&) {}));
+            theNumThreads, theComputerEndpoints[i], false, [](const auto&) {}));
         theComputers.back()->computer().addProcessor(
             "xeon", ProcessorType::GenericCpu, 4e9, 20, 128 * GB);
         theComputers.back()->computer().addContainer(
@@ -120,19 +121,20 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
             Lambda("f" + myId, ProportionalRequirements(1e6, 4 * 1e6, 100, 0)),
             2);
         theComputerImpls.emplace_back(std::make_unique<EdgeServerGrpc>(
-            *theComputers.back(), theNumThreads));
+            *theComputers.back(), theNumThreads, false));
         theComputerStateServers.emplace_back(
             std::make_unique<StateServer>(theComputerStateServerEndpoints[i]));
         theCompanions.emplace_back(std::make_unique<EdgeRouter>(
             theCompanionEndpoints[i],
             theCompanionCommandEndpoints[i],
             theControllerEndpoint,
+            false,
             support::Conf(EdgeLambdaProcessor::defaultConf()),
             support::Conf("type=random"),
             support::Conf("type=trivial,period=10,stat=mean"),
             support::Conf("type=grpc,persistence=0.05")));
         theCompanionImpls.emplace_back(std::make_unique<EdgeServerGrpc>(
-            *theCompanions.back(), theNumThreads));
+            *theCompanions.back(), theNumThreads, false));
         theCompanionCommands.emplace_back(
             std::make_unique<ForwardingTableServer>(
                 theCompanionCommandEndpoints[i],
@@ -198,7 +200,7 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
 TEST_F(TestChainDagTransactionGrpc, test_chain_correct) {
   System mySystem;
 
-  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint, false);
   LambdaRequest  myReq("f0", std::string(10, 'A'));
   myReq.theCallback = mySystem.theCallbackEndpoint;
   myReq.states().emplace("s0", State::fromContent("content-state-0"));
@@ -272,7 +274,7 @@ TEST_F(TestChainDagTransactionGrpc, test_chain_correct) {
 TEST_F(TestChainDagTransactionGrpc, test_chain_incorrect) {
   System mySystem;
 
-  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint, false);
   LambdaRequest  myReq("f0", std::string(10, 'A'));
   myReq.theCallback = mySystem.theCallbackEndpoint;
   myReq.theChain    = std::make_unique<model::Chain>(
@@ -333,7 +335,7 @@ TEST_F(TestChainDagTransactionGrpc, test_single_function_async_remote_states) {
                                      }));
 
   // invoke the functions
-  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint, false);
   for (size_t i = 0; i < N; i++) {
     const auto myAck = myClient.RunLambda(myReq, false);
     ASSERT_EQ("OK", myAck.theRetCode);
@@ -398,7 +400,7 @@ TEST_F(TestChainDagTransactionGrpc, test_single_function_sync_remote_states) {
                                      }));
 
   // invoke the functions
-  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint, false);
   for (size_t i = 0; i < N; i++) {
     const auto myResp = myClient.RunLambda(myReq, false);
     ASSERT_EQ("OK", myResp.theRetCode);
@@ -459,7 +461,7 @@ TEST_F(TestChainDagTransactionGrpc, test_chain_remote_states) {
   myReq.theNextFunctionIndex = 0;
 
   // invoke the functions
-  EdgeClientGrpc myClient(mySystem.theRouterEndpoint);
+  EdgeClientGrpc myClient(mySystem.theRouterEndpoint, false);
   for (size_t i = 0; i < N; i++) {
     const auto myAck = myClient.RunLambda(myReq, false);
     ASSERT_EQ("OK", myAck.theRetCode);
@@ -504,7 +506,7 @@ TEST_F(TestChainDagTransactionGrpc, test_chain_remote_states) {
 TEST_F(TestChainDagTransactionGrpc, test_dag) {
   System mySystem;
 
-  EdgeClientGrpc        myClient(mySystem.theRouterEndpoint);
+  EdgeClientGrpc        myClient(mySystem.theRouterEndpoint, false);
   CallbackServer::Queue myResponses;
   CallbackServer myCallbackServer(mySystem.theCallbackEndpoint, myResponses);
   myCallbackServer.run(false);

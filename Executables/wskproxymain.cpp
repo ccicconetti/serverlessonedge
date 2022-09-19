@@ -66,13 +66,17 @@ int main(int argc, char* argv[]) {
    boost::program_options::value<size_t>(&myNumThreads)
      ->default_value(5),
    "Maximum Number of threads spawned.")
+   ("secure", "If specified use SSL/TLS authentication.")
   ;
   // clang-format on
 
   try {
     uiiit::support::TrivialOptions myCli(argc, argv, myDesc);
 
-    ec::WskProxy myProxy(myWskApiRoot, myServerEndpoint, myNumThreads);
+    ec::WskProxy myProxy(myWskApiRoot,
+                         myServerEndpoint,
+                         myCli.varMap().count("secure") == 1,
+                         myNumThreads);
 
     myProxy.start();
     mySignalHandler.wait(); // blocking
