@@ -214,10 +214,9 @@ void EdgeController::announceRouter(const std::string& aEdgeServerEndpoint,
     }
 
     // now the new router can be announced without clashing with existing ones
-    const auto myNewStatus =
+    [[maybe_unused]] const auto myNewStatus =
         theRouters.add(aEdgeServerEndpoint, aEdgeRouterEndpoint);
     assert(not myNewStatus.theAlreadyPresent);
-    std::ignore = myNewStatus;
   }
 
   privateAnnounceRouter(aEdgeServerEndpoint, aEdgeRouterEndpoint);

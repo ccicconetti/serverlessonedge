@@ -185,11 +185,11 @@ void EdgeControllerHier::privateAnnounceRouter(
   it.first->second.emplace_back(aEdgeServerEndpoint, aEdgeRouterEndpoint);
 
   // add the router to the map of edge server -> forwarding table end-points
-  const auto myInserted = theForwardingTableEndpoints
-                              .emplace(aEdgeServerEndpoint, aEdgeRouterEndpoint)
-                              .second;
+  [[maybe_unused]] const auto myInserted =
+      theForwardingTableEndpoints
+          .emplace(aEdgeServerEndpoint, aEdgeRouterEndpoint)
+          .second;
   assert(myInserted);
-  std::ignore = myInserted;
 
   // reset the forwarding tables of all the routers
   reset();

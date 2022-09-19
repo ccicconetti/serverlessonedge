@@ -74,8 +74,6 @@ void EdgeControllerFlat::privateAnnounceRouter(
     const std::string& aEdgeRouterEndpoint) {
   ASSERT_IS_LOCKED(theMutex);
 
-  std::ignore = aEdgeServerEndpoint;
-
   // retrieve all the lambdas offered by all known computers
   Entries myEntries;
   for (const auto& myLambda : theComputers.lambdas()) {
