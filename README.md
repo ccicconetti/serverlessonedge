@@ -59,9 +59,11 @@ See [building instructions](docs/BUILDING.md).
 
 ### Examples
 
-You can find [here](docs/example.md) a step-by-step example of the execution of all the main system components (edgecomputer, edgerouter, edgecontroller) with stateless single function invocations.
+Step-by-step execution of examples:
 
-Examples with stateful function chains can be found [here](docs/example-chain.md).
+- [main system components](docs/example.md): edgecomputer, edgerouter, and edgecontroller, with stateless single function invocations
+- [stateful function chains](docs/example-chain.md)
+- [SSL/TLS gRPC support](docs/example-secure.md)
 
 ### Performance evaluation
 
