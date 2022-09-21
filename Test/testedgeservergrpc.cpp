@@ -37,6 +37,8 @@ SOFTWARE.
 
 #include <boost/filesystem.hpp>
 
+#include <glog/logging.h>
+
 #include <cctype>
 #include <chrono>
 #include <cstdlib>
@@ -368,6 +370,30 @@ TEST_F(TestEdgeServerGrpc, test_run_lambda_insecure) {
 
 TEST_F(TestEdgeServerGrpc, test_run_lambda_secure) {
   runLambda(true);
+}
+
+TEST_F(TestEdgeServerGrpc, test_secure_server_insecure_client) {
+  TrivialEdgeServer myEdgeServer(theEndpoint, "my-lambda", "my-bomb");
+  EdgeServerGrpc    myEdgeServerGrpc(myEdgeServer, 1, true);
+  myEdgeServerGrpc.run();
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  EdgeClientGrpc myClient(theEndpoint, false);
+  ASSERT_THROW(
+      myClient.RunLambda(LambdaRequest("my-lambda", "Hello world!"), false),
+      rpc::RpcFailed);
+}
+
+TEST_F(TestEdgeServerGrpc, test_insecure_server_secure_client) {
+  TrivialEdgeServer myEdgeServer(theEndpoint, "my-lambda", "my-bomb");
+  EdgeServerGrpc    myEdgeServerGrpc(myEdgeServer, 1, false);
+  myEdgeServerGrpc.run();
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  EdgeClientGrpc myClient(theEndpoint, true);
+  ASSERT_THROW(
+      myClient.RunLambda(LambdaRequest("my-lambda", "Hello world!"), false),
+      rpc::RpcFailed);
 }
 
 } // namespace edge
