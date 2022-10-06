@@ -52,7 +52,9 @@ for line in sys.stdin:
         if time < args.warmup or (args.duration > 0 and time > args.duration):
             continue
 
-    data.append( float(tokens[index]) )
+    x = float(tokens[index])
+    if not math.isnan(x):
+        data.append(x)
 
 if len(data) == 0:
     exit(-1)
