@@ -1,5 +1,23 @@
 # Building instructions
 
+## Quick start
+
+Create a VM with [multipass](https://multipass.run/), download ServerlessOnEdge, do a minimal build it with debug options (without OpenCV / proxygen / mvfst), and run the unit test:
+
+```
+sudo multipass launch bionic -c 5 -m 10G -d 10G -n soe-bionic
+sudo multipass shell soe-bionic
+git clone https://github.com/ccicconetti/serverlessonedge.git
+cd serverlessonedge/
+git submodule update --init --recursive
+sudo etsimec/utils/build_deps.sh
+cd build/debug/
+../build.sh g++
+ctest
+```
+
+## Longer version
+
 1. Clone the git repository:
 
 ```
@@ -18,13 +36,17 @@ cd build/debug
 make
 ```
 
+4. [optional] Run unit tests:
+
+```
+ctest
+```
+
 Note that [gmock](https://github.com/google/googlemock) is also needed to compile the unit tests but, if everything goes right, it will be downloaded automatically by CMake (needless to say: you do need a working Internet connection for this step).
 
-This will compile the full build tree *except OpenCV and without QUIC support*. The executables will be in `build/debug/Executables` from the repo root.
+This will compile the full build tree without optional components. The executables will be in `build/debug/Executables` from the repo root.
 
-The unit tests can be executed by running `build/debug/Test/testedge` or, if you want to execute _all_ the unit tests (including those of the sub-modules), run `NOBUILD=1 etsimec/rest/support/jenkins/run_tests.sh`. Note that without setting the environment variable `NOBUILD` the script will remove the full content of the build directory.
-
-If you want to compile with compiler optimisations and no assertions:
+If you want to compile with compiler optimisations and no assertions / unit tests:
 
 ```
 cd build/release
@@ -32,19 +54,15 @@ cd build/release
 make
 ```
 
-The unit tests will not be compiled (gmock will not be even downloaded).
+### Optional components
 
-If you want to compile *also the executables and libraries depending OpenCV* then run (e.g., in debug mode):
+#### Compile with OpenCV
 
-```
-cd build/debug
-../build.sh g++ -DWITH_OPENCV=1
-make
-```
+If you want to compile also the executables and libraries depending OpenCV, first install the related dependencies (see below) and then run build with `-DWITH_OPENCV=1`.
 
-Note that this requires extra dependencies, as explained below.
+#### Compile with QUIC/proxygen (Linux only)
 
-If you want to compile *with QUIC support* then first compile [proxygen](https://github.com/facebook/proxygen) with [mvfst](https://github.com/facebookincubator/mvfst) support with:
+If you want to compile with QUIC support via proxygen, then first compile [proxygen](https://github.com/facebook/proxygen) with [mvfst](https://github.com/facebookincubator/mvfst) support with (tested successfully only on Linux/Ubuntu 18.04):
 
 ```
 cd thirdparty
@@ -52,9 +70,19 @@ cd thirdparty
 cd ..
 ```
 
-then run the build script (or directly cmake) with `-DWITH_QUIC=1`. The `build_deps.sh` script has been tested successfully only on Linux/Ubuntu 18.04.
+Then build with `-DWITH_QUIC=1`.
 
-OpenCV and QUIC can be enabled at the same time with `-DWITH_QUIC=1 -DWITH_OPENCV=1`.
+#### Compile with QUIC/mvfst (Linux only)
+
+If you want to compile with QUIC support via proxygen, then first compile [proxygen](https://github.com/facebook/proxygen) with [mvfst](https://github.com/facebookincubator/mvfst) support with (tested successfully only on Linux/Ubuntu 18.04):
+
+```
+cd thirdparty
+./build_mvfst.sh
+cd ..
+```
+
+Then build with `-DWITH_MVFST=1`.
 
 ## Dependencies
 
@@ -99,4 +127,3 @@ If you want to compile OpenCV, run also:
 ```
 
 Note that this requires about 12 GB of free space (!).
-
