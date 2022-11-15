@@ -66,7 +66,7 @@ std::vector<std::string> Conf::toStrings() const {
       std::to_string(theAvgMu),
       std::to_string(theAlpha),
       std::to_string(theBeta),
-      std::to_string(theLambdaRequest),
+      theAppModel,
   });
 }
 
@@ -80,7 +80,7 @@ const std::vector<std::string>& Conf::toColumns() {
       "avg-mu",
       "alpha",
       "beta",
-      "lambda-request",
+      "app-model",
   });
   return ret;
 }
@@ -121,7 +121,6 @@ void Simulation::Worker::operator()() {
                                            myDesc.theConf->theAvgMu,
                                            myDesc.theConf->theAlpha,
                                            myDesc.theConf->theBeta,
-                                           myDesc.theConf->theLambdaRequest,
                                            myDesc.theSeed);
 
         } else if (myDesc.theConf->theType == Conf::Type::Dynamic) {
@@ -134,7 +133,6 @@ void Simulation::Worker::operator()() {
                                           myDesc.theConf->theAvgApps,
                                           myDesc.theConf->theAlpha,
                                           myDesc.theConf->theBeta,
-                                          myDesc.theConf->theLambdaRequest,
                                           myDesc.theSeed);
 
         } else {
@@ -223,6 +221,8 @@ void Simulation::run(const Conf&  aConf,
     myDesc.theAppPeriods =
         myAppPeriods.get() != nullptr ? &myAppPeriods->periods() : nullptr;
     myDesc.theSeed     = myRun + aStartingSeed;
+    myDesc.theAppModel = makeAppModel(myDesc.theSeed, aConf.theAppModel);
+    assert(myDesc.theAppModel.get() != nullptr);
     myDesc.theScenario = std::make_unique<Scenario>(
         *myNetwork,
         myDesc.theConf->theCloudDistanceFactor,
@@ -243,7 +243,8 @@ void Simulation::run(const Conf&  aConf,
           }
           throw std::runtime_error("Invalid node (container speed): " +
                                    aNode.toString());
-        });
+        },
+        *myDesc.theAppModel);
   }
 
   // dispatch the simulations

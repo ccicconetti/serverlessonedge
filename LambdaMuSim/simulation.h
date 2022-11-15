@@ -31,6 +31,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "LambdaMuSim/appmodel.h"
 #include "LambdaMuSim/scenario.h"
 #include "Support/macros.h"
 #include "Support/queue.h"
@@ -83,8 +84,8 @@ struct Conf {
   const double theAlpha;
   //! Factor to overprovision the capacity for lambda-apps, in [0,1]
   const double theBeta;
-  //! Capacity requested by each lambda.
-  const long theLambdaRequest;
+  //! Model of the applications' parameters.
+  const std::string theAppModel;
 
   //! File where to save performance data (can be empty)
   const std::string theOutfile;
@@ -106,6 +107,9 @@ struct Desc {
 
   // apps' periods
   const std::vector<std::deque<double>>* theAppPeriods;
+
+  // the applications' parameters model
+  std::unique_ptr<AppModel> theAppModel;
 
   // simulation scenario
   std::unique_ptr<Scenario> theScenario;

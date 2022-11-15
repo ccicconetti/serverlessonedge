@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
   std::size_t myAvgMu;
   double      myAlpha;
   double      myBeta;
-  long        myLambdaRequest;
+  std::string myAppModel;
   std::string myOutfile;
 
   std::size_t myStartingSeed;
@@ -158,9 +158,9 @@ int main(int argc, char* argv[]) {
     ("beta",
      po::value<double>(&myBeta)->default_value(0.5),
      "The lambda-app overprovisioning factor.")
-    ("lambda-request",
-     po::value<long>(&myLambdaRequest)->default_value(1),
-     "The average request rate of lambda-apps.")
+    ("app-model",
+     po::value<std::string>(&myAppModel)->default_value("constant,1,1,1"),
+     "The model that defines the applications' parameters.")
     ("out-file",
      po::value<std::string>(&myOutfile)->default_value("out.csv"),
      "The file where to save the results.")
@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
                       myAvgMu,
                       myAlpha,
                       myBeta,
-                      myLambdaRequest,
+                      myAppModel,
                       myOutfile,
                       myVarMap.count("append") == 1},
              myStartingSeed,

@@ -31,6 +31,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "LambdaMuSim/appmodel.h"
 #include "LambdaMuSim/appperiods.h"
 #include "Support/macros.h"
 
@@ -81,16 +82,28 @@ class Scenario
   };
 
   struct App {
-    App(const ID aBroker, const Type aType)
+    App(const ID   aBroker,
+        const Type aType,
+        const long aServiceRate,
+        const long aExchangeSize,
+        const long aStorageSize)
         : theBroker(aBroker)
-        , theType(aType) {
+        , theType(aType)
+        , theServiceRate(aServiceRate)
+        , theExchangeSize(aExchangeSize)
+        , theStorageSize(aStorageSize) {
       // noop
     }
 
-    ID   theBroker = 0;            //!< the broker to which this app connects
-    Type theType   = Type::Lambda; //!< the current app type
-    ID   theEdge   = 0;            //!< the edge to which is assigned (mu-only)
+    ID   theBroker       = 0; //!< the broker to which this app connects
+    Type theType         = Type::Lambda; //!< the current app type
+    long theServiceRate  = 1;            //!< the rate of function invocations
+    long theExchangeSize = 1; //!< amount of data units per invocation
+    long theStorageSize  = 1; //!< state size in the remote storage
+    ID   theEdge         = 0; //!< the edge to which is assigned (mu-only)
     std::vector<std::pair<ID, double>> theWeights; //!< weights (lambda-only)
+
+    std::string toString() const;
   };
 
   struct Broker {
@@ -118,6 +131,7 @@ class Scenario
    * on the node characteristics.
    * @param aContainerCapacity Function to determine the capacity of
    * lambda-containers based on the node characteristics.
+   * @param aAppModel The model of the applications' parameters.
    *
    * @throw std::runtime_error if the input args are inconsistent.
    */
@@ -125,7 +139,15 @@ class Scenario
       statesim::Network& aNetwork,
       const double       aCloudDistanceFactor,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
-      const std::function<long(const statesim::Node&)>& aContainerCapacity);
+      const std::function<long(const statesim::Node&)>& aContainerCapacity,
+      AppModel&                                         aAppModel);
+
+  /**
+   * @brief Change the model of the applications' parameters.
+   *
+   * @param aAppModel The new model.
+   */
+  void appModel(AppModel& aAppModel);
 
   /**
    * @brief Run a single snapshot, overwriting previous apps/allocations.
@@ -134,7 +156,6 @@ class Scenario
    * @param aAvgMu The average number of mu apps.
    * @param aAlpha The lambda reservation factor.
    * @param aBeta  The lambda overprovisioning factor.
-   * @param aLambdaRequest The capacity requested by each lambda app.
    * @param aSeed The RNG seed.
    * @return PerformanceData
    *
@@ -144,7 +165,6 @@ class Scenario
                            const std::size_t aAvgMu,
                            const double      aAlpha,
                            const double      aBeta,
-                           const long        aLambdaRequest,
                            const std::size_t aSeed);
 
   /**
@@ -157,7 +177,6 @@ class Scenario
    * @param aAvgApps The average number of apps.
    * @param aAlpha The lambda reservation factor.
    * @param aBeta  The lambda overprovisioning factor.
-   * @param aLambdaRequest The capacity requested by each lambda app.
    * @param aSeed The RNG seed.
    * @return PerformanceData
    *
@@ -170,7 +189,6 @@ class Scenario
                           const std::size_t                      aAvgApps,
                           const double                           aAlpha,
                           const double                           aBeta,
-                          const long                             aLambdaRequest,
                           const std::size_t                      aSeed);
 
  private:
@@ -180,21 +198,19 @@ class Scenario
   std::string   appsToString() const;
   static std::string toString(const Type aType);
   void               assignMuApps(const double aAlpha, PerformanceData& aData);
-  void               assignLambdaApps(const double     aBeta,
-                                      const long       aLambdaRequest,
-                                      PerformanceData& aData);
+  void assignLambdaApps(const double aBeta, PerformanceData& aData);
   std::pair<double, double> migrateLambdaToMu(const ID     aApp,
                                               const double aAlpha);
-  std::pair<double, double> migrateMuToLambda(const ID   aApp,
-                                              const long aLambdaRequest);
+  std::pair<double, double> migrateMuToLambda(const ID aApp);
   double                    lambdaCost(const ID aApp) const;
   double                    muCost(const ID aApp) const;
-  static void
-              checkArgs(const double aAlpha, const double aBeta, const long aLambdaRequest);
-  static Type flip(const Type aType) noexcept;
-  void        clearPreviousAssignments(PerformanceData& aData);
+  static void               checkArgs(const double aAlpha, const double aBeta);
+  static Type               flip(const Type aType) noexcept;
+  void                      clearPreviousAssignments(PerformanceData& aData);
 
  private:
+  AppModel* theAppModel; // initialized in the ctor, can be changed at run-time
+
   std::vector<App>    theApps;        // size = A
   std::vector<Broker> theBrokers;     // size = B
   std::vector<Edge>   theEdges;       // size = E

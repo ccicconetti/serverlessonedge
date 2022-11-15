@@ -106,12 +106,23 @@ std::string toString(const hungarian::HungarianAlgorithm::DistMatrix& aMatrix) {
   return ret.str();
 }
 
+std::string Scenario::App::toString() const {
+  std::stringstream ret;
+  ret << "type " << (theType == Scenario::Type::Lambda ? "lambda" : "mu    ")
+      << ", broker " << theBroker << ", service rate " << theServiceRate
+      << ", exchange size " << theExchangeSize << ", storage size "
+      << theStorageSize << ", edge assigned " << theEdge;
+  return ret.str();
+}
+
 Scenario::Scenario(
     statesim::Network& aNetwork,
     const double       aCloudDistanceFactor,
     const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
-    const std::function<long(const statesim::Node&)>&        aContainerCapacity)
-    : theApps()
+    const std::function<long(const statesim::Node&)>&        aContainerCapacity,
+    AppModel&                                                aAppModel)
+    : theAppModel(&aAppModel)
+    , theApps()
     , theBrokers()
     , theEdges()
     , theNetworkCost() {
@@ -174,6 +185,10 @@ Scenario::Scenario(
   }
 }
 
+void Scenario::appModel(AppModel& aAppModel) {
+  theAppModel = &aAppModel;
+}
+
 PerformanceData
 Scenario::dynamic(const double                           aDuration,
                   const double                           aWarmUp,
@@ -182,7 +197,6 @@ Scenario::dynamic(const double                           aDuration,
                   const std::size_t                      aAvgApps,
                   const double                           aAlpha,
                   const double                           aBeta,
-                  const long                             aLambdaRequest,
                   const std::size_t                      aSeed) {
   struct Accumulator {
     Accumulator(const double& aClock, const double aWarmUp)
@@ -208,7 +222,7 @@ Scenario::dynamic(const double                           aDuration,
         theAcc;
   };
 
-  checkArgs(aAlpha, aBeta, aLambdaRequest);
+  checkArgs(aAlpha, aBeta);
   if (aDuration < 0) {
     throw std::runtime_error("Invalid simulation duration, must be >= 0: " +
                              std::to_string(aDuration));
@@ -228,14 +242,25 @@ Scenario::dynamic(const double                           aDuration,
   clearPreviousAssignments(ret);
 
   // initialize apps and brokers, all apps are born in a lambda state
+  long mySumRequestRates = 0;
   for (std::size_t i = 0; i < myNumApps; i++) {
-    theApps.emplace_back(myBrokerRv(), Type::Lambda);
+    const auto myParams = (*theAppModel)();
+    mySumRequestRates += myParams.theServiceRate;
+    theApps.emplace_back(myBrokerRv(),
+                         Type::Lambda,
+                         myParams.theServiceRate,
+                         myParams.theExchangeSize,
+                         myParams.theStorageSize);
     theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
   }
+  VLOG(2) << "applications:\n"
+          << ::toString(theApps, "\n", [](const auto& aApp) {
+               return aApp.toString();
+             });
 
   // set the cloud num containers and capacity
   theEdges[CLOUD].theNumContainers     = 1 + myNumApps;
-  theEdges[CLOUD].theContainerCapacity = myNumApps * aLambdaRequest / aBeta;
+  theEdges[CLOUD].theContainerCapacity = mySumRequestRates / aBeta;
   ret.theNumContainers += theEdges[CLOUD].theNumContainers;
   ret.theTotCapacity += theEdges[CLOUD].theContainerCapacity;
 
@@ -309,7 +334,7 @@ Scenario::dynamic(const double                           aDuration,
 
       // assign lambda-apps to the remaining containers, taking into account the
       // beta factor, app requests, and container capacities
-      assignLambdaApps(aBeta, aLambdaRequest, myData);
+      assignLambdaApps(aBeta, myData);
       myLambdaCost = myData.theLambdaCost;
 
       // the flag will be set to true if there are app changes before next epoch
@@ -350,8 +375,7 @@ Scenario::dynamic(const double                           aDuration,
         assert(myNumLambda < myNumApps);
         assert(myNumApps >= myNumLambda);
 
-        std::tie(myOldCost, myNewCost) =
-            migrateMuToLambda(myChanged, aLambdaRequest);
+        std::tie(myOldCost, myNewCost) = migrateMuToLambda(myChanged);
 
         myLambdaCost += myNewCost;
         myMuCost -= myOldCost;
@@ -387,9 +411,8 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
                                    const std::size_t aAvgMu,
                                    const double      aAlpha,
                                    const double      aBeta,
-                                   const long        aLambdaRequest,
                                    const std::size_t aSeed) {
-  checkArgs(aAlpha, aBeta, aLambdaRequest);
+  checkArgs(aAlpha, aBeta);
 
   PerformanceData ret;
 
@@ -402,19 +425,25 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   clearPreviousAssignments(ret);
 
   // initialize apps and brokers
-  for (std::size_t i = 0; i < myNumLambda; i++) {
-    theApps.emplace_back(myBrokerRv(), Type::Lambda);
+  long mySumRequestRates = 0;
+  for (std::size_t i = 0; i < (myNumLambda + myNumMu); i++) {
+    const auto myParams = (*theAppModel)();
+    mySumRequestRates += i < myNumLambda ? myParams.theServiceRate : 0;
+    theApps.emplace_back(myBrokerRv(),
+                         i < myNumLambda ? Type::Lambda : Type::Mu,
+                         myParams.theServiceRate,
+                         myParams.theExchangeSize,
+                         myParams.theStorageSize);
     theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
   }
-
-  for (std::size_t i = 0; i < myNumMu; i++) {
-    theApps.emplace_back(myBrokerRv(), Type::Mu);
-    theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
-  }
+  VLOG(2) << "applications:\n"
+          << ::toString(theApps, "\n", [](const auto& aApp) {
+               return aApp.toString();
+             });
 
   // set the cloud num containers and capacity
   theEdges[CLOUD].theNumContainers     = 1 + myNumMu;
-  theEdges[CLOUD].theContainerCapacity = myNumLambda * aLambdaRequest / aBeta;
+  theEdges[CLOUD].theContainerCapacity = mySumRequestRates / aBeta;
   ret.theNumContainers += theEdges[CLOUD].theNumContainers;
   ret.theTotCapacity += theEdges[CLOUD].theContainerCapacity;
 
@@ -432,7 +461,7 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
 
   // assign lambda-apps to the remaining containers, taking into account the
   // beta factor, app requests, and container capacities
-  assignLambdaApps(aBeta, aLambdaRequest, ret);
+  assignLambdaApps(aBeta, ret);
 
   VLOG(2) << "apps after assignment:\n" << appsToString();
 
@@ -557,9 +586,7 @@ void Scenario::assignMuApps(const double aAlpha, PerformanceData& aData) {
   }
 }
 
-void Scenario::assignLambdaApps(const double     aBeta,
-                                const long       aLambdaRequest,
-                                PerformanceData& aData) {
+void Scenario::assignLambdaApps(const double aBeta, PerformanceData& aData) {
   // filter the lambda-apps only
   std::vector<ID> myLambdaApps;
   for (ID a = 0; a < theApps.size(); a++) {
@@ -585,7 +612,11 @@ void Scenario::assignLambdaApps(const double     aBeta,
   }
 
   // fill the request vector
-  Mcfp::Requests myLambdaRequests(myLambdaApps.size(), aLambdaRequest);
+  Mcfp::Requests myLambdaRequests;
+  for (ID a = 0; a < myLambdaApps.size(); a++) {
+    assert(myLambdaApps[a] < theApps.size());
+    myLambdaRequests.emplace_back(theApps[myLambdaApps[a]].theServiceRate);
+  }
   VLOG(2) << "requests: ["
           << ::toString(
                  myLambdaRequests,
@@ -681,8 +712,7 @@ std::pair<double, double> Scenario::migrateLambdaToMu(const ID     aApp,
   return {myOldCost, muCost(aApp)};
 }
 
-std::pair<double, double>
-Scenario::migrateMuToLambda(const ID aApp, const long aLambdaRequest) {
+std::pair<double, double> Scenario::migrateMuToLambda(const ID aApp) {
   assert(aApp < theApps.size());
   assert(theApps[aApp].theType == Type::Mu);
   assert(theApps[aApp].theWeights.empty());
@@ -701,7 +731,7 @@ Scenario::migrateMuToLambda(const ID aApp, const long aLambdaRequest) {
 
   // migrate lambda to the cloud
   // theApps[aApp].theEdge is not meaningful anymore
-  theApps[aApp].theWeights.emplace_back(CLOUD, aLambdaRequest);
+  theApps[aApp].theWeights.emplace_back(CLOUD, theApps[aApp].theServiceRate);
   theApps[aApp].theType = Type::Lambda;
 
   return {myOldCost, lambdaCost(aApp)};
@@ -727,9 +757,7 @@ double Scenario::muCost(const ID aApp) const {
   return networkCost(theApps[aApp].theBroker, theApps[aApp].theEdge);
 }
 
-void Scenario::checkArgs(const double aAlpha,
-                         const double aBeta,
-                         const long   aLambdaRequest) {
+void Scenario::checkArgs(const double aAlpha, const double aBeta) {
   if (aAlpha < 0 or aAlpha > 1) {
     throw std::runtime_error("Invalid alpha, must be in [0,1]: " +
                              std::to_string(aAlpha));
@@ -737,10 +765,6 @@ void Scenario::checkArgs(const double aAlpha,
   if (aBeta < 0 or aBeta > 1) {
     throw std::runtime_error("Invalid beta, must be in [0,1]: " +
                              std::to_string(aBeta));
-  }
-  if (aLambdaRequest <= 0) {
-    throw std::runtime_error("Invalid lambda request, must be > 0: " +
-                             std::to_string(aLambdaRequest));
   }
 }
 

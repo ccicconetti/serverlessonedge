@@ -30,6 +30,7 @@ SOFTWARE.
 */
 
 #include "Dataset/afdb-utils.h"
+#include "LambdaMuSim/appmodel.h"
 #include "LambdaMuSim/appperiods.h"
 #include "LambdaMuSim/apppool.h"
 #include "LambdaMuSim/scenario.h"
@@ -47,6 +48,7 @@ SOFTWARE.
 #include <google/protobuf/io/coded_stream.h>
 #include <map>
 #include <set>
+#include <stdexcept>
 
 namespace uiiit {
 namespace lambdamusim {
@@ -164,15 +166,17 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
                           });
   }
 
-  Scenario myScenario(
+  AppModelConstant myAppModel(AppModel::Params{1, 1, 1});
+  Scenario         myScenario(
       myNetwork,
       2.0,
       [](const auto& aNode) { return 2; },
-      [](const auto& aNode) { return 1; });
+      [](const auto& aNode) { return 1; },
+      myAppModel);
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
-  const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 1, 1, 42);
+  const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 1, 42);
 
   EXPECT_EQ(5 * 6 + 1 + 1 + 2, myOut1.theLambdaCost); // 5:cloud, 3: edge
   EXPECT_EQ(16, myOut1.theMuCost);
@@ -184,21 +188,23 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(0, myOut1.theMuMigrations);
 
   // repeat identical simulation
-  const auto myOut1again = myScenario.snapshot(6, 6, 0.5, 1, 1, 42);
+  const auto myOut1again = myScenario.snapshot(6, 6, 0.5, 1, 42);
 
   ASSERT_EQ(myOut1, myOut1again)
       << "\nexpected: " << ::toString(myOut1.toStrings(), ",")
       << "\nactual:   " << ::toString(myOut1again.toStrings(), ",");
 
   // same but use all edge containers for mu-apps
-  const auto myOut2 = myScenario.snapshot(6, 6, 1, 1, 1, 42);
+  const auto myOut2 = myScenario.snapshot(6, 6, 1, 1, 42);
 
   EXPECT_EQ(7 * 6 + 2, myOut2.theLambdaCost); // 7: cloud, 1: edge
   EXPECT_EQ(7, myOut2.theMuCost);
   EXPECT_EQ(0, myOut2.theMuCloud);
 
   // same but lambda-apps have bigger requests
-  const auto myOut3 = myScenario.snapshot(6, 6, 1, 1, 2, 42);
+  AppModelConstant myAnotherAppModel(AppModel::Params{2, 1, 1});
+  myScenario.appModel(myAnotherAppModel);
+  const auto myOut3 = myScenario.snapshot(6, 6, 1, 1, 42);
 
   EXPECT_EQ(15 * 6 + 2, myOut3.theLambdaCost); // 7.5: cloud, 0.5: edge
   EXPECT_EQ(myOut2.theMuCost, myOut3.theMuCost);
@@ -225,7 +231,7 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         10,
                         0.5,
                         0.5,
-                        1,
+                        "constant,1,1,1",
                         (theTestDir / "out").string(),
                         true},
                    42,
@@ -235,9 +241,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,906,268,9."
+  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "906,268,9."
             "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,911,276,13."
+            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "911,276,13."
             "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
             myContent);
 
@@ -257,7 +265,7 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         10,
                         0.5,
                         0.5,
-                        1,
+                        "constant,1,1,1",
                         (theTestDir / "out").string(),
                         true},
                    43,
@@ -266,11 +274,14 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,906,268,9."
+  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "906,268,9."
             "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,911,276,13."
+            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "911,276,13."
             "000000,10.000000,31.000000,31.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,1,911,276,13."
+            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "911,276,13."
             "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
             myContent);
 }
@@ -327,17 +338,20 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   statesim::Network myNetwork(
       theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
 
+  AppModelConstant myAppModel(AppModel::Params{1, 1, 1});
+
   Scenario myScenario(
       myNetwork,
       2.0,
       [](const auto& aNode) { return 2; },
-      [](const auto& aNode) { return 1; });
+      [](const auto& aNode) { return 1; },
+      myAppModel);
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
   AppPeriods myAppPeriods(theDataset, theCostModel, 1);
   const auto myOut1 = myScenario.dynamic(
-      10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 1, 42);
+      10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 42);
 
   if (myCheckFloat) {
     EXPECT_FLOAT_EQ(6.1521521, myOut1.theNumLambda);
@@ -353,7 +367,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // repeat identical simulation
   const auto myOut1again = myScenario.dynamic(
-      10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 1, 42);
+      10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 42);
 
   ASSERT_EQ(myOut1, myOut1again)
       << "\nexpected: " << ::toString(myOut1.toStrings(), ",")
@@ -361,7 +375,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // same but all mu-apps go to the cloud
   const auto myOut2 = myScenario.dynamic(
-      10000, 0, 1000, myAppPeriods.periods(), 10, 0, 0.5, 1, 42);
+      10000, 0, 1000, myAppPeriods.periods(), 10, 0, 0.5, 42);
 
   EXPECT_EQ(myOut1.theNumLambda, myOut2.theNumLambda);
   EXPECT_EQ(myOut1.theNumMu, myOut2.theNumMu);
@@ -377,7 +391,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // same but with warm-up
   const auto myOut3 = myScenario.dynamic(
-      10000, 0.2, 1000, myAppPeriods.periods(), 10, 0, 0.5, 1, 42);
+      10000, 0.2, 1000, myAppPeriods.periods(), 10, 0, 0.5, 42);
 
   EXPECT_EQ(myOut1.theNumLambda, myOut3.theNumLambda);
   EXPECT_EQ(myOut1.theNumMu, myOut3.theNumMu);
@@ -393,7 +407,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
 
   // same but with warm-up == duration
   const auto myOut4 = myScenario.dynamic(
-      10000, 10000, 1000, myAppPeriods.periods(), 10, 0, 0.5, 1, 42);
+      10000, 10000, 1000, myAppPeriods.periods(), 10, 0, 0.5, 42);
 
   EXPECT_TRUE(std::isnan(myOut4.theNumLambda));
   EXPECT_TRUE(std::isnan(myOut4.theNumMu));
@@ -426,7 +440,7 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
               0, // (ibidem)
               0.5,
               0.5,
-              1,
+              "constant,1,1,1",
               (theTestDir / "out").string(),
               true};
 
@@ -437,7 +451,8 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,910,268,7."
+  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
+            "1,1,910,268,7."
             "926733,1.073267,20.573380,2.645391,0.000000,2,9\n",
             myContent);
 
@@ -447,13 +462,77 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,910,268,7."
+  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
+            "1,1,910,268,7."
             "926733,1.073267,20.573380,2.645391,0.000000,2,9\n"
-            "42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,910,268,7."
+            "42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
+            "1,1,910,268,7."
             "926733,1.073267,20.573380,2.645391,0.000000,2,9\n"
-            "43,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,1,914,276,"
+            "43,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
+            "1,1,914,276,"
             "11.926733,1.073267,30.779422,2.138962,0.000000,0,9\n",
             myContent);
+}
+
+TEST_F(TestLambdaMuSim, test_app_model_invalid) {
+  ASSERT_THROW(makeAppModel(42, ""), std::runtime_error);
+  ASSERT_THROW(makeAppModel(42, "unknown-type"), std::runtime_error);
+}
+
+TEST_F(TestLambdaMuSim, test_app_model_constant) {
+  ASSERT_THROW(makeAppModel(42, "constant,12,1000,alpha"),
+               std::invalid_argument);
+  ASSERT_THROW(makeAppModel(42, "constant,12,1000"), std::runtime_error);
+  ASSERT_THROW(makeAppModel(42, "constant,12"), std::runtime_error);
+  ASSERT_THROW(makeAppModel(42, "constant"), std::runtime_error);
+
+  auto myModel = makeAppModel(42, "constant,12,1000,420");
+
+  for (auto i = 0; i < 10; i++) {
+    const auto myParams = (*myModel)();
+    ASSERT_EQ(12, myParams.theServiceRate);
+    ASSERT_EQ(1000, myParams.theExchangeSize);
+    ASSERT_EQ(420, myParams.theStorageSize);
+  }
+}
+
+TEST_F(TestLambdaMuSim, test_app_model_classes) {
+  ASSERT_THROW(makeAppModel(42, "classes"), std::runtime_error);
+  ASSERT_THROW(makeAppModel(42, "constant,1,2"), std::runtime_error);
+  ASSERT_THROW(makeAppModel(42, "constant,1,2,3,4,5"), std::runtime_error);
+
+  // single class
+  auto mySingleModel = makeAppModel(42, "classes,99,12,1000,420");
+
+  for (auto i = 0; i < 10; i++) {
+    const auto myParams = (*mySingleModel)();
+    ASSERT_EQ(12, myParams.theServiceRate);
+    ASSERT_EQ(1000, myParams.theExchangeSize);
+    ASSERT_EQ(420, myParams.theStorageSize);
+  }
+
+  // two classes
+  auto myDualModel = makeAppModel(42, "classes,1,12,1000,420,2,6,500,210");
+
+  auto myFirst  = 0.0;
+  auto myDouble = 0.0;
+  for (auto i = 0; i < 1000; i++) {
+    const auto myParams = (*myDualModel)();
+    if (myParams.theServiceRate == 12) {
+      ++myFirst;
+      ASSERT_EQ(1000, myParams.theExchangeSize);
+      ASSERT_EQ(420, myParams.theStorageSize);
+    } else if (myParams.theServiceRate == 6) {
+      ++myDouble;
+      ASSERT_EQ(500, myParams.theExchangeSize);
+      ASSERT_EQ(210, myParams.theStorageSize);
+    } else {
+      FAIL() << "invalid service rate " << myParams.theServiceRate;
+    }
+  }
+  ASSERT_GE(myFirst, 0);
+  ASSERT_NEAR(myDouble / myFirst, 2, 0.1)
+      << "first = " << myFirst << ", double = " << myDouble;
 }
 
 } // namespace lambdamusim
