@@ -615,9 +615,9 @@ void Scenario::assignLambdaApps(const double aBeta, PerformanceData& aData) {
 
   // fill the request vector
   Mcfp::Requests myLambdaRequests;
-  for (ID a = 0; a < myLambdaApps.size(); a++) {
-    assert(myLambdaApps[a] < theApps.size());
-    myLambdaRequests.emplace_back(theApps[myLambdaApps[a]].theServiceRate);
+  for (ID i = 0; i < myLambdaApps.size(); i++) {
+    assert(myLambdaApps[i] < theApps.size());
+    myLambdaRequests.emplace_back(theApps[myLambdaApps[i]].theServiceRate);
   }
   VLOG(2) << "requests: ["
           << ::toString(
@@ -642,10 +642,10 @@ void Scenario::assignLambdaApps(const double aBeta, PerformanceData& aData) {
   // fill the cost matrix
   Mcfp::Costs myLambdaCosts(myLambdaApps.size(),
                             std::vector<double>(myLambdaContainers.size()));
-  for (ID a = 0; a < myLambdaApps.size(); a++) {
+  for (ID i = 0; i < myLambdaApps.size(); i++) {
     for (ID e = 0; e < myLambdaContainers.size(); e++) {
-      myLambdaCosts[a][e] =
-          networkCost(theApps[a].theBroker, myLambdaContainers[e]);
+      const auto& myApp   = theApps[myLambdaApps[i]];
+      myLambdaCosts[i][e] = networkCost(myApp.theBroker, myLambdaContainers[e]);
     }
   }
 
