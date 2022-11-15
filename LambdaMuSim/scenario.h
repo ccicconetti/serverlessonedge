@@ -51,16 +51,17 @@ class Node;
 namespace lambdamusim {
 
 struct PerformanceData {
-  std::size_t theNumContainers    = 0;
-  std::size_t theTotCapacity      = 0;
-  double      theNumLambda        = 0; //!< int with S, real with D
-  double      theNumMu            = 0; //!< int with S, real with D
-  double      theLambdaCost       = 0; //!< average with D
-  double      theMuCost           = 0; //!< average with D
-  double      theMuCloud          = 0; //!< int with S, real with D
-  double      theMuServiceCloud   = 0;
-  std::size_t theMuMigrations     = 0; //!< D only
-  std::size_t theNumOptimizations = 0; //!< D only
+  std::size_t theNumContainers      = 0;
+  std::size_t theTotCapacity        = 0;
+  double      theNumLambda          = 0; //!< int with S, real with D
+  double      theNumMu              = 0; //!< int with S, real with D
+  double      theLambdaCost         = 0; //!< average with D
+  double      theLambdaServiceCloud = 0;
+  double      theMuCost             = 0; //!< average with D
+  double      theMuCloud            = 0; //!< int with S, real with D
+  double      theMuServiceCloud     = 0;
+  std::size_t theMuMigrations       = 0; //!< D only
+  std::size_t theNumOptimizations   = 0; //!< D only
 
   bool operator==(const PerformanceData& aOther) const noexcept;
 
@@ -216,6 +217,7 @@ class Scenario
   static void               checkArgs(const double aAlpha, const double aBeta);
   static Type               flip(const Type aType) noexcept;
   void                      clearPreviousAssignments(PerformanceData& aData);
+  double                    lambdaServiceCloud() const;
 
  private:
   const double theCloudStorageCostLocal;

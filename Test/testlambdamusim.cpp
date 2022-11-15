@@ -181,6 +181,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   const auto myOut1 = myScenario.snapshot(6, 6, 0.5, 1, 42);
 
   EXPECT_EQ(5 * 6 + 1 + 1 + 2, myOut1.theLambdaCost); // 5:cloud, 3: edge
+  EXPECT_FLOAT_EQ(5.0 / 8.0, myOut1.theLambdaServiceCloud);
   EXPECT_EQ(16, myOut1.theMuCost);
   EXPECT_EQ(2, myOut1.theMuCloud);
   EXPECT_FLOAT_EQ(0.4, myOut1.theMuServiceCloud);
@@ -201,6 +202,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   const auto myOut2 = myScenario.snapshot(6, 6, 1, 1, 42);
 
   EXPECT_EQ(7 * 6 + 2, myOut2.theLambdaCost); // 7: cloud, 1: edge
+  EXPECT_FLOAT_EQ(7.0 / 8.0, myOut2.theLambdaServiceCloud);
   EXPECT_EQ(7, myOut2.theMuCost);
   EXPECT_EQ(0, myOut2.theMuCloud);
   EXPECT_FLOAT_EQ(0.0, myOut2.theMuServiceCloud);
@@ -211,6 +213,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   const auto myOut3 = myScenario.snapshot(6, 6, 1, 1, 42);
 
   EXPECT_EQ(15 * 6 + 2, myOut3.theLambdaCost); // 7.5: cloud, 0.5: edge
+  EXPECT_FLOAT_EQ(7.5 / 8.0, myOut3.theLambdaServiceCloud);
   EXPECT_EQ(2 * myOut2.theMuCost, myOut3.theMuCost);
   EXPECT_EQ(myOut2.theMuCloud, myOut3.theMuCloud);
   EXPECT_EQ(myOut2.theMuServiceCloud, myOut3.theMuServiceCloud);
@@ -267,6 +270,8 @@ TEST_F(TestLambdaMuSim, test_example_snapshot_only_lambda) {
                     (myNetworkCostEdgeClose * myExchangeSize +
                      myCloudStorageCostRemote * myStorageSize),
             myOut1.theLambdaCost);
+  EXPECT_FLOAT_EQ(1.0 * myNumLambdasCloud / myOut1.theNumLambda,
+                  myOut1.theLambdaServiceCloud);
 
   // mu apps
   EXPECT_FLOAT_EQ(5, myOut1.theNumMu);
@@ -387,11 +392,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
 
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-      "constant,1,1,1,906,268,9.000000,5.000000,21.000000,13.000000,0.000000,"
-      "0.000000,0,0\n"
+      "constant,1,1,1,906,268,9.000000,5.000000,21.000000,0.000000,13.000000,0."
+      "000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-      "constant,1,1,1,911,276,13.000000,10.000000,31.000000,31.000000,0.000000,"
-      "0.000000,0,0\n",
+      "constant,1,1,1,911,276,13.000000,10.000000,31.000000,0.000000,31.000000,"
+      "0.000000,0.000000,0,0\n",
       myContent);
 
   // run again with same seed
@@ -424,13 +429,13 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,906,268,9."
-      "000000,5.000000,21.000000,13.000000,0.000000,0.000000,0,0\n"
+      "000000,5.000000,21.000000,0.000000,13.000000,0.000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,911,276,13."
-      "000000,10.000000,31.000000,31.000000,0.000000,0.000000,0,0\n"
+      "000000,10.000000,31.000000,0.000000,31.000000,0.000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,911,276,13."
-      "000000,10.000000,31.000000,31.000000,0.000000,0.000000,0,0\n",
+      "000000,10.000000,31.000000,0.000000,31.000000,0.000000,0.000000,0,0\n",
       myContent);
 }
 
@@ -503,6 +508,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   const auto myOut1 = myScenario.dynamic(
       10000, 0, 1000, myAppPeriods.periods(), 10, 0.5, 0.5, 42);
 
+  EXPECT_FLOAT_EQ(1, myOut1.theLambdaServiceCloud);
   if (myCheckFloat) {
     EXPECT_FLOAT_EQ(6.1521521, myOut1.theNumLambda);
     EXPECT_FLOAT_EQ(2.8478479, myOut1.theNumMu);
@@ -533,6 +539,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_EQ(myOut1.theNumContainers, myOut2.theNumContainers);
   EXPECT_EQ(myOut1.theTotCapacity, myOut2.theTotCapacity);
   EXPECT_EQ(myOut1.theLambdaCost, myOut2.theLambdaCost);
+  EXPECT_FLOAT_EQ(myOut1.theLambdaServiceCloud, myOut2.theLambdaServiceCloud);
   if (myCheckFloat) {
     EXPECT_FLOAT_EQ(17.069069, myOut2.theMuCost);
     EXPECT_FLOAT_EQ(2.6006007, myOut2.theMuCloud);
@@ -549,6 +556,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_EQ(myOut1.theNumContainers, myOut3.theNumContainers);
   EXPECT_EQ(myOut1.theTotCapacity, myOut3.theTotCapacity);
   EXPECT_EQ(myOut1.theLambdaCost, myOut3.theLambdaCost);
+  EXPECT_FLOAT_EQ(myOut1.theLambdaServiceCloud, myOut3.theLambdaServiceCloud);
   if (myCheckFloat) {
     EXPECT_FLOAT_EQ(17.069069, myOut3.theMuCost);
     EXPECT_FLOAT_EQ(2.6006007, myOut3.theMuCloud);
@@ -565,6 +573,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_EQ(myOut1.theNumContainers, myOut4.theNumContainers);
   EXPECT_EQ(myOut1.theTotCapacity, myOut4.theTotCapacity);
   EXPECT_TRUE(std::isnan(myOut4.theLambdaCost));
+  EXPECT_TRUE(std::isnan(myOut4.theLambdaServiceCloud));
   EXPECT_TRUE(std::isnan(myOut4.theMuCost));
   EXPECT_TRUE(std::isnan(myOut4.theMuCloud));
   EXPECT_TRUE(std::isnan(myOut4.theMuServiceCloud));
@@ -608,7 +617,7 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,910,268,7."
-      "926733,1.073267,20.598689,2.645391,0.000000,0.000000,2,9\n",
+      "926733,1.073267,20.598689,0.028376,2.645391,0.000000,0.000000,2,9\n",
       myContent);
 
   // run two replications, starting with same seed as before
@@ -619,13 +628,16 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
 
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-      "constant,1,1,1,910,268,7.926733,1.073267,20.598689,2.645391,0.000000,"
+      "constant,1,1,1,910,268,7.926733,1.073267,20.598689,0.028376,2.645391,0."
+      "000000,"
       "0.000000,2,9\n"
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-      "constant,1,1,1,910,268,7.926733,1.073267,20.598689,2.645391,0.000000,"
+      "constant,1,1,1,910,268,7.926733,1.073267,20.598689,0.028376,2.645391,0."
+      "000000,"
       "0.000000,2,9\n"
       "43,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-      "constant,1,1,1,914,276,11.926733,1.073267,31.053705,2.138962,0.000000,"
+      "constant,1,1,1,914,276,11.926733,1.073267,31.053705,0.018679,2.138962,0."
+      "000000,"
       "0.000000,0,9\n",
       myContent);
 }

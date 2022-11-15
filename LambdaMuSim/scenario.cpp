@@ -63,6 +63,7 @@ bool PerformanceData::operator==(const PerformanceData& aOther) const noexcept {
          theNumContainers == aOther.theNumContainers and
          theTotCapacity == aOther.theTotCapacity and
          theLambdaCost == aOther.theLambdaCost and
+         theLambdaServiceCloud == aOther.theLambdaServiceCloud and
          theMuCost == aOther.theMuCost and theMuCloud == aOther.theMuCloud and
          theMuServiceCloud == aOther.theMuServiceCloud and
          theMuMigrations == aOther.theMuMigrations and
@@ -76,6 +77,7 @@ std::vector<std::string> PerformanceData::toStrings() const {
       std::to_string(theNumLambda),
       std::to_string(theNumMu),
       std::to_string(theLambdaCost),
+      std::to_string(theLambdaServiceCloud),
       std::to_string(theMuCost),
       std::to_string(theMuCloud),
       std::to_string(theMuServiceCloud),
@@ -90,6 +92,7 @@ const std::vector<std::string>& PerformanceData::toColumns() {
                                              "num-lambda",
                                              "num-mu",
                                              "lambda-cost",
+                                             "lambda-service-cloud",
                                              "mu-cost",
                                              "mu-cloud",
                                              "mu-service-cloud",
@@ -275,14 +278,16 @@ Scenario::dynamic(const double                           aDuration,
           << networkCostToString();
 
   AppPool     myAppPool(aPeriods, myNumApps, aSeed);
-  double      myClock      = 0;
-  double      myNextEpoch  = 0;
-  std::size_t myNumLambda  = myNumApps; // all apps start as lambda
-  double      myLambdaCost = 0;
-  double      myMuCost     = 0;
+  double      myClock              = 0;
+  double      myNextEpoch          = 0;
+  std::size_t myNumLambda          = myNumApps; // all apps start as lambda
+  double      myLambdaCost         = 0;
+  double      myLambdaServiceCloud = 0;
+  double      myMuCost             = 0;
   Accumulator myNumLambdaAcc(myClock, aWarmUp);
   Accumulator myNumMuAcc(myClock, aWarmUp);
   Accumulator myLambdaCostAcc(myClock, aWarmUp);
+  Accumulator myLambdaServiceCloudAcc(myClock, aWarmUp);
   Accumulator myMuCostAcc(myClock, aWarmUp);
   Accumulator myMuCloudAcc(myClock, aWarmUp);
   Accumulator myMuServiceCloudAcc(myClock, aWarmUp);
@@ -344,7 +349,8 @@ Scenario::dynamic(const double                           aDuration,
       // assign lambda-apps to the remaining containers, taking into account the
       // beta factor, app requests, and container capacities
       assignLambdaApps(aBeta, myData);
-      myLambdaCost = myData.theLambdaCost;
+      myLambdaCost         = myData.theLambdaCost;
+      myLambdaServiceCloud = myData.theLambdaServiceCloud;
 
       // the flag will be set to true if there are app changes before next epoch
       myOptimize = false;
@@ -371,6 +377,7 @@ Scenario::dynamic(const double                           aDuration,
         std::tie(myOldCost, myNewCost) = migrateLambdaToMu(myChanged, aAlpha);
 
         myLambdaCost -= myOldCost;
+        myLambdaServiceCloud = lambdaServiceCloud();
         myMuCost += myNewCost;
         myNumLambda--;
 
@@ -385,6 +392,7 @@ Scenario::dynamic(const double                           aDuration,
         assert(myNumApps >= myNumLambda);
 
         std::tie(myOldCost, myNewCost) = migrateMuToLambda(myChanged);
+        myLambdaServiceCloud           = lambdaServiceCloud();
 
         myLambdaCost += myNewCost;
         myMuCost -= myOldCost;
@@ -400,6 +408,7 @@ Scenario::dynamic(const double                           aDuration,
       myNumMuAcc(myNumApps - myNumLambda);
     }
     myLambdaCostAcc(myLambdaCost);
+    myLambdaServiceCloudAcc(myLambdaServiceCloud);
     myMuCostAcc(myMuCost);
 
     assert(myTimeElapsed >= 0);
@@ -407,12 +416,13 @@ Scenario::dynamic(const double                           aDuration,
   }
 
   // save weighted means to the output
-  ret.theNumLambda      = myNumLambdaAcc.mean();
-  ret.theNumMu          = myNumMuAcc.mean();
-  ret.theLambdaCost     = myLambdaCostAcc.mean();
-  ret.theMuCost         = myMuCostAcc.mean();
-  ret.theMuCloud        = myMuCloudAcc.mean();
-  ret.theMuServiceCloud = myMuServiceCloudAcc.mean();
+  ret.theNumLambda          = myNumLambdaAcc.mean();
+  ret.theNumMu              = myNumMuAcc.mean();
+  ret.theLambdaCost         = myLambdaCostAcc.mean();
+  ret.theLambdaServiceCloud = myLambdaServiceCloudAcc.mean();
+  ret.theMuCost             = myMuCostAcc.mean();
+  ret.theMuCloud            = myMuCloudAcc.mean();
+  ret.theMuServiceCloud     = myMuServiceCloudAcc.mean();
 
   return ret;
 }
@@ -696,6 +706,9 @@ void Scenario::assignLambdaApps(const double aBeta, PerformanceData& aData) {
       theApps[a].theWeights.emplace_back(elem.first, elem.second);
     }
   }
+
+  // ratio of lambda service that goes to the cloud
+  aData.theLambdaServiceCloud = lambdaServiceCloud();
 }
 
 std::pair<double, double> Scenario::migrateLambdaToMu(const ID     aApp,
@@ -815,6 +828,23 @@ void Scenario::clearPreviousAssignments(PerformanceData& aData) {
     aData.theTotCapacity += e == CLOUD ? 0 : theEdges[e].theContainerCapacity;
     theEdges[e].theMuApps.clear();
   }
+}
+
+double Scenario::lambdaServiceCloud() const {
+  auto myServiceCloud = 0.0;
+  auto myServiceTotal = 0.0;
+  for (const auto& myApp : theApps) {
+    for (const auto& elem : myApp.theWeights) {
+      myServiceTotal += elem.second;
+      if (elem.first == CLOUD) {
+        myServiceCloud += elem.second;
+      }
+    }
+  }
+  if (myServiceTotal > 0.0) {
+    return myServiceCloud / myServiceTotal;
+  }
+  return 0.0;
 }
 
 } // namespace lambdamusim
