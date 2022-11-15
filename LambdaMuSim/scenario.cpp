@@ -118,11 +118,13 @@ std::string Scenario::App::toString() const {
 Scenario::Scenario(
     statesim::Network& aNetwork,
     const double       aCloudDistanceFactor,
-    const double       aCloudStorageCost,
+    const double       aCloudStorageCostLocal,
+    const double       aCloudStorageCostRemote,
     const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
     const std::function<long(const statesim::Node&)>&        aContainerCapacity,
     AppModel&                                                aAppModel)
-    : theCloudStorageCost(aCloudStorageCost)
+    : theCloudStorageCostLocal(aCloudStorageCostLocal)
+    , theCloudStorageCostRemote(aCloudStorageCostRemote)
     , theAppModel(&aAppModel)
     , theApps()
     , theBrokers()
@@ -561,8 +563,10 @@ void Scenario::assignMuApps(const double aAlpha, PerformanceData& aData) {
       myMuApps.size(), std::vector<double>(myContainerToNodes.size()));
   for (ID a = 0; a < myMuApps.size(); a++) {
     for (ID c = 0; c < myContainerToNodes.size(); c++) {
-      myApMatrix[a][c] =
-          networkCost(theApps[myMuApps[a]].theBroker, myContainerToNodes[c]);
+      const auto& myApp = theApps[myMuApps[a]];
+      myApMatrix[a][c]  = myApp.theServiceRate *
+                         networkCost(myApp.theBroker, myContainerToNodes[c]) *
+                         myApp.theExchangeSize;
     }
   }
   VLOG(2) << "assignment problem cost matrix:\n"
@@ -644,8 +648,12 @@ void Scenario::assignLambdaApps(const double aBeta, PerformanceData& aData) {
                             std::vector<double>(myLambdaContainers.size()));
   for (ID i = 0; i < myLambdaApps.size(); i++) {
     for (ID e = 0; e < myLambdaContainers.size(); e++) {
-      const auto& myApp   = theApps[myLambdaApps[i]];
-      myLambdaCosts[i][e] = networkCost(myApp.theBroker, myLambdaContainers[e]);
+      const auto& myApp = theApps[myLambdaApps[i]];
+      myLambdaCosts[i][e] =
+          networkCost(myApp.theBroker, myLambdaContainers[e]) *
+              myApp.theExchangeSize +
+          (e == CLOUD ? theCloudStorageCostLocal : theCloudStorageCostRemote) *
+              myApp.theStorageSize;
     }
   }
 

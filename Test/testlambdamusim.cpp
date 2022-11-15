@@ -171,6 +171,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
       myNetwork,
       2.0,
       0.0,
+      0.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
       myAppModel);
@@ -202,14 +203,147 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(7, myOut2.theMuCost);
   EXPECT_EQ(0, myOut2.theMuCloud);
 
-  // same but lambda-apps have bigger requests
+  // same but with have bigger requests
   AppModelConstant myAnotherAppModel(AppModel::Params{2, 1, 1});
   myScenario.appModel(myAnotherAppModel);
   const auto myOut3 = myScenario.snapshot(6, 6, 1, 1, 42);
 
   EXPECT_EQ(15 * 6 + 2, myOut3.theLambdaCost); // 7.5: cloud, 0.5: edge
-  EXPECT_EQ(myOut2.theMuCost, myOut3.theMuCost);
+  EXPECT_EQ(2 * myOut2.theMuCost, myOut3.theMuCost);
   EXPECT_EQ(myOut2.theMuCloud, myOut3.theMuCloud);
+}
+
+TEST_F(TestLambdaMuSim, test_example_snapshot_only_lambda) {
+  statesim::Network myNetwork(
+      theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
+
+  // app model params
+  const long       myServiceRate  = 2;
+  const long       myExchangeSize = 5;
+  const long       myStorageSize  = 3;
+  AppModelConstant myAppModel(
+      AppModel::Params{myServiceRate, myExchangeSize, myStorageSize});
+
+  // edge nodes have 2 containers each, with a lambda-capacity of 1
+  const double myCloudStorageCostLocal  = 10;
+  const double myCloudStorageCostRemote = 5;
+  Scenario     myScenario(
+      myNetwork,
+      2.0,
+      myCloudStorageCostLocal,
+      myCloudStorageCostRemote,
+      [](const auto& aNode) { return 2; },
+      [](const auto& aNode) { return 1; },
+      myAppModel);
+
+  // all the containers go to lambda apps (alpha = 0)
+  // there is no overprovisioning of capacity (beta = 1)
+  const auto myOut1 = myScenario.snapshot(6, 6, 0, 1, 42);
+  EXPECT_EQ(2 * 3 + 1 + 5, myOut1.theNumContainers);
+  EXPECT_EQ(3 * 1 + myServiceRate * myOut1.theNumLambda, myOut1.theTotCapacity);
+
+  // 8 lambda apps: 5 go to the cloud, 3 go to the edge
+  const long myNumLambdasCloud      = 5;
+  const long myNumLambdasEdgeClose  = 2;
+  const long myNumLambdasEdgeFar    = 1;
+  const long myNetworkCostCloud     = 6;
+  const long myNetworkCostEdgeClose = 1;
+  const long myNetworkCostEdgeFar   = 2;
+  EXPECT_FLOAT_EQ(myNumLambdasCloud + myNumLambdasEdgeClose +
+                      myNumLambdasEdgeFar,
+                  myOut1.theNumLambda);
+  EXPECT_EQ(myNumLambdasCloud * myServiceRate *
+                    (myNetworkCostCloud * myExchangeSize +
+                     myCloudStorageCostLocal * myStorageSize) +
+
+                myNumLambdasEdgeFar * myServiceRate *
+                    (myNetworkCostEdgeFar * myExchangeSize +
+                     myCloudStorageCostRemote * myStorageSize) +
+
+                myNumLambdasEdgeClose * myServiceRate *
+                    (myNetworkCostEdgeClose * myExchangeSize +
+                     myCloudStorageCostRemote * myStorageSize),
+            myOut1.theLambdaCost);
+
+  // mu apps
+  EXPECT_FLOAT_EQ(5, myOut1.theNumMu);
+  EXPECT_EQ(5, myOut1.theMuCloud);
+  EXPECT_EQ(myOut1.theMuCloud * myServiceRate * myNetworkCostCloud *
+                myExchangeSize,
+            myOut1.theMuCost);
+  EXPECT_EQ(0, myOut1.theMuMigrations);
+}
+
+TEST_F(TestLambdaMuSim, test_example_snapshot_only_mu) {
+  statesim::Network myNetwork(
+      theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
+
+  // app model params
+  const long       myServiceRate  = 2;
+  const long       myExchangeSize = 5;
+  const long       myStorageSize  = 3;
+  AppModelConstant myAppModel(
+      AppModel::Params{myServiceRate, myExchangeSize, myStorageSize});
+
+  // edge nodes have 2 containers each, with a lambda-capacity of 1
+  Scenario myScenario(
+      myNetwork,
+      2.0,
+      0.0,
+      0.0,
+      [](const auto& aNode) { return 2; },
+      [](const auto& aNode) { return 1; },
+      myAppModel);
+
+  // all the containers go to the mu apps (alpha = 1)
+  const auto myOut1 = myScenario.snapshot(0, 6, 1.0, 1, 42);
+  EXPECT_EQ(2 * 3 + 1 + 5, myOut1.theNumContainers);
+  EXPECT_EQ(3 * 1 + myServiceRate * myOut1.theNumLambda, myOut1.theTotCapacity);
+
+  // lambda apps (none)
+  EXPECT_FLOAT_EQ(0, myOut1.theNumLambda);
+  EXPECT_FLOAT_EQ(0, myOut1.theLambdaCost);
+
+  // mu apps
+  long       myNumMuCloud           = 0;
+  long       myNumMuEdgeClose       = 4;
+  long       myNumMuEdgeFar         = 1;
+  const long myNetworkCostCloud     = 6;
+  const long myNetworkCostEdgeClose = 1;
+  const long myNetworkCostEdgeFar   = 2;
+  EXPECT_FLOAT_EQ(5, myOut1.theNumMu);
+  EXPECT_EQ(myNumMuCloud, myOut1.theMuCloud);
+  EXPECT_EQ(myServiceRate * myExchangeSize *
+                (myNumMuCloud * myNetworkCostCloud +
+                 myNumMuEdgeClose * myNetworkCostEdgeClose +
+                 myNumMuEdgeFar * myNetworkCostEdgeFar),
+            myOut1.theMuCost);
+  EXPECT_EQ(0, myOut1.theMuMigrations);
+
+  // repeat with more mu apps
+  const auto myOut2 = myScenario.snapshot(0, 20, 1.0, 1, 42);
+  EXPECT_FLOAT_EQ(24, myOut2.theNumMu);
+  myNumMuCloud     = 18;
+  myNumMuEdgeClose = 4;
+  myNumMuEdgeFar   = 2;
+  EXPECT_EQ(myNumMuCloud, myOut2.theMuCloud);
+  EXPECT_EQ(myServiceRate * myExchangeSize *
+                (myNumMuCloud * myNetworkCostCloud +
+                 myNumMuEdgeClose * myNetworkCostEdgeClose +
+                 myNumMuEdgeFar * myNetworkCostEdgeFar),
+            myOut2.theMuCost);
+
+  // repeat with different seeds
+  for (size_t mySeed = 42; mySeed < 100; mySeed++) {
+    const auto myOut3 = myScenario.snapshot(0, 20, 1.0, 1, mySeed);
+    myNumMuCloud      = myOut3.theNumMu - 6;
+    EXPECT_EQ(myNumMuCloud, myOut3.theMuCloud);
+    EXPECT_EQ(myServiceRate * myExchangeSize *
+                  (myNumMuCloud * myNetworkCostCloud +
+                   myNumMuEdgeClose * myNetworkCostEdgeClose +
+                   myNumMuEdgeFar * myNetworkCostEdgeFar),
+              myOut3.theMuCost);
+  }
 }
 
 TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
@@ -222,6 +356,7 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         (theTestDir / "links").string(),
                         (theTestDir / "edges").string(),
                         2.0,
+                        0.0,
                         0.0,
                         "", // unused with snapshot
                         0,  // (ibidem)
@@ -243,15 +378,14 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-            "constant,1,1,1,"
-            "906,268,9."
-            "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-            "constant,1,1,1,"
-            "911,276,13."
-            "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
-            myContent);
+  EXPECT_EQ(
+      "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+      "constant,1,1,1,906,268,9.000000,5.000000,21.000000,13.000000,0.000000,"
+      "0,0\n"
+      "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+      "constant,1,1,1,911,276,13.000000,10.000000,31.000000,31.000000,0.000000,"
+      "0,0\n",
+      myContent);
 
   // run again with same seed
   mySimulation.run(Conf{Conf::Type::Snapshot,
@@ -259,6 +393,7 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         (theTestDir / "links").string(),
                         (theTestDir / "edges").string(),
                         2.0,
+                        0.0,
                         0.0,
                         "", // unused with snapshot
                         0,  // (ibidem)
@@ -279,19 +414,17 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-            "constant,1,1,1,"
-            "906,268,9."
-            "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-            "constant,1,1,1,"
-            "911,276,13."
-            "000000,10.000000,31.000000,31.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-            "constant,1,1,1,"
-            "911,276,13."
-            "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
-            myContent);
+  EXPECT_EQ(
+      "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+      "constant,1,1,1,906,268,9."
+      "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
+      "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+      "constant,1,1,1,911,276,13."
+      "000000,10.000000,31.000000,31.000000,0.000000,0,0\n"
+      "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+      "constant,1,1,1,911,276,13."
+      "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
+      myContent);
 }
 
 TEST_F(TestLambdaMuSim, test_app_pool) {
@@ -351,6 +484,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   Scenario myScenario(
       myNetwork,
       2.0,
+      0.0,
       0.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
@@ -440,6 +574,7 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
               (theTestDir / "edges").string(),
               2.0,
               0.0,
+              0.0,
               (theTestDir / "apps").string(),
               86400 * 1e3 * 9, // duration: 9 days
               3600 * 1e3 * 2,  // warm-up:  2 hours
@@ -461,11 +596,11 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-            "constant,1,"
-            "1,1,910,268,7."
-            "926733,1.073267,20.598689,2.645391,0.000000,2,9\n",
-            myContent);
+  EXPECT_EQ(
+      "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+      "constant,1,1,1,910,268,7."
+      "926733,1.073267,20.598689,2.645391,0.000000,2,9\n",
+      myContent);
 
   // run two replications, starting with same seed as before
   mySimulation.run(myConf, 42, 2);
@@ -474,13 +609,13 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   VLOG(1) << '\n' << myContent;
 
   EXPECT_EQ(
-      "42,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+      "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,910,268,7.926733,1.073267,20.598689,2.645391,0.000000,"
       "2,9\n"
-      "42,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+      "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,910,268,7.926733,1.073267,20.598689,2.645391,0.000000,"
       "2,9\n"
-      "43,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+      "43,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,914,276,11.926733,1.073267,31.053705,2.138962,0.000000,"
       "0,9\n",
       myContent);

@@ -88,7 +88,8 @@ int main(int argc, char* argv[]) {
   std::string myLinksPath;
   std::string myEdgesPath;
   double      myCloudDistanceFactor;
-  double      myCloudStorageCost;
+  double      myCloudStorageCostLocal;
+  double      myCloudStorageCostRemote;
   std::string myAppsPath;
   double      myDuration;
   double      myWarmUp;
@@ -129,9 +130,12 @@ int main(int argc, char* argv[]) {
     ("cloud-distance-factor",
      po::value<double>(&myCloudDistanceFactor)->default_value(2.0),
      "The cloud distance scale factor.")
-    ("cloud-storage-cost",
-     po::value<double>(&myCloudStorageCost)->default_value(.00),
-     "The cloud storage cost, per data unit (lambda apps only).")
+    ("cloud-storage-cost-local",
+     po::value<double>(&myCloudStorageCostLocal)->default_value(0.0),
+     "The cost to access cloud storage from the cloud, per data unit (lambda apps only).")
+    ("cloud-storage-cost-remote",
+     po::value<double>(&myCloudStorageCostRemote)->default_value(0.0),
+     "The cost to access cloud storage from the edge, per data unit (lambda apps only).")
     ("apps-path",
      po::value<std::string>(&myAppsPath)->default_value("apps"),
      "File containing the specifications of applications (dynamic only).")
@@ -218,7 +222,8 @@ int main(int argc, char* argv[]) {
                       myLinksPath,
                       myEdgesPath,
                       myCloudDistanceFactor,
-                      myCloudStorageCost,
+                      myCloudStorageCostLocal,
+                      myCloudStorageCostRemote,
                       myAppsPath,
                       myDuration,
                       myWarmUp,

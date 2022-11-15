@@ -59,7 +59,8 @@ std::string Desc::toString() const {
 std::vector<std::string> Conf::toStrings() const {
   return std::vector<std::string>({
       std::to_string(theCloudDistanceFactor),
-      std::to_string(myCloudStorageCost),
+      std::to_string(myCloudStorageCostLocal),
+      std::to_string(myCloudStorageCostRemote),
       std::to_string(theEpoch),
       std::to_string(theMinPeriods),
       std::to_string(theAvgApps),
@@ -74,7 +75,8 @@ std::vector<std::string> Conf::toStrings() const {
 const std::vector<std::string>& Conf::toColumns() {
   static const std::vector<std::string> ret({
       "cloud-distance-factor",
-      "cloud-storage-cost",
+      "cloud-storage-cost-local",
+      "cloud-storage-cost-remote",
       "epoch",
       "min-periods",
       "avg-apps",
@@ -228,7 +230,8 @@ void Simulation::run(const Conf&  aConf,
     myDesc.theScenario = std::make_unique<Scenario>(
         *myNetwork,
         myDesc.theConf->theCloudDistanceFactor,
-        myDesc.theConf->myCloudStorageCost,
+        myDesc.theConf->myCloudStorageCostLocal,
+        myDesc.theConf->myCloudStorageCostRemote,
         [](const auto& aNode) {
           const auto myNumContainers =
               static_cast<std::size_t>(std::round(aNode.speed() / 1e9));

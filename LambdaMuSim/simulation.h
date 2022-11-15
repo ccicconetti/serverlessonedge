@@ -63,8 +63,10 @@ struct Conf {
   const std::string theEdgesPath;
   //! Cloud distance scale factor
   const double theCloudDistanceFactor;
-  //! Cloud storage cost for data unit (lambda only)
-  const double myCloudStorageCost;
+  //! Cost to access the cloud storage in the cloud for data unit (lambda only)
+  const double myCloudStorageCostLocal;
+  //! Cost to access the cloud storage from the edge for data unit (lambda only)
+  const double myCloudStorageCostRemote;
   //! File containing the info about apps (unused with Type::Snapshot)
   const std::string theAppsPath;
   //! Simulation duration (unused with Type::Snapshot)

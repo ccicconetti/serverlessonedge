@@ -127,8 +127,10 @@ class Scenario
    * @param aNetwork The network to use to determine the edge costs.
    * @param aCloudDistanceFactor Factor to scale the maximum distance in
    * aNetwork to obtain the cost to reach the cloud
-   * @param aCloudStorageCost The cost to retrive/update the state on a remote
-   * storage system for lambda apps, per data unit.
+   * @param aCloudStorageCostLocal The cost to update the state on a remote
+   * storage system from the cloud itself for lambda apps, per data unit.
+   * @param aCloudStorageCostRemote The cost to update the state on a remote
+   * storage system from the cloud itself for lambda apps, per data unit.
    * @param aNumContainers Function to determine the number of containers based
    * on the node characteristics.
    * @param aContainerCapacity Function to determine the capacity of
@@ -140,7 +142,8 @@ class Scenario
   explicit Scenario(
       statesim::Network& aNetwork,
       const double       aCloudDistanceFactor,
-      const double       aCloudStorageCost,
+      const double       aCloudStorageCostLocal,
+      const double       aCloudStorageCostRemote,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
       const std::function<long(const statesim::Node&)>& aContainerCapacity,
       AppModel&                                         aAppModel);
@@ -157,8 +160,9 @@ class Scenario
    *
    * @param aAvgLambda The average number of lambda apps.
    * @param aAvgMu The average number of mu apps.
-   * @param aAlpha The lambda reservation factor.
-   * @param aBeta  The lambda overprovisioning factor.
+   * @param aAlpha The lambda reservation factor (0 = all the edge containers go
+   * to the lambda apps, 1 = all the edge containers go to the mu apps).
+   * @param aBeta  The lambda overprovisioning factor.d
    * @param aSeed The RNG seed.
    * @return PerformanceData
    *
@@ -178,7 +182,8 @@ class Scenario
    * @param aEpoch The duration of an epoch.
    * @param aPeriods The application periods.
    * @param aAvgApps The average number of apps.
-   * @param aAlpha The lambda reservation factor.
+   * @param aAlpha The lambda reservation factor (0 = all the edge containers go
+   * to the lambda apps, 1 = all the edge containers go to the mu apps).
    * @param aBeta  The lambda overprovisioning factor.
    * @param aSeed The RNG seed.
    * @return PerformanceData
@@ -212,7 +217,9 @@ class Scenario
   void                      clearPreviousAssignments(PerformanceData& aData);
 
  private:
-  const double theCloudStorageCost;
+  const double theCloudStorageCostLocal;
+  const double theCloudStorageCostRemote;
+
   AppModel* theAppModel; // initialized in the ctor, can be changed at run-time
 
   std::vector<App>    theApps;        // size = A
