@@ -6,10 +6,10 @@ Simulations of execution of apps alternating between stateless (lambda) and stat
 
 ## lambdamusim
 
-Check-out v1.3.0:
+Check-out v1.4.0:
 
 ```
-git checkout v1.3.0
+git checkout v1.4.0
 ```
 
 See build instructions in the main repository `README.md`.

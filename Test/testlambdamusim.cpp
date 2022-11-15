@@ -170,6 +170,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   Scenario         myScenario(
       myNetwork,
       2.0,
+      0.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
       myAppModel);
@@ -221,6 +222,7 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         (theTestDir / "links").string(),
                         (theTestDir / "edges").string(),
                         2.0,
+                        0.0,
                         "", // unused with snapshot
                         0,  // (ibidem)
                         0,  // (ibidem)
@@ -241,10 +243,12 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+  EXPECT_EQ("42,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+            "constant,1,1,1,"
             "906,268,9."
             "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "43,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+            "constant,1,1,1,"
             "911,276,13."
             "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
             myContent);
@@ -255,6 +259,7 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         (theTestDir / "links").string(),
                         (theTestDir / "edges").string(),
                         2.0,
+                        0.0,
                         "", // unused with snapshot
                         0,  // (ibidem)
                         0,  // (ibidem)
@@ -274,13 +279,16 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+  EXPECT_EQ("42,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+            "constant,1,1,1,"
             "906,268,9."
             "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "43,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+            "constant,1,1,1,"
             "911,276,13."
             "000000,10.000000,31.000000,31.000000,0.000000,0,0\n"
-            "43,2.000000,0.000000,0,0,10,10,0.500000,0.500000,constant,1,1,1,"
+            "43,2.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
+            "constant,1,1,1,"
             "911,276,13."
             "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
             myContent);
@@ -343,6 +351,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   Scenario myScenario(
       myNetwork,
       2.0,
+      0.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
       myAppModel);
@@ -430,6 +439,7 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
               (theTestDir / "links").string(),
               (theTestDir / "edges").string(),
               2.0,
+              0.0,
               (theTestDir / "apps").string(),
               86400 * 1e3 * 9, // duration: 9 days
               3600 * 1e3 * 2,  // warm-up:  2 hours
@@ -451,7 +461,8 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
+  EXPECT_EQ("42,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+            "constant,1,"
             "1,1,910,268,7."
             "926733,1.073267,20.573380,2.645391,0.000000,2,9\n",
             myContent);
@@ -462,16 +473,17 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   std::getline(std::ifstream((theTestDir / "out").string()), myContent, '\0');
   VLOG(1) << '\n' << myContent;
 
-  EXPECT_EQ("42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
-            "1,1,910,268,7."
-            "926733,1.073267,20.573380,2.645391,0.000000,2,9\n"
-            "42,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
-            "1,1,910,268,7."
-            "926733,1.073267,20.573380,2.645391,0.000000,2,9\n"
-            "43,2.000000,3600000.000000,1,10,0,0,0.500000,0.500000,constant,1,"
-            "1,1,914,276,"
-            "11.926733,1.073267,30.779422,2.138962,0.000000,0,9\n",
-            myContent);
+  EXPECT_EQ(
+      "42,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+      "constant,1,1,1,910,268,7.926733,1.073267,20.573380,2.645391,0.000000,"
+      "2,9\n"
+      "42,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+      "constant,1,1,1,910,268,7.926733,1.073267,20.573380,2.645391,0.000000,"
+      "2,9\n"
+      "43,2.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
+      "constant,1,1,1,914,276,11.926733,1.073267,30.779422,2.138962,0.000000,"
+      "0,9\n",
+      myContent);
 }
 
 TEST_F(TestLambdaMuSim, test_app_model_invalid) {

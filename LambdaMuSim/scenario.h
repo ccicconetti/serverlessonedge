@@ -127,6 +127,8 @@ class Scenario
    * @param aNetwork The network to use to determine the edge costs.
    * @param aCloudDistanceFactor Factor to scale the maximum distance in
    * aNetwork to obtain the cost to reach the cloud
+   * @param aCloudStorageCost The cost to retrive/update the state on a remote
+   * storage system for lambda apps, per data unit.
    * @param aNumContainers Function to determine the number of containers based
    * on the node characteristics.
    * @param aContainerCapacity Function to determine the capacity of
@@ -138,6 +140,7 @@ class Scenario
   explicit Scenario(
       statesim::Network& aNetwork,
       const double       aCloudDistanceFactor,
+      const double       aCloudStorageCost,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
       const std::function<long(const statesim::Node&)>& aContainerCapacity,
       AppModel&                                         aAppModel);
@@ -209,6 +212,7 @@ class Scenario
   void                      clearPreviousAssignments(PerformanceData& aData);
 
  private:
+  const double theCloudStorageCost;
   AppModel* theAppModel; // initialized in the ctor, can be changed at run-time
 
   std::vector<App>    theApps;        // size = A

@@ -118,10 +118,12 @@ std::string Scenario::App::toString() const {
 Scenario::Scenario(
     statesim::Network& aNetwork,
     const double       aCloudDistanceFactor,
+    const double       aCloudStorageCost,
     const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
     const std::function<long(const statesim::Node&)>&        aContainerCapacity,
     AppModel&                                                aAppModel)
-    : theAppModel(&aAppModel)
+    : theCloudStorageCost(aCloudStorageCost)
+    , theAppModel(&aAppModel)
     , theApps()
     , theBrokers()
     , theEdges()
