@@ -101,6 +101,68 @@ const std::vector<std::string>& PerformanceData::toColumns() {
   return ret;
 }
 
+std::string toString(const MuAlgorithm aAlgo) {
+  switch (aAlgo) {
+    case MuAlgorithm::Random:
+      return "random";
+    case MuAlgorithm::BestFit:
+      return "best-fit";
+    case MuAlgorithm::Hungarian:
+      return "hungarian";
+    default:;
+  }
+  throw std::runtime_error("Invalid mu app assignment algorithm: " +
+                           std::to_string(static_cast<uint16_t>(aAlgo)));
+}
+
+MuAlgorithm muAlgorithmFromString(const std::string& aAlgo) {
+  if (aAlgo == "random") {
+    return MuAlgorithm::Random;
+  } else if (aAlgo == "best-fit") {
+    return MuAlgorithm::BestFit;
+  } else if (aAlgo == "hungarian") {
+    return MuAlgorithm::Hungarian;
+  }
+  throw std::runtime_error("Invalid mu app assignment algorithm: " + aAlgo);
+}
+
+const std::list<MuAlgorithm>& allMuAlgorithms() {
+  static const std::list<MuAlgorithm> myAlgos(
+      {MuAlgorithm::Random, MuAlgorithm::BestFit, MuAlgorithm::Hungarian});
+  return myAlgos;
+}
+
+std::string toString(const LambdaAlgorithm aAlgo) {
+  switch (aAlgo) {
+    case LambdaAlgorithm::Random:
+      return "random";
+    case LambdaAlgorithm::Even:
+      return "even";
+    case LambdaAlgorithm::Mcfp:
+      return "mcfp";
+    default:;
+  }
+  throw std::runtime_error("Invalid lambda app assignment algorithm: " +
+                           std::to_string(static_cast<uint16_t>(aAlgo)));
+}
+
+LambdaAlgorithm lambdaAlgorithmFromString(const std::string& aAlgo) {
+  if (aAlgo == "random") {
+    return LambdaAlgorithm::Random;
+  } else if (aAlgo == "even") {
+    return LambdaAlgorithm::Even;
+  } else if (aAlgo == "mcfp") {
+    return LambdaAlgorithm::Mcfp;
+  }
+  throw std::runtime_error("Invalid lambda app assignment algorithm: " + aAlgo);
+}
+
+const std::list<LambdaAlgorithm>& allLambdaAlgorithms() {
+  static const std::list<LambdaAlgorithm> myAlgos(
+      {LambdaAlgorithm::Random, LambdaAlgorithm::Even, LambdaAlgorithm::Mcfp});
+  return myAlgos;
+}
+
 std::string toString(const hungarian::HungarianAlgorithm::DistMatrix& aMatrix) {
   std::stringstream ret;
   for (const auto& myColumns : aMatrix) {
@@ -128,10 +190,14 @@ Scenario::Scenario(
     const double       aCloudStorageCostRemote,
     const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
     const std::function<long(const statesim::Node&)>&        aContainerCapacity,
-    AppModel&                                                aAppModel)
+    AppModel&                                                aAppModel,
+    const MuAlgorithm                                        aMuAlgorithm,
+    const LambdaAlgorithm                                    aLambdaAlgorithm)
     : theCloudStorageCostLocal(aCloudStorageCostLocal)
     , theCloudStorageCostRemote(aCloudStorageCostRemote)
     , theAppModel(&aAppModel)
+    , theMuAlgorithm(aMuAlgorithm)
+    , theLambdaAlgorithm(aLambdaAlgorithm)
     , theApps()
     , theBrokers()
     , theEdges()

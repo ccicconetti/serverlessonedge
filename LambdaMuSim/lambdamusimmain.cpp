@@ -101,6 +101,8 @@ int main(int argc, char* argv[]) {
   double      myAlpha;
   double      myBeta;
   std::string myAppModel;
+  std::string myMuAlgorithm;
+  std::string myLambdaAlgorithm;
   std::string myOutfile;
 
   std::size_t myStartingSeed;
@@ -235,6 +237,8 @@ int main(int argc, char* argv[]) {
                       myAlpha,
                       myBeta,
                       myAppModel,
+                      ls::muAlgorithmFromString(myMuAlgorithm),
+                      ls::lambdaAlgorithmFromString(myLambdaAlgorithm),
                       myOutfile,
                       myVarMap.count("append") == 1},
              myStartingSeed,

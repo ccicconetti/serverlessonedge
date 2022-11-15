@@ -69,6 +69,26 @@ struct PerformanceData {
   static const std::vector<std::string>& toColumns();
 };
 
+enum class MuAlgorithm : uint16_t {
+  Random    = 0,
+  BestFit   = 1,
+  Hungarian = 2,
+};
+
+std::string                   toString(const MuAlgorithm aAlgo);
+MuAlgorithm                   muAlgorithmFromString(const std::string& aAlgo);
+const std::list<MuAlgorithm>& allMuAlgorithms();
+
+enum class LambdaAlgorithm : uint16_t {
+  Random = 0,
+  Even   = 1,
+  Mcfp   = 2,
+};
+
+std::string     toString(const LambdaAlgorithm aAlgo);
+LambdaAlgorithm lambdaAlgorithmFromString(const std::string& aAlgo);
+const std::list<LambdaAlgorithm>& allLambdaAlgorithms();
+
 class Scenario
 {
   NONCOPYABLE_NONMOVABLE(Scenario);
@@ -138,6 +158,8 @@ class Scenario
    * @param aContainerCapacity Function to determine the capacity of
    * lambda-containers based on the node characteristics.
    * @param aAppModel The model of the applications' parameters.
+   * @param aMuAlgorithm The algorithm to assign mu apps.
+   * @param aLambdaAlgorithm The algorithm to assign lambda apps.
    *
    * @throw std::runtime_error if the input args are inconsistent.
    */
@@ -148,7 +170,9 @@ class Scenario
       const double       aCloudStorageCostRemote,
       const std::function<std::size_t(const statesim::Node&)>& aNumContainers,
       const std::function<long(const statesim::Node&)>& aContainerCapacity,
-      AppModel&                                         aAppModel);
+      AppModel&                                         aAppModel,
+      const MuAlgorithm                                 aMuAlgorithm,
+      const LambdaAlgorithm                             aLambdaAlgorithm);
 
   /**
    * @brief Change the model of the applications' parameters.
@@ -224,6 +248,8 @@ class Scenario
   const double theCloudStorageCostRemote;
 
   AppModel* theAppModel; // initialized in the ctor, can be changed at run-time
+  const MuAlgorithm     theMuAlgorithm;
+  const LambdaAlgorithm theLambdaAlgorithm;
 
   std::vector<App>    theApps;        // size = A
   std::vector<Broker> theBrokers;     // size = B

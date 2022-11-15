@@ -90,6 +90,10 @@ struct Conf {
   const double theBeta;
   //! Model of the applications' parameters.
   const std::string theAppModel;
+  //! Algorithm to assign mu apps.
+  const MuAlgorithm theMuAlgorithm;
+  //! Algorithm to assign lambda apps.
+  const LambdaAlgorithm theLambdaAlgorithm;
 
   //! File where to save performance data (can be empty)
   const std::string theOutfile;

@@ -69,6 +69,8 @@ std::vector<std::string> Conf::toStrings() const {
       std::to_string(theAlpha),
       std::to_string(theBeta),
       theAppModel,
+      toString(theMuAlgorithm),
+      toString(theLambdaAlgorithm),
   });
 }
 
@@ -85,6 +87,8 @@ const std::vector<std::string>& Conf::toColumns() {
       "alpha",
       "beta",
       "app-model",
+      "mu-algorithm",
+      "lambda-algorithm",
   });
   return ret;
 }
@@ -250,7 +254,9 @@ void Simulation::run(const Conf&  aConf,
           throw std::runtime_error("Invalid node (container speed): " +
                                    aNode.toString());
         },
-        *myDesc.theAppModel);
+        *myDesc.theAppModel,
+        myDesc.theConf->theMuAlgorithm,
+        myDesc.theConf->theLambdaAlgorithm);
   }
 
   // dispatch the simulations

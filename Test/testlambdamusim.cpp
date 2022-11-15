@@ -153,6 +153,18 @@ struct TestLambdaMuSim : public ::testing::Test {
   const dataset::CostModel                           theCostModel;
 };
 
+TEST_F(TestLambdaMuSim, test_algorithms) {
+  for (const auto& myAlgo : allMuAlgorithms()) {
+    ASSERT_EQ(myAlgo, muAlgorithmFromString(toString(myAlgo)));
+  }
+  ASSERT_THROW(muAlgorithmFromString("non-algorithm"), std::runtime_error);
+
+  for (const auto& myAlgo : allLambdaAlgorithms()) {
+    ASSERT_EQ(myAlgo, lambdaAlgorithmFromString(toString(myAlgo)));
+  }
+  ASSERT_THROW(lambdaAlgorithmFromString("non-algorithm"), std::runtime_error);
+}
+
 TEST_F(TestLambdaMuSim, test_example_snapshot) {
   statesim::Network myNetwork(
       theExampleNodes, theExampleLinks, theExampleEdges, theExampleClients);
@@ -174,7 +186,9 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
       0.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
-      myAppModel);
+      myAppModel,
+      MuAlgorithm::Hungarian,
+      LambdaAlgorithm::Mcfp);
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
@@ -240,7 +254,9 @@ TEST_F(TestLambdaMuSim, test_example_snapshot_only_lambda) {
       myCloudStorageCostRemote,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
-      myAppModel);
+      myAppModel,
+      MuAlgorithm::Hungarian,
+      LambdaAlgorithm::Mcfp);
 
   // all the containers go to lambda apps (alpha = 0)
   // there is no overprovisioning of capacity (beta = 1)
@@ -302,7 +318,9 @@ TEST_F(TestLambdaMuSim, test_example_snapshot_only_mu) {
       0.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
-      myAppModel);
+      myAppModel,
+      MuAlgorithm::Hungarian,
+      LambdaAlgorithm::Mcfp);
 
   // all the containers go to the mu apps (alpha = 1)
   const auto myOut1 = myScenario.snapshot(0, 6, 1.0, 1, 42);
@@ -381,6 +399,8 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         0.5,
                         0.5,
                         "constant,1,1,1",
+                        MuAlgorithm::Hungarian,
+                        LambdaAlgorithm::Mcfp,
                         (theTestDir / "out").string(),
                         true},
                    42,
@@ -392,11 +412,11 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
 
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-      "constant,1,1,1,906,268,9.000000,5.000000,21.000000,0.000000,13.000000,0."
-      "000000,0.000000,0,0\n"
+      "constant,1,1,1,hungarian,mcfp,906,268,9.000000,5.000000,21.000000,0."
+      "000000,13.000000,0.000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-      "constant,1,1,1,911,276,13.000000,10.000000,31.000000,0.000000,31.000000,"
-      "0.000000,0.000000,0,0\n",
+      "constant,1,1,1,hungarian,mcfp,911,276,13.000000,10.000000,31.000000,0."
+      "000000,31.000000,0.000000,0.000000,0,0\n",
       myContent);
 
   // run again with same seed
@@ -418,6 +438,8 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
                         0.5,
                         0.5,
                         "constant,1,1,1",
+                        MuAlgorithm::Hungarian,
+                        LambdaAlgorithm::Mcfp,
                         (theTestDir / "out").string(),
                         true},
                    43,
@@ -428,13 +450,13 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
 
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-      "constant,1,1,1,906,268,9."
+      "constant,1,1,1,hungarian,mcfp,906,268,9."
       "000000,5.000000,21.000000,0.000000,13.000000,0.000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-      "constant,1,1,1,911,276,13."
+      "constant,1,1,1,hungarian,mcfp,911,276,13."
       "000000,10.000000,31.000000,0.000000,31.000000,0.000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
-      "constant,1,1,1,911,276,13."
+      "constant,1,1,1,hungarian,mcfp,911,276,13."
       "000000,10.000000,31.000000,0.000000,31.000000,0.000000,0.000000,0,0\n",
       myContent);
 }
@@ -500,7 +522,9 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
       0.0,
       [](const auto& aNode) { return 2; },
       [](const auto& aNode) { return 1; },
-      myAppModel);
+      myAppModel,
+      MuAlgorithm::Hungarian,
+      LambdaAlgorithm::Mcfp);
 
   // edge nodes have 2 containers each, with a lambda-capacity of 1
   // lambda-apps request a capacity of 1
@@ -604,6 +628,8 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
               0.5,
               0.5,
               "constant,1,1,1",
+              MuAlgorithm::Hungarian,
+              LambdaAlgorithm::Mcfp,
               (theTestDir / "out").string(),
               true};
 
@@ -616,7 +642,7 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
 
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-      "constant,1,1,1,910,268,7."
+      "constant,1,1,1,hungarian,mcfp,910,268,7."
       "926733,1.073267,20.598689,0.028376,2.645391,0.000000,0.000000,2,9\n",
       myContent);
 
@@ -628,14 +654,14 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
 
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-      "constant,1,1,1,910,268,7.926733,1.073267,20.598689,0.028376,2.645391,0."
-      "000000,0.000000,2,9\n"
+      "constant,1,1,1,hungarian,mcfp,910,268,7.926733,1.073267,20.598689,0."
+      "028376,2.645391,0.000000,0.000000,2,9\n"
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-      "constant,1,1,1,910,268,7.926733,1.073267,20.598689,0.028376,2.645391,0."
-      "000000,0.000000,2,9\n"
+      "constant,1,1,1,hungarian,mcfp,910,268,7.926733,1.073267,20.598689,0."
+      "028376,2.645391,0.000000,0.000000,2,9\n"
       "43,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
-      "constant,1,1,1,914,276,11.926733,1.073267,31.053705,0.018679,2.138962,0."
-      "000000,0.000000,0,9\n",
+      "constant,1,1,1,hungarian,mcfp,914,276,11.926733,1.073267,31.053705,0."
+      "018679,2.138962,0.000000,0.000000,0,9\n",
       myContent);
 }
 
