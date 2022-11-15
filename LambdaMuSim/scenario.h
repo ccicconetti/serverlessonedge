@@ -58,6 +58,7 @@ struct PerformanceData {
   double      theLambdaCost       = 0; //!< average with D
   double      theMuCost           = 0; //!< average with D
   double      theMuCloud          = 0; //!< int with S, real with D
+  double      theMuServiceCloud   = 0;
   std::size_t theMuMigrations     = 0; //!< D only
   std::size_t theNumOptimizations = 0; //!< D only
 

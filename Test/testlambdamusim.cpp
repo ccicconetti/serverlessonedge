@@ -183,6 +183,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(5 * 6 + 1 + 1 + 2, myOut1.theLambdaCost); // 5:cloud, 3: edge
   EXPECT_EQ(16, myOut1.theMuCost);
   EXPECT_EQ(2, myOut1.theMuCloud);
+  EXPECT_FLOAT_EQ(0.4, myOut1.theMuServiceCloud);
   EXPECT_EQ(8, myOut1.theNumLambda);
   EXPECT_EQ(5, myOut1.theNumMu);
   EXPECT_EQ(2 * 3 + 1 + 5, myOut1.theNumContainers);
@@ -202,6 +203,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(7 * 6 + 2, myOut2.theLambdaCost); // 7: cloud, 1: edge
   EXPECT_EQ(7, myOut2.theMuCost);
   EXPECT_EQ(0, myOut2.theMuCloud);
+  EXPECT_FLOAT_EQ(0.0, myOut2.theMuServiceCloud);
 
   // same but with have bigger requests
   AppModelConstant myAnotherAppModel(AppModel::Params{2, 1, 1});
@@ -211,6 +213,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot) {
   EXPECT_EQ(15 * 6 + 2, myOut3.theLambdaCost); // 7.5: cloud, 0.5: edge
   EXPECT_EQ(2 * myOut2.theMuCost, myOut3.theMuCost);
   EXPECT_EQ(myOut2.theMuCloud, myOut3.theMuCloud);
+  EXPECT_EQ(myOut2.theMuServiceCloud, myOut3.theMuServiceCloud);
 }
 
 TEST_F(TestLambdaMuSim, test_example_snapshot_only_lambda) {
@@ -268,6 +271,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot_only_lambda) {
   // mu apps
   EXPECT_FLOAT_EQ(5, myOut1.theNumMu);
   EXPECT_EQ(5, myOut1.theMuCloud);
+  EXPECT_FLOAT_EQ(1, myOut1.theMuServiceCloud);
   EXPECT_EQ(myOut1.theMuCloud * myServiceRate * myNetworkCostCloud *
                 myExchangeSize,
             myOut1.theMuCost);
@@ -313,6 +317,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot_only_mu) {
   const long myNetworkCostEdgeFar   = 2;
   EXPECT_FLOAT_EQ(5, myOut1.theNumMu);
   EXPECT_EQ(myNumMuCloud, myOut1.theMuCloud);
+  EXPECT_FLOAT_EQ(0, myOut1.theMuServiceCloud);
   EXPECT_EQ(myServiceRate * myExchangeSize *
                 (myNumMuCloud * myNetworkCostCloud +
                  myNumMuEdgeClose * myNetworkCostEdgeClose +
@@ -327,6 +332,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot_only_mu) {
   myNumMuEdgeClose = 4;
   myNumMuEdgeFar   = 2;
   EXPECT_EQ(myNumMuCloud, myOut2.theMuCloud);
+  EXPECT_FLOAT_EQ(myNumMuCloud / myOut2.theNumMu, myOut2.theMuServiceCloud);
   EXPECT_EQ(myServiceRate * myExchangeSize *
                 (myNumMuCloud * myNetworkCostCloud +
                  myNumMuEdgeClose * myNetworkCostEdgeClose +
@@ -338,6 +344,7 @@ TEST_F(TestLambdaMuSim, test_example_snapshot_only_mu) {
     const auto myOut3 = myScenario.snapshot(0, 20, 1.0, 1, mySeed);
     myNumMuCloud      = myOut3.theNumMu - 6;
     EXPECT_EQ(myNumMuCloud, myOut3.theMuCloud);
+    EXPECT_FLOAT_EQ(myNumMuCloud / myOut3.theNumMu, myOut3.theMuServiceCloud);
     EXPECT_EQ(myServiceRate * myExchangeSize *
                   (myNumMuCloud * myNetworkCostCloud +
                    myNumMuEdgeClose * myNetworkCostEdgeClose +
@@ -381,10 +388,10 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,906,268,9.000000,5.000000,21.000000,13.000000,0.000000,"
-      "0,0\n"
+      "0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,911,276,13.000000,10.000000,31.000000,31.000000,0.000000,"
-      "0,0\n",
+      "0.000000,0,0\n",
       myContent);
 
   // run again with same seed
@@ -417,13 +424,13 @@ TEST_F(TestLambdaMuSim, test_simulation_snapshot) {
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,906,268,9."
-      "000000,5.000000,21.000000,13.000000,0.000000,0,0\n"
+      "000000,5.000000,21.000000,13.000000,0.000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,911,276,13."
-      "000000,10.000000,31.000000,31.000000,0.000000,0,0\n"
+      "000000,10.000000,31.000000,31.000000,0.000000,0.000000,0,0\n"
       "43,2.000000,0.000000,0.000000,0.000000,0,0,10,10,0.500000,0.500000,"
       "constant,1,1,1,911,276,13."
-      "000000,10.000000,31.000000,31.000000,0.000000,0,0\n",
+      "000000,10.000000,31.000000,31.000000,0.000000,0.000000,0,0\n",
       myContent);
 }
 
@@ -504,6 +511,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
     EXPECT_FLOAT_EQ(36.930931, myOut1.theLambdaCost);
     EXPECT_FLOAT_EQ(8.8438435, myOut1.theMuCost);
     EXPECT_FLOAT_EQ(0.6986987, myOut1.theMuCloud);
+    EXPECT_FLOAT_EQ(0.1398899, myOut1.theMuServiceCloud);
     EXPECT_EQ(15, myOut1.theMuMigrations);
     EXPECT_EQ(11, myOut1.theNumOptimizations);
   }
@@ -559,6 +567,7 @@ TEST_F(TestLambdaMuSim, test_example_dynamic) {
   EXPECT_TRUE(std::isnan(myOut4.theLambdaCost));
   EXPECT_TRUE(std::isnan(myOut4.theMuCost));
   EXPECT_TRUE(std::isnan(myOut4.theMuCloud));
+  EXPECT_TRUE(std::isnan(myOut4.theMuServiceCloud));
   EXPECT_EQ(0, myOut4.theMuMigrations);
   EXPECT_EQ(0, myOut4.theNumOptimizations);
 }
@@ -599,7 +608,7 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,910,268,7."
-      "926733,1.073267,20.598689,2.645391,0.000000,2,9\n",
+      "926733,1.073267,20.598689,2.645391,0.000000,0.000000,2,9\n",
       myContent);
 
   // run two replications, starting with same seed as before
@@ -611,13 +620,13 @@ TEST_F(TestLambdaMuSim, test_simulation_dynamic) {
   EXPECT_EQ(
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,910,268,7.926733,1.073267,20.598689,2.645391,0.000000,"
-      "2,9\n"
+      "0.000000,2,9\n"
       "42,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,910,268,7.926733,1.073267,20.598689,2.645391,0.000000,"
-      "2,9\n"
+      "0.000000,2,9\n"
       "43,2.000000,0.000000,0.000000,3600000.000000,1,10,0,0,0.500000,0.500000,"
       "constant,1,1,1,914,276,11.926733,1.073267,31.053705,2.138962,0.000000,"
-      "0,9\n",
+      "0.000000,0,9\n",
       myContent);
 }
 
