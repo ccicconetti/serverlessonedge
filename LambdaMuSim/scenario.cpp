@@ -105,8 +105,8 @@ std::string toString(const MuAlgorithm aAlgo) {
   switch (aAlgo) {
     case MuAlgorithm::Random:
       return "random";
-    case MuAlgorithm::BestFit:
-      return "best-fit";
+    case MuAlgorithm::Greedy:
+      return "greedy";
     case MuAlgorithm::Hungarian:
       return "hungarian";
     default:;
@@ -118,8 +118,8 @@ std::string toString(const MuAlgorithm aAlgo) {
 MuAlgorithm muAlgorithmFromString(const std::string& aAlgo) {
   if (aAlgo == "random") {
     return MuAlgorithm::Random;
-  } else if (aAlgo == "best-fit") {
-    return MuAlgorithm::BestFit;
+  } else if (aAlgo == "greedy") {
+    return MuAlgorithm::Greedy;
   } else if (aAlgo == "hungarian") {
     return MuAlgorithm::Hungarian;
   }
@@ -128,7 +128,7 @@ MuAlgorithm muAlgorithmFromString(const std::string& aAlgo) {
 
 const std::list<MuAlgorithm>& allMuAlgorithms() {
   static const std::list<MuAlgorithm> myAlgos(
-      {MuAlgorithm::Random, MuAlgorithm::BestFit, MuAlgorithm::Hungarian});
+      {MuAlgorithm::Random, MuAlgorithm::Greedy, MuAlgorithm::Hungarian});
   return myAlgos;
 }
 
@@ -136,8 +136,8 @@ std::string toString(const LambdaAlgorithm aAlgo) {
   switch (aAlgo) {
     case LambdaAlgorithm::Random:
       return "random";
-    case LambdaAlgorithm::Even:
-      return "even";
+    case LambdaAlgorithm::Greedy:
+      return "greedy";
     case LambdaAlgorithm::Mcfp:
       return "mcfp";
     default:;
@@ -149,8 +149,8 @@ std::string toString(const LambdaAlgorithm aAlgo) {
 LambdaAlgorithm lambdaAlgorithmFromString(const std::string& aAlgo) {
   if (aAlgo == "random") {
     return LambdaAlgorithm::Random;
-  } else if (aAlgo == "even") {
-    return LambdaAlgorithm::Even;
+  } else if (aAlgo == "greedy") {
+    return LambdaAlgorithm::Greedy;
   } else if (aAlgo == "mcfp") {
     return LambdaAlgorithm::Mcfp;
   }
@@ -158,8 +158,9 @@ LambdaAlgorithm lambdaAlgorithmFromString(const std::string& aAlgo) {
 }
 
 const std::list<LambdaAlgorithm>& allLambdaAlgorithms() {
-  static const std::list<LambdaAlgorithm> myAlgos(
-      {LambdaAlgorithm::Random, LambdaAlgorithm::Even, LambdaAlgorithm::Mcfp});
+  static const std::list<LambdaAlgorithm> myAlgos({LambdaAlgorithm::Random,
+                                                   LambdaAlgorithm::Greedy,
+                                                   LambdaAlgorithm::Mcfp});
   return myAlgos;
 }
 
@@ -350,6 +351,7 @@ Scenario::dynamic(const double                           aDuration,
   double      myLambdaCost         = 0;
   double      myLambdaServiceCloud = 0;
   double      myMuCost             = 0;
+  std::size_t myAssignCounter      = 0;
   Accumulator myNumLambdaAcc(myClock, aWarmUp);
   Accumulator myNumMuAcc(myClock, aWarmUp);
   Accumulator myLambdaCostAcc(myClock, aWarmUp);
@@ -396,7 +398,8 @@ Scenario::dynamic(const double                           aDuration,
 
       // assign mu-apps to containers, taking into account the alpha factor
       // the capacities (and beta factor) are ignored
-      assignMuApps(aAlpha, myData);
+      support::UniformRv myMuRv(0, 1, aSeed, myAssignCounter++, 0);
+      assignMuApps(aAlpha, myData, [&myMuRv]() { return myMuRv(); });
       myMuCost = myData.theMuCost;
       myMuCloudAcc(myData.theMuCloud);
       myMuServiceCloudAcc(myData.theMuServiceCloud);
@@ -414,7 +417,8 @@ Scenario::dynamic(const double                           aDuration,
 
       // assign lambda-apps to the remaining containers, taking into account the
       // beta factor, app requests, and container capacities
-      assignLambdaApps(aBeta, myData);
+      support::UniformRv myLambdaRv(0, 1, aSeed, myAssignCounter++, 0);
+      assignLambdaApps(aBeta, myData, [&myLambdaRv]() { return myLambdaRv(); });
       myLambdaCost         = myData.theLambdaCost;
       myLambdaServiceCloud = myData.theLambdaServiceCloud;
 
@@ -543,11 +547,13 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
 
   // assign mu-apps to containers, taking into account the alpha factor
   // the capacities (and beta factor) are ignored
-  assignMuApps(aAlpha, ret);
+  support::UniformRv myMuRv(0, 1, aSeed, 0, 0);
+  assignMuApps(aAlpha, ret, [&myMuRv]() { return myMuRv(); });
 
   // assign lambda-apps to the remaining containers, taking into account the
   // beta factor, app requests, and container capacities
-  assignLambdaApps(aBeta, ret);
+  support::UniformRv myLambdaRv(0, 1, aSeed, 1, 0);
+  assignLambdaApps(aBeta, ret, [&myLambdaRv]() { return myLambdaRv(); });
 
   VLOG(2) << "apps after assignment:\n" << appsToString();
 
@@ -612,7 +618,9 @@ std::string Scenario::toString(const Type aType) {
   assert(false);
 }
 
-void Scenario::assignMuApps(const double aAlpha, PerformanceData& aData) {
+void Scenario::assignMuApps(const double                   aAlpha,
+                            PerformanceData&               aData,
+                            const std::function<double()>& aRnd) {
   // prepare the containers
   std::vector<ID> myContainerToNodes;
   for (ID e = 0; e < theEdges.size(); e++) {
@@ -656,8 +664,23 @@ void Scenario::assignMuApps(const double aAlpha, PerformanceData& aData) {
 
   // solve assignment problem
   std::vector<int> myMuAssignment;
-  aData.theMuCost =
-      hungarian::HungarianAlgorithm::Solve(myApMatrix, myMuAssignment);
+  switch (theMuAlgorithm) {
+    case MuAlgorithm::Random:
+      aData.theMuCost = hungarian::HungarianAlgorithm::SolveRandom(
+          myApMatrix, myMuAssignment, aRnd);
+      break;
+    case MuAlgorithm::Greedy:
+      aData.theMuCost = hungarian::HungarianAlgorithm::SolveGreedy(
+          myApMatrix, myMuAssignment);
+      break;
+    case MuAlgorithm::Hungarian:
+      aData.theMuCost =
+          hungarian::HungarianAlgorithm::Solve(myApMatrix, myMuAssignment);
+      break;
+    default:
+      throw std::runtime_error("Unknown solver: " +
+                               uiiit::lambdamusim::toString(theMuAlgorithm));
+  }
 
   // clear previous assignments
   for (auto& myEdge : theEdges) {
@@ -682,7 +705,9 @@ void Scenario::assignMuApps(const double aAlpha, PerformanceData& aData) {
   aData.theMuServiceCloud = myServiceCloud / myServiceTot;
 }
 
-void Scenario::assignLambdaApps(const double aBeta, PerformanceData& aData) {
+void Scenario::assignLambdaApps(const double                   aBeta,
+                                PerformanceData&               aData,
+                                const std::function<double()>& aRnd) {
   // filter the lambda-apps only
   std::vector<ID> myLambdaApps;
   for (ID a = 0; a < theApps.size(); a++) {
@@ -749,8 +774,24 @@ void Scenario::assignLambdaApps(const double aBeta, PerformanceData& aData) {
 
   // solve the minimum cost flow problem
   Mcfp::Weights myWeights;
-  aData.theLambdaCost = Mcfp::solve(
-      myLambdaCosts, myLambdaRequests, myLambdaCapacities, myWeights);
+  switch (theLambdaAlgorithm) {
+    case LambdaAlgorithm::Random:
+      aData.theLambdaCost = Mcfp::solveRandom(
+          myLambdaCosts, myLambdaRequests, myLambdaCapacities, myWeights, aRnd);
+      break;
+    case LambdaAlgorithm::Greedy:
+      aData.theLambdaCost = Mcfp::solveGreedy(
+          myLambdaCosts, myLambdaRequests, myLambdaCapacities, myWeights);
+      break;
+    case LambdaAlgorithm::Mcfp:
+      aData.theLambdaCost = Mcfp::solve(
+          myLambdaCosts, myLambdaRequests, myLambdaCapacities, myWeights);
+      break;
+    default:
+      throw std::runtime_error(
+          "Unknown solver: " +
+          uiiit::lambdamusim::toString(theLambdaAlgorithm));
+  }
 
   assert(myWeights.size() == myLambdaApps.size());
   assert(not myWeights.empty());

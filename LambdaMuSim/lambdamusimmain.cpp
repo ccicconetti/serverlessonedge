@@ -32,6 +32,7 @@ SOFTWARE.
 #include "LambdaMuSim/simulation.h"
 #include "Support/chrono.h"
 #include "Support/glograii.h"
+#include "Support/tostring.h"
 #include "Support/versionutils.h"
 
 #include <boost/program_options.hpp>
@@ -171,6 +172,14 @@ int main(int argc, char* argv[]) {
     ("app-model",
      po::value<std::string>(&myAppModel)->default_value("constant,1,1,1"),
      "The model that defines the applications' parameters.")
+    ("mu-algorithm",
+     po::value<std::string>(&myMuAlgorithm)->default_value("hungarian"),
+     (std::string("The algorithm to assign mu apps, one of: {") +
+     toString(ls::allMuAlgorithms(), ",", [](const auto& aAlgo){ return ls::toString(aAlgo); }) + "}").c_str())
+    ("lambda-algorithm",
+     po::value<std::string>(&myLambdaAlgorithm)->default_value("mcfp"),
+     (std::string("The algorithm to assign lambda apps, one of: {") +
+     toString(ls::allLambdaAlgorithms(), ",", [](const auto& aAlgo){ return ls::toString(aAlgo); }) + "}").c_str())
     ("out-file",
      po::value<std::string>(&myOutfile)->default_value("out.csv"),
      "The file where to save the results.")

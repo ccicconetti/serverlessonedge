@@ -71,7 +71,7 @@ struct PerformanceData {
 
 enum class MuAlgorithm : uint16_t {
   Random    = 0,
-  BestFit   = 1,
+  Greedy    = 1,
   Hungarian = 2,
 };
 
@@ -81,7 +81,7 @@ const std::list<MuAlgorithm>& allMuAlgorithms();
 
 enum class LambdaAlgorithm : uint16_t {
   Random = 0,
-  Even   = 1,
+  Greedy = 1,
   Mcfp   = 2,
 };
 
@@ -230,9 +230,13 @@ class Scenario
   const double& networkCost(const ID aBroker, const ID aEdge) const noexcept;
   std::string   networkCostToString() const;
   std::string   appsToString() const;
-  static std::string toString(const Type aType);
-  void               assignMuApps(const double aAlpha, PerformanceData& aData);
-  void assignLambdaApps(const double aBeta, PerformanceData& aData);
+  static std::string        toString(const Type aType);
+  void                      assignMuApps(const double                   aAlpha,
+                                         PerformanceData&               aData,
+                                         const std::function<double()>& aRnd);
+  void                      assignLambdaApps(const double                   aBeta,
+                                             PerformanceData&               aData,
+                                             const std::function<double()>& aRnd);
   std::pair<double, double> migrateLambdaToMu(const ID     aApp,
                                               const double aAlpha);
   std::pair<double, double> migrateMuToLambda(const ID aApp);

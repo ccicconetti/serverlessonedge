@@ -31,6 +31,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <functional>
 #include <vector>
 
 namespace uiiit {
@@ -43,19 +44,25 @@ namespace lambdamusim {
  *
  * https://www.boost.org/doc/libs/1_78_0/libs/graph/doc/graph_theory_review.html#sec:network-flow-algorithms
  * https://www.boost.org/doc/libs/1_78_0/libs/graph/doc/successive_shortest_path_nonnegative_weights.html
+ *
+ * Also includes some comparison algorithms:
+ * - random: assign capacities to requests at random
+ * - greedy: assign each task to the worker with the smallest cost; if the
+ * request is not exhausted move to the second-smallest cost, and so on
  */
 class Mcfp
 {
  public:
   using Costs      = std::vector<std::vector<double>>;
-  using Weights    = std::vector<std::vector<double>>;
   using Requests   = std::vector<long>;
   using Capacities = std::vector<long>;
+  using Weights    = std::vector<std::vector<double>>;
 
   /**
    * @brief Compute the minimum cost flow in the given problem: there are a
    * number of tasks that need to be allocated to a set of workers. Each
-   * task-worker has a given cost, while the
+   * task-worker has a given cost. Each task has a given amount of request to be
+   * fulfilled by the workers, each with a given capacity.
    *
    * @param aCosts The task-worker costs.
    * @param aRequests The amount of work each task requires.
@@ -69,6 +76,17 @@ class Mcfp
                       const Requests&   aRequests,
                       const Capacities& aCapacities,
                       Weights&          aWeights);
+
+  static double solveRandom(const Costs&                   aCosts,
+                            const Requests&                aRequests,
+                            const Capacities&              aCapacities,
+                            Weights&                       aWeights,
+                            const std::function<double()>& aRnd);
+
+  static double solveGreedy(const Costs&      aCosts,
+                            const Requests&   aRequests,
+                            const Capacities& aCapacities,
+                            Weights&          aWeights);
 };
 
 } // namespace lambdamusim

@@ -253,5 +253,20 @@ double Mcfp::solve(const Costs&      aCosts,
   return ret;
 }
 
+double Mcfp::solveRandom([[maybe_unused]] const Costs&      aCosts,
+                         [[maybe_unused]] const Requests&   aRequests,
+                         [[maybe_unused]] const Capacities& aCapacities,
+                         [[maybe_unused]] Weights&          aWeights,
+                         [[maybe_unused]] const std::function<double()>& aRnd) {
+  return 0;
+}
+
+double Mcfp::solveGreedy([[maybe_unused]] const Costs&      aCosts,
+                         [[maybe_unused]] const Requests&   aRequests,
+                         [[maybe_unused]] const Capacities& aCapacities,
+                         [[maybe_unused]] Weights&          aWeights) {
+  return 0;
+}
+
 } // namespace lambdamusim
 } // namespace uiiit
