@@ -38,7 +38,33 @@ SOFTWARE.
 
 namespace hungarian {
 
-struct TestHungarian : public ::testing::Test {};
+struct TestHungarian : public ::testing::Test {
+  // numbers from:
+  // https://developers.google.com/optimization/assignment/assignment_example
+  TestHungarian()
+      : theOrToolsCostMatrix({
+            {90, 80, 75, 70},
+            {35, 85, 55, 65},
+            {125, 95, 90, 95},
+            {45, 110, 95, 115},
+            {50, 100, 90, 100},
+        })
+      , theRndNumbers({0.1, 2, -7, 99, 7, 99, -5, 3.14, 0, 0, 7e7})
+      , theRndOffset(0)
+      , theRndLambda([this]() {
+        if (++theRndOffset == theRndNumbers.size()) {
+          theRndOffset = 0;
+        };
+        return theRndNumbers[theRndOffset];
+      }) {
+    // noop
+  }
+
+  const std::vector<std::vector<double>> theOrToolsCostMatrix;
+  const std::vector<double>              theRndNumbers;
+  unsigned int                           theRndOffset;
+  const std::function<double()>          theRndLambda;
+};
 
 TEST_F(TestHungarian, test_invalid) {
   std::vector<int> myAssignment;
@@ -71,20 +97,41 @@ TEST_F(TestHungarian, test_original_example) {
 }
 
 TEST_F(TestHungarian, test_ortools_example) {
-  // numbers from:
-  // https://developers.google.com/optimization/assignment/assignment_example
-
-  std::vector<std::vector<double>> myCostMatrix = {
-      {90, 80, 75, 70},
-      {35, 85, 55, 65},
-      {125, 95, 90, 95},
-      {45, 110, 95, 115},
-      {50, 100, 90, 100},
-  };
   std::vector<int> myAssignment;
-
-  ASSERT_FLOAT_EQ(265, HungarianAlgorithm::Solve(myCostMatrix, myAssignment));
+  ASSERT_FLOAT_EQ(
+      265, HungarianAlgorithm::Solve(theOrToolsCostMatrix, myAssignment));
   ASSERT_EQ(std::vector<int>({3, 2, 1, 0, -1}), myAssignment);
+}
+
+TEST_F(TestHungarian, test_ortools_example_random) {
+  std::vector<int> myAssignment;
+  EXPECT_FLOAT_EQ(320,
+                  HungarianAlgorithm::SolveRandom(
+                      theOrToolsCostMatrix, myAssignment, theRndLambda));
+  EXPECT_EQ(std::vector<int>({2, 0, 1, 3, -1}), myAssignment);
+
+  EXPECT_FLOAT_EQ(385,
+                  HungarianAlgorithm::SolveRandom(
+                      theOrToolsCostMatrix, myAssignment, theRndLambda));
+  EXPECT_EQ(std::vector<int>({-1, 3, 0, 2, 1}), myAssignment);
+
+  EXPECT_FLOAT_EQ(355,
+                  HungarianAlgorithm::SolveRandom(
+                      theOrToolsCostMatrix, myAssignment, theRndLambda));
+  EXPECT_EQ(std::vector<int>({0, 2, -1, 1, 3}), myAssignment);
+}
+
+TEST_F(TestHungarian, test_ortools_example_greedy) {
+  std::vector<int> myAssignment;
+  EXPECT_FLOAT_EQ(
+      305, HungarianAlgorithm::SolveGreedy(theOrToolsCostMatrix, myAssignment));
+  EXPECT_EQ(std::vector<int>({3, 0, 2, 1, -1}), myAssignment);
+
+  std::vector<int> myOtherAssignment;
+  EXPECT_FLOAT_EQ(
+      305,
+      HungarianAlgorithm::SolveGreedy(theOrToolsCostMatrix, myOtherAssignment));
+  EXPECT_EQ(myAssignment, myOtherAssignment);
 }
 
 } // namespace hungarian
