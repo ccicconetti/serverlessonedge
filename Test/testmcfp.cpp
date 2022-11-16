@@ -31,6 +31,8 @@ SOFTWARE.
 
 #include "LambdaMuSim/mcfp.h"
 
+#include "Test/fakerandom.h"
+
 #include "gtest/gtest.h"
 
 #include <stdexcept>
@@ -39,7 +41,24 @@ SOFTWARE.
 namespace uiiit {
 namespace lambdamusim {
 
-struct TestMcfp : public ::testing::Test {};
+struct TestMcfp : public ::testing::Test {
+  TestMcfp()
+      : theCosts({
+            {10, 5, 20, 17},
+            {4, 10, 2, 30},
+            {20, 4, 50, 12},
+            {100, 2, 40, 25},
+            {10, 10, 10, 10},
+        })
+      , theRequests({1, 2, 4, 2, 2})
+      , theCapacities({2, 2, 3, 3}) {
+    // noop
+  }
+
+  Mcfp::Costs      theCosts;
+  Mcfp::Requests   theRequests;
+  Mcfp::Capacities theCapacities;
+};
 
 TEST_F(TestMcfp, test_invalid) {
   Mcfp::Weights myWeights;
@@ -139,6 +158,81 @@ TEST_F(TestMcfp, test_simple_problem_instances) {
                               Mcfp::Requests({1, 1, 1}),
                               Mcfp::Capacities({2, 2}),
                               myWeights));
+}
+
+TEST_F(TestMcfp, test_solver) {
+  Mcfp::Weights myWeights;
+  EXPECT_FLOAT_EQ(74,
+                  Mcfp::solve(theCosts, theRequests, theCapacities, myWeights));
+  EXPECT_EQ(Mcfp::Weights({
+                {1, 0, 0, 0},
+                {0, 0, 2, 0},
+                {0, 0, 0, 3},
+                {0, 2, 0, 0},
+                {1, 0, 1, 0},
+            }),
+            myWeights);
+}
+
+TEST_F(TestMcfp, test_solver_random) {
+  ::FakeRandom  myFakeRandom;
+  Mcfp::Weights myWeights;
+  EXPECT_FLOAT_EQ(
+      156,
+      Mcfp::solveRandom(
+          theCosts, theRequests, theCapacities, myWeights, myFakeRandom()));
+  EXPECT_EQ(Mcfp::Weights({
+                {0, 0, 1, 0},
+                {1, 0, 1, 0},
+                {0, 2, 1, 1},
+                {0, 0, 0, 2},
+                {1, 0, 0, 0},
+            }),
+            myWeights);
+  EXPECT_FLOAT_EQ(
+      238,
+      Mcfp::solveRandom(
+          theCosts, theRequests, theCapacities, myWeights, myFakeRandom()));
+  EXPECT_EQ(Mcfp::Weights({
+                {1, 0, 0, 0},
+                {1, 1, 0, 0},
+                {0, 1, 3, 0},
+                {0, 0, 0, 2},
+                {0, 0, 0, 1},
+            }),
+            myWeights);
+  EXPECT_FLOAT_EQ(
+      249,
+      Mcfp::solveRandom(
+          theCosts, theRequests, theCapacities, myWeights, myFakeRandom()));
+  EXPECT_EQ(Mcfp::Weights({
+                {0, 0, 0, 0},
+                {0, 1, 0, 1},
+                {1, 1, 2, 0},
+                {0, 0, 1, 1},
+                {1, 0, 0, 1},
+            }),
+            myWeights);
+}
+
+TEST_F(TestMcfp, test_solver_greedy) {
+  Mcfp::Weights myWeights;
+  EXPECT_FLOAT_EQ(
+      199, Mcfp::solveGreedy(theCosts, theRequests, theCapacities, myWeights));
+  EXPECT_EQ(Mcfp::Weights({
+                {0, 1, 0, 0},
+                {0, 0, 2, 0},
+                {0, 1, 0, 3},
+                {1, 0, 1, 0},
+                {1, 0, 0, 0},
+            }),
+            myWeights);
+
+  Mcfp::Weights myOtherWeights;
+  EXPECT_FLOAT_EQ(
+      199,
+      Mcfp::solveGreedy(theCosts, theRequests, theCapacities, myOtherWeights));
+  ASSERT_EQ(myWeights, myOtherWeights);
 }
 
 } // namespace lambdamusim

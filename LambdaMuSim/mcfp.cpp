@@ -33,10 +33,13 @@ SOFTWARE.
 
 #include "Support/tostring.h"
 
+#include <algorithm>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_concepts.hpp>
 #include <boost/graph/successive_shortest_path_nonnegative_weights.hpp>
 
+#include <limits>
+#include <map>
 #include <numeric>
 #include <stdexcept>
 #include <string>
@@ -111,10 +114,8 @@ double Mcfp::solve(const Costs&      aCosts,
                    const Requests&   aRequests,
                    const Capacities& aCapacities,
                    Weights&          aWeights) {
-  // consistency checks
-  if (aCosts.empty()) {
-    throw std::runtime_error("Invalid empty cost matrix");
-  }
+  unsigned int T, W;
+  std::tie(T, W) = inputCheck(aCosts, aRequests, aCapacities);
 
   using Traits =
       boost::adjacency_list_traits<boost::vecS, boost::vecS, boost::directedS>;
@@ -146,27 +147,6 @@ double Mcfp::solve(const Costs&      aCosts,
   ResidualCapacity residual_capacity =
       boost::get(boost::edge_residual_capacity, g);
   Weight weight = boost::get(boost::edge_weight, g);
-
-  // count the number of tasks and workers and run consistency checks
-  const auto T = aCosts.size();    // number of tasks
-  const auto W = aCosts[0].size(); // number of workers
-  for (const auto& myCosts : aCosts) {
-    if (myCosts.size() != W) {
-      throw std::runtime_error("Invalid cost matrix: expected " +
-                               std::to_string(W) + " workers, found " +
-                               std::to_string(myCosts.size()));
-    }
-  }
-  if (aRequests.size() != T) {
-    throw std::runtime_error("Invalid requests size: expected " +
-                             std::to_string(T) + ", found " +
-                             std::to_string(aRequests.size()));
-  }
-  if (aCapacities.size() != W) {
-    throw std::runtime_error("Invalid capacity size: expected " +
-                             std::to_string(W) + ", found " +
-                             std::to_string(aCapacities.size()));
-  }
 
   // create the graph
 
@@ -253,19 +233,133 @@ double Mcfp::solve(const Costs&      aCosts,
   return ret;
 }
 
-double Mcfp::solveRandom([[maybe_unused]] const Costs&      aCosts,
-                         [[maybe_unused]] const Requests&   aRequests,
-                         [[maybe_unused]] const Capacities& aCapacities,
-                         [[maybe_unused]] Weights&          aWeights,
-                         [[maybe_unused]] const std::function<double()>& aRnd) {
-  return 0;
+double Mcfp::solveRandom(const Costs&                   aCosts,
+                         const Requests&                aRequests,
+                         const Capacities&              aCapacities,
+                         Weights&                       aWeights,
+                         const std::function<double()>& aRnd) {
+  unsigned int T, W;
+  std::tie(T, W) = inputCheck(aCosts, aRequests, aCapacities);
+
+  // sort the requests in random order
+  std::multimap<double, unsigned int> myRequests;
+  for (std::size_t i = 0; i < T; i++) {
+    for (auto u = 0; u < aRequests[i]; u++) {
+      myRequests.emplace(aRnd(), i);
+    }
+  }
+
+  // sort the workers in random order
+  std::multimap<double, unsigned int> myWorkers;
+  for (std::size_t j = 0; j < W; j++) {
+    for (auto u = 0; u < aCapacities[j]; u++) {
+      myWorkers.emplace(aRnd(), j);
+    }
+  }
+
+  // resize the output matrix
+  aWeights = Weights(T, std::vector<double>(W, 0));
+
+  // match the requests to workers
+  double myCost = 0;
+  auto   jt     = myWorkers.begin();
+  for (const auto& elem : myRequests) {
+    if (jt == myWorkers.end()) {
+      // no more workers with capacity > 0
+      break;
+    }
+    const auto& myRequest = elem.second;
+    aWeights[myRequest][jt->second]++;
+    myCost += aCosts[myRequest][jt->second];
+    jt = myWorkers.erase(jt);
+  }
+
+  return myCost;
 }
 
-double Mcfp::solveGreedy([[maybe_unused]] const Costs&      aCosts,
-                         [[maybe_unused]] const Requests&   aRequests,
-                         [[maybe_unused]] const Capacities& aCapacities,
-                         [[maybe_unused]] Weights&          aWeights) {
-  return 0;
+double Mcfp::solveGreedy(const Costs&      aCosts,
+                         const Requests&   aRequests,
+                         const Capacities& aCapacities,
+                         Weights&          aWeights) {
+  unsigned int T, W;
+  std::tie(T, W) = inputCheck(aCosts, aRequests, aCapacities);
+
+  // local copy of costs and capacities
+  auto myCosts      = aCosts;
+  auto myCapacities = aCapacities;
+
+  // put to infinity the costs of all the workers with vanishing capacity
+  for (std::size_t j = 0; j < W; j++) {
+    if (myCapacities[j] <= 0) {
+      for (std::size_t i = 0; i < T; i++) {
+        myCosts[i][j] = std::numeric_limits<double>::max();
+      }
+    }
+  }
+
+  // resize the output matrix
+  aWeights = Weights(T, std::vector<double>(W, 0));
+
+  // assign tasks to workers in a greedy fashion
+  // note: the loop may terminate with an early return: this happens when the
+  // capacities of the workers are insufficient to serve all the tasks
+  double myCost = 0;
+  for (std::size_t i = 0; i < T; i++) {
+    for (auto u = 0; u < aRequests[i]; u++) {
+      const auto it = std::min_element(myCosts[i].begin(), myCosts[i].end());
+      if (*it == std::numeric_limits<double>::max()) {
+        return myCost; // early return
+      }
+
+      const auto j = it - myCosts[i].begin();
+      assert(myCapacities[j] > 0);
+      aWeights[i][j]++;
+      myCost += *it;
+      myCapacities[j]--;
+
+      // if the capacity of the worker selected becomes vanishing, then force
+      // the remaining elements in the cost matrix to infinity
+      if (myCapacities[j] == 0) {
+        for (std::size_t k = i; k < T; k++) {
+          myCosts[k][j] = std::numeric_limits<double>::max();
+        }
+      }
+    }
+  }
+
+  return myCost;
+}
+
+std::pair<unsigned int, unsigned int>
+Mcfp::inputCheck(const Costs&      aCosts,
+                 const Requests&   aRequests,
+                 const Capacities& aCapacities) {
+  // throw if empty cost matrix
+  if (aCosts.empty()) {
+    throw std::runtime_error("Invalid empty cost matrix");
+  }
+
+  // count the number of tasks and workers
+  const auto T = aCosts.size();    // number of tasks
+  const auto W = aCosts[0].size(); // number of workers
+  for (const auto& myCosts : aCosts) {
+    if (myCosts.size() != W) {
+      throw std::runtime_error("Invalid cost matrix: expected " +
+                               std::to_string(W) + " workers, found " +
+                               std::to_string(myCosts.size()));
+    }
+  }
+  if (aRequests.size() != T) {
+    throw std::runtime_error("Invalid requests size: expected " +
+                             std::to_string(T) + ", found " +
+                             std::to_string(aRequests.size()));
+  }
+  if (aCapacities.size() != W) {
+    throw std::runtime_error("Invalid capacity size: expected " +
+                             std::to_string(W) + ", found " +
+                             std::to_string(aCapacities.size()));
+  }
+  return {T, W};
 }
 
 } // namespace lambdamusim

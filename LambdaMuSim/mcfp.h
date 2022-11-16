@@ -45,10 +45,7 @@ namespace lambdamusim {
  * https://www.boost.org/doc/libs/1_78_0/libs/graph/doc/graph_theory_review.html#sec:network-flow-algorithms
  * https://www.boost.org/doc/libs/1_78_0/libs/graph/doc/successive_shortest_path_nonnegative_weights.html
  *
- * Also includes some comparison algorithms:
- * - random: assign capacities to requests at random
- * - greedy: assign each task to the worker with the smallest cost; if the
- * request is not exhausted move to the second-smallest cost, and so on
+ * Also includes comparison algorithms.
  */
 class Mcfp
 {
@@ -77,16 +74,51 @@ class Mcfp
                       const Capacities& aCapacities,
                       Weights&          aWeights);
 
+  /**
+   * @brief Assign capacities to requests at random.
+   *
+   * @param aCosts The task-worker costs.
+   * @param aRequests The amount of work each task requires.
+   * @param aCapacities The workers' capacities.
+   * @param aWeights The weights returned.
+   * @param Rnd A function that returns a random value.
+   * @return the cost found.
+   *
+   * @throw std::runtime_error if the input passed is inconsistent.
+   */
   static double solveRandom(const Costs&                   aCosts,
                             const Requests&                aRequests,
                             const Capacities&              aCapacities,
                             Weights&                       aWeights,
                             const std::function<double()>& aRnd);
 
+  /**
+   * @brief Assign each task to the worker with the smallest cost; if the
+   * request is not exhausted move to the second-smallest cost, and so on.
+   *
+   * @param aCosts The task-worker costs.
+   * @param aRequests The amount of work each task requires.
+   * @param aCapacities The workers' capacities.
+   * @param aWeights The weights returned.
+   * @return the cost found.
+   *
+   * @throw std::runtime_error if the input passed is inconsistent.
+   */
   static double solveGreedy(const Costs&      aCosts,
                             const Requests&   aRequests,
                             const Capacities& aCapacities,
                             Weights&          aWeights);
+
+ private:
+  /**
+   * @throw std::runtime_error if the input passed is inconsistent.
+   * @return std::pair<unsigned int, unsigned int> the number of tasks and
+   * workers
+   */
+  static std::pair<unsigned int, unsigned int>
+  inputCheck(const Costs&      aCosts,
+             const Requests&   aRequests,
+             const Capacities& aCapacities);
 };
 
 } // namespace lambdamusim
