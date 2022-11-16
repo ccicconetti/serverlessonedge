@@ -32,9 +32,13 @@ SOFTWARE.
 #include "LambdaMuSim/appmodel.h"
 
 #include "Support/split.h"
+#include "Support/tostring.h"
+
+#include "glog/logging.h"
 
 #include <algorithm>
 #include <numeric>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -69,8 +73,8 @@ std::unique_ptr<AppModel> makeAppModel(const size_t       aSeed,
           "number of parameters (" +
           std::to_string(myTokens.size() - 1) + ")");
     }
-    std::map<double, AppModel::Params> myParams;
-    auto                               myOffset = 1u;
+    std::multimap<double, AppModel::Params> myParams;
+    auto                                    myOffset = 1u;
     while (myOffset < myTokens.size()) {
       myParams.emplace(std::stod(myTokens[myOffset]),
                        AppModel::Params{std::stol(myTokens[myOffset + 1]),
@@ -84,18 +88,26 @@ std::unique_ptr<AppModel> makeAppModel(const size_t       aSeed,
   throw std::runtime_error("Invalid app model type: " + myTokens[0]);
 }
 
+std::string AppModel::Params::toString() const {
+  std::stringstream ret;
+  ret << "service rate " << theServiceRate << " calls/time unit, exchange size "
+      << theExchangeSize << " data units, storage size " << theStorageSize
+      << " data units";
+  return ret.str();
+}
+
 AppModelConstant::AppModelConstant(const Params& aParams)
     : AppModel()
     , theParams(aParams) {
-  // noop
+  VLOG(1) << "built app model constant with params: " << aParams.toString();
 }
 
 AppModel::Params AppModelConstant::operator()() {
   return theParams;
 }
 
-AppModelClasses::AppModelClasses(const size_t                    aSeed,
-                                 const std::map<double, Params>& aParams)
+AppModelClasses::AppModelClasses(const size_t                         aSeed,
+                                 const std::multimap<double, Params>& aParams)
     : AppModel()
     , theRv(0.0,
             std::accumulate(aParams.begin(),
@@ -111,6 +123,12 @@ AppModelClasses::AppModelClasses(const size_t                    aSeed,
   if (aParams.empty()) {
     throw std::runtime_error("No application classes defined");
   }
+  VLOG(1) << "built app model classes with params:\n"
+          << ::toString(aParams, "\n", [](const auto& elem) {
+               std::stringstream ret;
+               ret << "weight " << elem.first << "\t" << elem.second.toString();
+               return ret.str();
+             });
 }
 
 AppModel::Params AppModelClasses::operator()() {

@@ -40,6 +40,8 @@ SOFTWARE.
 
 #include <glog/logging.h>
 
+#include <boost/algorithm/string/replace.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <mutex>
@@ -68,7 +70,7 @@ std::vector<std::string> Conf::toStrings() const {
       std::to_string(theAvgMu),
       std::to_string(theAlpha),
       std::to_string(theBeta),
-      theAppModel,
+      boost::replace_all_copy(theAppModel, ",", ";"),
       toString(theMuAlgorithm),
       toString(theLambdaAlgorithm),
   });

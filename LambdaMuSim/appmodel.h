@@ -84,6 +84,8 @@ class AppModel
     long theServiceRate  = 1; //!< the rate of function invocations
     long theExchangeSize = 1; //!< amount of data units per invocation
     long theStorageSize  = 1; //!< state size in the remote storage
+
+    std::string toString() const;
   };
 
   AppModel()          = default;
@@ -127,12 +129,13 @@ class AppModelClasses final : public AppModel
    *
    * @throw std::runtime_error if aParams is empty.
    */
-  AppModelClasses(const size_t aSeed, const std::map<double, Params>& aParams);
+  AppModelClasses(const size_t                         aSeed,
+                  const std::multimap<double, Params>& aParams);
   Params operator()() override;
 
  private:
-  support::UniformRv             theRv;
-  const std::map<double, Params> theParams;
+  support::UniformRv                  theRv;
+  const std::multimap<double, Params> theParams;
 };
 
 } // namespace lambdamusim
