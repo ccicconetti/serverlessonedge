@@ -726,5 +726,88 @@ TEST_F(TestLambdaMuSim, test_app_model_classes) {
       << "first = " << myFirst << ", double = " << myDouble;
 }
 
+TEST_F(TestLambdaMuSim, test_simulation_run_all_algorithms) {
+  Simulation mySimulation(1);
+  ASSERT_TRUE(prepareNetworkFiles(theTestDir));
+  ASSERT_TRUE(prepareAfdbDatasetFiles(theTestDir));
+
+  for (const auto myMuAlgo : allMuAlgorithms()) {
+    for (const auto myLambdaAlgo : allLambdaAlgorithms()) {
+
+      LOG(INFO) << "snapshot, mu algo " << toString(myMuAlgo)
+                << ", lambda algo " << toString(myLambdaAlgo);
+      mySimulation.run(Conf{Conf::Type::Snapshot,
+                            (theTestDir / "nodes").string(),
+                            (theTestDir / "links").string(),
+                            (theTestDir / "edges").string(),
+                            2.0,
+                            0.0,
+                            0.0,
+                            "", // unused with snapshot
+                            0,  // (ibidem)
+                            0,  // (ibidem)
+                            0,  // (ibidem)
+                            0,  // (ibidem)
+                            0,  // (ibidem)
+                            10,
+                            10,
+                            0.5,
+                            0.5,
+                            "constant,1,1,1",
+                            myMuAlgo,
+                            myLambdaAlgo,
+                            (theTestDir / "out").string(),
+                            false},
+                       42,
+                       1);
+      {
+        std::string myContent;
+        std::getline(
+            std::ifstream((theTestDir / "out").string()), myContent, '\0');
+        ASSERT_TRUE(myContent.find(toString(myMuAlgo)) != std::string::npos);
+        ASSERT_TRUE(myContent.find(toString(myLambdaAlgo)) !=
+                    std::string::npos);
+        VLOG(1) << '\n' << myContent;
+      }
+
+      LOG(INFO) << "dynamic , mu algo " << toString(myMuAlgo)
+                << ", lambda algo " << toString(myLambdaAlgo);
+      mySimulation.run(Conf{Conf::Type::Dynamic,
+                            (theTestDir / "nodes").string(),
+                            (theTestDir / "links").string(),
+                            (theTestDir / "edges").string(),
+                            2.0,
+                            0.0,
+                            0.0,
+                            (theTestDir / "apps").string(),
+                            86400 * 1e3 * 9, // duration: 9 days
+                            3600 * 1e3 * 2,  // warm-up:  2 hours
+                            3600 * 1e3,      // epoch:    1 hour
+                            1,
+                            10,
+                            0, // unused with dynamic
+                            0, // (ibidem)
+                            0.5,
+                            0.5,
+                            "constant,1,1,1",
+                            myMuAlgo,
+                            myLambdaAlgo,
+                            (theTestDir / "out").string(),
+                            false},
+                       42,
+                       1);
+      {
+        std::string myContent;
+        std::getline(
+            std::ifstream((theTestDir / "out").string()), myContent, '\0');
+        ASSERT_TRUE(myContent.find(toString(myMuAlgo)) != std::string::npos);
+        ASSERT_TRUE(myContent.find(toString(myLambdaAlgo)) !=
+                    std::string::npos);
+        VLOG(1) << '\n' << myContent;
+      }
+    }
+  }
+}
+
 } // namespace lambdamusim
 } // namespace uiiit
