@@ -1,54 +1,68 @@
 #!/bin/bash
 
-if [ "$DRY" == "" ] ; then
+if [ "$SEED_STARTING" == "" ] ; then
+  SEED_STARTING=1
+fi
+
+if [ "$NUM_REPLICATIONS" == "" ] ; then
+  NUM_REPLICATIONS=6000
+fi
+
+if [ "$NUM_THREADS" == "" ] ; then
+  NUM_THREADS=1
+fi
+
+if [[ "$DRY" == "" && ! -d "data" ]] ; then
   mkdir data 2> /dev/null
 fi
 
-apps=100
-mixes="lambdas mus mix"
-alphas="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
-betas="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
+numapps="10 20 50 100"
+algos="random greedy proposed"
 
-for m in $mixes ; do
-  for a in $alphas ; do
-    for b in $betas ; do
+for n in $numapps ; do
+for a in $algos ; do
 
-      avg_lambda=0
-      avg_mu=0
-      if [ $m == "lambdas" ] ; then
-        avg_lambda=$apps
-      elif [ $m == "mus" ] ; then
-        avg_mu=$apps
-      elif [ $m == "mix" ] ; then
-        avg_lambda=$(( apps / 2 ))
-        avg_mu=$(( apps / 2 ))
-      else
-        echo "unknown mix: $m, bailing out"
-        exit 1
-      fi
+  mu_algo=$a
+  lambda_algo=$a
+  if [ "$a" == "proposed" ] ; then
+    mu_algo="hungarian"
+    lambda_algo="mcfp"
+  fi
 
-      cmd="./lambdamusim \
-            --type snapshot \
-            --nodes-path network/urban_sensing.0.nodes \
-            --links-path network/urban_sensing.0.links \
-            --edges-path network/urban_sensing.0.edges \
-            --cloud-distance-factor 2 \
-            --avg-lambda $avg_lambda \
-            --avg-mu $avg_mu \
-            --alpha $a \
-            --beta $b \
-            --lambda-request 1 \
-            --out-file data/012-urban0.csv \
-            --append \
-            --seed-starting 1 \
-            --num-replications 6400"
+  cmd="./lambdamusim \
+        --type snapshot \
+        --nodes-path network/urban_sensing.0.nodes \
+        --links-path network/urban_sensing.0.links \
+        --edges-path network/urban_sensing.0.edges \
+        --cloud-distance-factor 2 \
+        --cloud-storage-cost-local 0 \
+        --cloud-storage-cost-remote 100 \
+        --avg-lambda $(( n / 2 )) \
+        --avg-mu $(( n / 2 )) \
+        --alpha 0.5 \
+        --beta 1 \
+        --app-model classes,0.5,1,100,1,0.5,10,1,10 \
+        --mu-algorithm $mu_algo \
+        --lambda-algorithm $lambda_algo \
+        --out-file data/020-urban0.csv \
+        --append \
+        --seed-starting $SEED_STARTING \
+        --num-replications $NUM_REPLICATIONS \
+        --num-threads $NUM_THREADS \
+        "
 
-      if [ "$DRY" == "" ] ; then
-        $cmd
-      else
-        echo $cmd
-      fi
-    done
-  done
+  if [ "$EXPLAIN" != "" ] ; then
+    $cmd --explain
+    exit 0
+  elif [ "$PRINT" != "" ] ; then
+    $cmd --print
+    exit 0
+  elif [ "$DRY" == "" ] ; then
+    $cmd
+  else
+    echo $cmd
+  fi
+
+done
 done
 
