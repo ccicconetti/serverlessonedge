@@ -35,13 +35,13 @@ for a in $algos ; do
         --links-path network/urban_sensing.0.links \
         --edges-path network/urban_sensing.0.edges \
         --cloud-distance-factor 2 \
-        --cloud-storage-cost-local 50 \
-        --cloud-storage-cost-remote 100 \
+        --cloud-storage-cost-local 0 \
+        --cloud-storage-cost-remote 10 \
         --avg-lambda $(( n * 3 / 4 )) \
         --avg-mu $(( n / 4 )) \
         --alpha 0.5 \
         --beta 1 \
-        --app-model classes,0.5,1,100,1,0.5,10,1,10 \
+        --app-model classes,0.5,1,100,0,0.5,10,1,0 \
         --mu-algorithm $mu_algo \
         --lambda-algorithm $lambda_algo \
         --out-file data/020-urban0.csv \
