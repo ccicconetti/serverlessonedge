@@ -1,4 +1,4 @@
-# Simulation 012
+# Simulation 020
 
 Simulations of execution of apps alternating between stateless (lambda) and stateful (mu) behavior.
 
@@ -37,7 +37,11 @@ After installing all the depencies above you may run simulations with:
 
 The execution will produce its output in the directory `data`, which will be created if not existing.
 
-If you want to obtain the list of the commands that will be run, without actually running them, prepend `DRY=1` to the command above.
+Special commands:
+
+- with `DRY=1` you obtain the list of commands what will be run
+- with `EXPLAIN=1` you get an explanation of the fields in the output file
+- with `PRINT=1` you get a comma-separated value list of the fields in the output file
 
 ## Downloading the raw results without running the experiments
 
