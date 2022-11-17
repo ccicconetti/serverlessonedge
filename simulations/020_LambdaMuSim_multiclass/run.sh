@@ -41,7 +41,7 @@ for a in $algos ; do
         --avg-mu $(( n / 4 )) \
         --alpha 0.5 \
         --beta 1 \
-        --app-model classes,0.5,1,100,0,0.5,10,1,0 \
+        --app-model classes,0.5,1,100,10,0.5,10,1,0 \
         --mu-algorithm $mu_algo \
         --lambda-algorithm $lambda_algo \
         --out-file data/020-urban0.csv \
