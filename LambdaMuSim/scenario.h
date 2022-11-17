@@ -246,6 +246,7 @@ class Scenario
   static Type               flip(const Type aType) noexcept;
   void                      clearPreviousAssignments(PerformanceData& aData);
   double                    lambdaServiceCloud() const;
+  static void debugPrint(const std::string& aHeader, const std::string& aWhat);
 
  private:
   const double theCloudStorageCostLocal;

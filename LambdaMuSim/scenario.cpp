@@ -330,10 +330,9 @@ Scenario::dynamic(const double                           aDuration,
                          myParams.theStorageSize);
     theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
   }
-  VLOG(2) << "applications:\n"
-          << ::toString(theApps, "\n", [](const auto& aApp) {
+  debugPrint("applications", ::toString(theApps, "\n", [](const auto& aApp) {
                return aApp.toString();
-             });
+             }));
 
   // set the cloud num containers and capacity
   theEdges[CLOUD].theNumContainers     = 1 + myNumApps;
@@ -425,7 +424,7 @@ Scenario::dynamic(const double                           aDuration,
       // the flag will be set to true if there are app changes before next epoch
       myOptimize = false;
 
-      VLOG(2) << "apps after assignment:\n" << appsToString();
+      debugPrint("apps after assignment", appsToString());
 
     } else {
       // perform in-between-epochs assignment
@@ -526,10 +525,9 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
                          myParams.theStorageSize);
     theBrokers[theApps.back().theBroker].theApps.emplace_back(i);
   }
-  VLOG(2) << "applications:\n"
-          << ::toString(theApps, "\n", [](const auto& aApp) {
+  debugPrint("applications", ::toString(theApps, "\n", [](const auto& aApp) {
                return aApp.toString();
-             });
+             }));
 
   // set the cloud num containers and capacity
   theEdges[CLOUD].theNumContainers     = 1 + myNumMu;
@@ -538,8 +536,8 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   ret.theTotCapacity += theEdges[CLOUD].theContainerCapacity;
 
   VLOG(2) << "seed " << aSeed << ", " << myNumLambda << " lambda-apps, "
-          << myNumMu << " mu-apps, network costs:\n"
-          << networkCostToString();
+          << myNumMu << " mu-apps";
+  debugPrint("network costs", networkCostToString());
 
   // save assignment-independent output
   ret.theNumLambda = myNumLambda;
@@ -555,7 +553,7 @@ PerformanceData Scenario::snapshot(const std::size_t aAvgLambda,
   support::UniformRv myLambdaRv(0, 1, aSeed, 1, 0);
   assignLambdaApps(aBeta, ret, [&myLambdaRv]() { return myLambdaRv(); });
 
-  VLOG(2) << "apps after assignment:\n" << appsToString();
+  debugPrint("apps after assignment", appsToString());
 
   return ret;
 }
@@ -659,11 +657,13 @@ void Scenario::assignMuApps(const double                   aAlpha,
                          myApp.theExchangeSize;
     }
   }
-  VLOG(2) << "assignment problem cost matrix:\n"
-          << uiiit::lambdamusim::toString(myApMatrix);
+  debugPrint("assignment problem cost matrix",
+             uiiit::lambdamusim::toString(myApMatrix));
 
   // solve assignment problem
   std::vector<int> myMuAssignment;
+  VLOG(1) << "solving mu apps with "
+          << uiiit::lambdamusim::toString(theMuAlgorithm);
   switch (theMuAlgorithm) {
     case MuAlgorithm::Random:
       aData.theMuCost = hungarian::HungarianAlgorithm::SolveRandom(
@@ -738,12 +738,10 @@ void Scenario::assignLambdaApps(const double                   aBeta,
     assert(myLambdaApps[i] < theApps.size());
     myLambdaRequests.emplace_back(theApps[myLambdaApps[i]].theServiceRate);
   }
-  VLOG(2) << "requests: ["
-          << ::toString(
-                 myLambdaRequests,
-                 ",",
-                 [](const auto& aValue) { return std::to_string(aValue); })
-          << "]";
+  debugPrint("requests",
+             ::toString(myLambdaRequests, ",", [](const auto& aValue) {
+               return std::to_string(aValue);
+             }));
 
   // fill the capacities vector
   Mcfp::Capacities myLambdaCapacities;
@@ -751,12 +749,10 @@ void Scenario::assignLambdaApps(const double                   aBeta,
     myLambdaCapacities.emplace_back(static_cast<long>(
         std::floor(aBeta * theEdges[e].theContainerCapacity)));
   }
-  VLOG(2) << "capacities: ["
-          << ::toString(
-                 myLambdaCapacities,
-                 ",",
-                 [](const auto& aValue) { return std::to_string(aValue); })
-          << "]";
+  debugPrint("capacities",
+             ::toString(myLambdaCapacities, ",", [](const auto& aValue) {
+               return std::to_string(aValue);
+             }));
 
   // fill the cost matrix
   Mcfp::Costs myLambdaCosts(myLambdaApps.size(),
@@ -771,9 +767,14 @@ void Scenario::assignLambdaApps(const double                   aBeta,
               myApp.theStorageSize;
     }
   }
+  debugPrint("costs", ::toString(myLambdaCosts, "\n", [](const auto& aVector) {
+               return ::toStringStd(aVector, "\t");
+             }));
 
   // solve the minimum cost flow problem
   Mcfp::Weights myWeights;
+  VLOG(1) << "solving lambda apps with "
+          << uiiit::lambdamusim::toString(theLambdaAlgorithm);
   switch (theLambdaAlgorithm) {
     case LambdaAlgorithm::Random:
       aData.theLambdaCost = Mcfp::solveRandom(
@@ -952,6 +953,13 @@ double Scenario::lambdaServiceCloud() const {
     return myServiceCloud / myServiceTotal;
   }
   return 0.0;
+}
+
+void Scenario::debugPrint(const std::string& aHeader,
+                          const std::string& aWhat) {
+#ifndef NDEBUG
+  VLOG(2) << aHeader << ":\n" << aWhat;
+#endif
 }
 
 } // namespace lambdamusim
