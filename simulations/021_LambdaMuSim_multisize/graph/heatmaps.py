@@ -54,8 +54,6 @@ if __name__ == "__main__":
     metrics = {
         "lambda-cost": [True, r"$Cost/\lambda$-app"],
         "lambda-service-cloud": [False, r"Ratio of $\lambda$-apps in the cloud "],
-        "mu-cost": [True, r"Cost/$\mu$-app"],
-        "mu-service-cloud": [False, r"Ratio of $\mu$-apps in the cloud"],
     }
     numapps = [50, 100, 150, 200]
     algos = ["random", "greedy", "proposed"]

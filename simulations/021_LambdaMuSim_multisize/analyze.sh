@@ -34,14 +34,22 @@ for a in $algos ; do
     echo "$outmangle"
     outfile=post/$outmangle.dat
     rm -f $outfile 2> /dev/null
-    for e in $exchange_sizes ; do
-    for s in $storage_sizes ; do
-      fingerprint="2.000000,0.000000,10.000000,60000.000000,50,10,$((n*3/4)),$((n/4)),0.500000,1.000000,classes;0.5;5;100;10;0.5;5;$e;$s,$algo_fp"
-      value=$(grep $fingerprint $infile | $percentile_script --delimiter , --column ${columns[$i]} --mean | cut -f 1,3 -d ' ')
-      echo $e $s $value >> $outfile
-    done
-    done
+    if [[ ${names[$i]} =~ "lambda" ]] ; then
+      for e in $exchange_sizes ; do
+      for s in $storage_sizes ; do
+        fingerprint="2.000000,0.000000,10.000000,60000.000000,50,10,$((n*3/4)),$((n/4)),0.500000,1.000000,classes;0.5;5;100;10;0.5;5;$e;$s,$algo_fp"
+        value=$(grep $fingerprint $infile | $percentile_script --delimiter , --column ${columns[$i]} --mean | cut -f 1,3 -d ' ')
+        echo $e $s $value >> $outfile
+      done
+      done
+    else
+      for e in $exchange_sizes ; do
+        fingerprint="2.000000,0.000000,10.000000,60000.000000,50,10,$((n*3/4)),$((n/4)),0.500000,1.000000,classes;0.5;5;100;10;0.5;5;$e;0,$algo_fp"
+        value=$(grep $fingerprint $infile | $percentile_script --delimiter , --column ${columns[$i]} --mean | cut -f 1,3 -d ' ')
+        echo $e $value >> $outfile
+      done
+    fi
   done
-
+ 
 done
 done
