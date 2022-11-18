@@ -16,9 +16,9 @@ if [[ "$DRY" == "" && ! -d "data" ]] ; then
   mkdir data 2> /dev/null
 fi
 
-numapps="25 50 75"
+numapps="25 50"
 algos="random greedy proposed"
-exchange_sizes="0 20 40 60 80 100"
+exchange_sizes="0 2 4 6 8 10 12 14 16 18 20"
 
 for n in $numapps ; do
 for a in $algos ; do
