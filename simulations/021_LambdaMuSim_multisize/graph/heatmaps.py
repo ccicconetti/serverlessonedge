@@ -55,8 +55,8 @@ if __name__ == "__main__":
         "lambda-cost": [True, r"$Cost/\lambda$-app"],
         "lambda-service-cloud": [False, r"Ratio of $\lambda$-apps in the cloud "],
     }
-    numapps = [50, 100, 150, 200]
-    algos = ["random", "greedy", "proposed"]
+    numapps = [150]
+    algos = ["proposed"]
     metrics_norm = {"lambda-cost", "mu-cost"}
     dir = "../post/"
 
