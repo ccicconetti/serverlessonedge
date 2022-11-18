@@ -16,10 +16,10 @@ infile=data/021-urban0.csv
 columns=(15 16 19 20 21 22 23)
 names=("num-containers" "tot-capacity" "lambda-cost" "lambda-service-cloud" "mu-cost" "mu-cloud" "mu-service-cloud")
 
-numapps="50 100 150 200"
-algos="random greedy proposed"
-exchange_sizes="0 20 40 60 80 100"
-storage_sizes="0 2 4 6 8 10"
+numapps="150"
+algos="proposed"
+exchange_sizes="0 1 2 3 4 5 6 7 8 9 10"
+storage_sizes="0 1 2 3 4 5 6 7 8 9 10"
 
 for n in $numapps ; do
 for a in $algos ; do

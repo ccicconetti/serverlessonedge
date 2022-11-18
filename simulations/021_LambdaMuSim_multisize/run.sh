@@ -16,10 +16,10 @@ if [[ "$DRY" == "" && ! -d "data" ]] ; then
   mkdir data 2> /dev/null
 fi
 
-numapps="50 100 150 200"
-algos="random greedy proposed"
-exchange_sizes="0 20 40 60 80 100"
-storage_sizes="0 2 4 6 8 10"
+numapps="150"
+algos="proposed"
+exchange_sizes="0 1 2 3 4 5 6 7 8 9 10"
+storage_sizes="0 1 2 3 4 5 6 7 8 9 10"
 
 for n in $numapps ; do
 for a in $algos ; do
