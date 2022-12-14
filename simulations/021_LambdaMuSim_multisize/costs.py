@@ -27,7 +27,7 @@ param_ref = [5, 100, 10]
 for tier, c in netcost.items():
     costs_ref = costs(tier, param_ref)
     print(f"{tier} ->\tcost_mu_ref {costs_ref[0]}")
-    for m_k_other in range(0, 101, 10):
+    for m_k_other in range(0, 11, 1):
         line = ""
         for d_k_other in range(0, 11, 1):
             params_cur = [param_ref[0], m_k_other, d_k_other]
@@ -35,8 +35,9 @@ for tier, c in netcost.items():
         print(line)
 
 for tier, c in netcost.items():
+    costs_ref = costs(tier, param_ref)
     print(f"{tier} ->\tcost_lambda_ref {costs_ref[1]}")
-    for m_k_other in range(0, 101, 10):
+    for m_k_other in range(0, 11, 1):
         line = ""
         for d_k_other in range(0, 11, 1):
             params_cur = [param_ref[0], m_k_other, d_k_other]
