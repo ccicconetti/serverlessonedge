@@ -46,6 +46,7 @@ SOFTWARE.
 
 #include <glog/logging.h>
 
+#include <cstdlib>
 #include <ctime>
 #include <list>
 #include <map>
@@ -63,7 +64,7 @@ struct TestParallelCalls : public ::testing::Test {
       , theComputer(5, theEndpoint, false, [](const auto& aUtil) {})
       , theComputerServerImpl(nullptr) {
     Composer()(
-        support::Conf("type=intel-server,num-containers=1,num-workers=1"),
+        support::Conf("type=intel-server,num-containers=2,num-workers=2"),
         theComputer.computer());
 
     theComputerServerImpl.reset(
@@ -92,10 +93,13 @@ struct TestParallelCalls : public ::testing::Test {
 };
 
 TEST_F(TestParallelCalls, DISABLED_test_single) {
-  EdgeClientGrpc myClient(theEndpoint, false);
+  const auto     myEnvEndpoint = ::getenv("ENDPOINT");
+  EdgeClientGrpc myClient(myEnvEndpoint == nullptr ? theEndpoint :
+                                                     std::string(myEnvEndpoint),
+                          false);
 
   using Data = std::map<size_t, std::vector<double>>;
-  const std::list<size_t> mySizes({10, 1000});
+  const std::list<size_t> mySizes({10, 10000});
   Data                    myDelaysSingle;
   support::Chrono         myChrono(false);
 
