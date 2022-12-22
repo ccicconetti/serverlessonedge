@@ -165,7 +165,7 @@ void Container::advance(const double aElapsed) {
   const auto myOperations = theProcessor.timeToOps(aElapsed);
   const auto myActualOperations =
       std::min(theActive.front().theResidualOps, myOperations);
-  VLOG_IF(1, myActualOperations != myOperations)
+  VLOG_IF(2, myActualOperations != myOperations)
       << "Could not run " << myOperations << " operations on container "
       << theName << " hosted by processor " << theProcessor.name()
       << ", advancing by " << myActualOperations << " instead";

@@ -137,6 +137,10 @@ add_executable(testmcfp testmain.cpp testmcfp.cpp)
 target_link_libraries(testmcfp ${LIBS})
 gtest_discover_tests(testmcfp)
 
+add_executable(testparallelcalls testmain.cpp testparallelcalls.cpp)
+target_link_libraries(testparallelcalls ${LIBS})
+gtest_discover_tests(testparallelcalls)
+
 add_executable(testprocessor testmain.cpp testprocessor.cpp)
 target_link_libraries(testprocessor ${LIBS})
 gtest_discover_tests(testprocessor)
