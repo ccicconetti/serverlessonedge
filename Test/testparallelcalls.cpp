@@ -38,12 +38,14 @@ SOFTWARE.
 #include "Support/chrono.h"
 #include "Support/conf.h"
 #include "Support/random.h"
+#include "Support/split.h"
 #include "Support/threadpool.h"
 #include "Support/tostring.h"
 #include "Support/wait.h"
 
 #include "gtest/gtest.h"
 
+#include <fstream>
 #include <glog/logging.h>
 
 #include <cstdlib>
@@ -59,20 +61,61 @@ namespace edge {
 
 struct TestParallelCalls : public ::testing::Test {
   TestParallelCalls()
-      : theEndpoint("127.0.0.1:10000")
-      , theNumThreads(5)
-      , theComputer(5, theEndpoint, false, [](const auto& aUtil) {})
+      : theEndpoint("localhost:10000")
+      , theOutput("out")
+      , theLambda("clambda0")
+      , theSizes({10, 100})
+      , theComputer(nullptr)
       , theComputerServerImpl(nullptr) {
-    Composer()(
-        support::Conf("type=intel-server,num-containers=2,num-workers=2"),
-        theComputer.computer());
+    getEnv();
 
-    theComputerServerImpl.reset(
-        new EdgeServerGrpc(theComputer, theNumThreads, false));
+    if (theEndpoint.find("localhost") != std::string::npos) {
+      theComputer = std::make_unique<EdgeComputer>(
+          theConcurrency, theEndpoint, theSecure, [](const auto&) {});
 
-    theComputerServerImpl->run();
+      Composer()(
+          support::Conf(std::string("type=intel-server,num-containers=") +
+                        std::to_string(theConcurrency) +
+                        ",num-workers=" + std::to_string(theConcurrency)),
+          theComputer->computer());
 
-    LOG(INFO) << "starting test";
+      theComputerServerImpl.reset(
+          new EdgeServerGrpc(*theComputer, theConcurrency, theSecure));
+
+      theComputerServerImpl->run();
+    }
+  }
+
+  void getEnv() {
+    const auto myEnvEndpoint = ::getenv("ENDPOINT");
+    if (myEnvEndpoint != nullptr) {
+      theEndpoint = std::string(myEnvEndpoint);
+    }
+    const auto myEnvConcurrency = ::getenv("CONCURRENCY");
+    if (myEnvConcurrency != nullptr) {
+      theConcurrency = std::stoull(std::string(myEnvConcurrency));
+    }
+    const auto myEnvNumCalls = ::getenv("NUMCALLS");
+    if (myEnvNumCalls != nullptr) {
+      theNumCalls = std::stoull(std::string(myEnvNumCalls));
+    }
+    const auto myEnvOutput = ::getenv("OUTPUT");
+    if (myEnvOutput != nullptr) {
+      theOutput = std::string(myEnvOutput);
+    }
+    const auto myEnvLambda = ::getenv("LAMBDA");
+    if (myEnvLambda != nullptr) {
+      theLambda = std::string(myEnvLambda);
+    }
+    const auto myEnvSizes = ::getenv("SIZES");
+    if (myEnvSizes != nullptr) {
+      theSizes =
+          support::split<std::list<size_t>>(std::string(myEnvSizes), ",");
+    }
+    const auto myEnvSecure = ::getenv("SECURE");
+    if (myEnvSecure != nullptr) {
+      theSecure = std::string(myEnvSecure) != "0";
+    }
   }
 
   static bool checkResponse(const LambdaResponse& aResp,
@@ -82,48 +125,38 @@ struct TestParallelCalls : public ::testing::Test {
            aResp.theDataOut.size() == 0;
   }
 
-  const std::string theEndpoint;
-  const size_t      theNumThreads;
+  // can be overridden by environment variables
+  std::string       theEndpoint;
+  size_t            theConcurrency = 2;
+  size_t            theNumCalls    = 10;
+  std::string       theOutput;
+  std::string       theLambda;
+  std::list<size_t> theSizes;
+  bool              theSecure = false;
 
-  EdgeComputer                    theComputer;
+  std::unique_ptr<EdgeComputer>   theComputer;
   std::unique_ptr<EdgeServerImpl> theComputerServerImpl;
-
-  const size_t N        = 10;
-  const size_t NTHREADS = 2;
 };
 
 TEST_F(TestParallelCalls, DISABLED_test_single) {
-  const auto     myEnvEndpoint = ::getenv("ENDPOINT");
-  EdgeClientGrpc myClient(myEnvEndpoint == nullptr ? theEndpoint :
-                                                     std::string(myEnvEndpoint),
-                          false);
+
+  EdgeClientGrpc myClient(theEndpoint, theSecure);
 
   using Data = std::map<size_t, std::vector<double>>;
-  const std::list<size_t> mySizes({10, 10000});
-  Data                    myDelaysSingle;
-  support::Chrono         myChrono(false);
-
-  // run one call at a time
-  for (const auto& mySize : mySizes) {
-    const auto it = myDelaysSingle.emplace(mySize, std::vector<double>(N, 0));
-    LambdaRequest myReq("clambda0", std::string(mySize, 'A'));
-    for (size_t i = 0; i < N; i++) {
-      myChrono.start();
-      ASSERT_TRUE(checkResponse(myClient.RunLambda(myReq, false), mySize));
-      it.first->second.at(i) = myChrono.stop();
-    }
-  }
+  Data myDelays;
 
   // run calls in parallel
   struct RandomCaller {
     RandomCaller(EdgeClientGrpc&          aClient,
                  const std::list<size_t>& aSizes,
                  const size_t             aIterations,
-                 Data&                    aData)
+                 Data&                    aData,
+                 const std::string&       aLambda)
         : theClient(aClient)
         , theSizes(aSizes)
         , theIterations(aIterations)
-        , theData(aData) {
+        , theData(aData)
+        , theLambda(aLambda) {
       // noop
     }
 
@@ -132,7 +165,7 @@ TEST_F(TestParallelCalls, DISABLED_test_single) {
       support::Chrono    myChrono(false);
       for (size_t i = 0; i < theIterations; i++) {
         const auto    mySize = support::choice(theSizes, myRv);
-        LambdaRequest myReq("clambda0", std::string(mySize, 'A'));
+        LambdaRequest myReq(theLambda, std::string(mySize, 'A'));
         myChrono.start();
         const auto mySuccess =
             checkResponse(theClient.RunLambda(myReq, false), mySize);
@@ -145,21 +178,25 @@ TEST_F(TestParallelCalls, DISABLED_test_single) {
     const std::list<size_t> theSizes;
     const size_t            theIterations;
     Data&                   theData;
+    const std::string       theLambda;
   };
   support::ThreadPool<RandomCaller> myThreadPool;
-  Data                              myDelaysDouble;
-  for (size_t i = 0; i < NTHREADS; i++) {
-    myThreadPool.add(RandomCaller(myClient, mySizes, N, myDelaysDouble));
+  for (size_t i = 0; i < theConcurrency; i++) {
+    myThreadPool.add(
+        RandomCaller(myClient, theSizes, theNumCalls, myDelays, theLambda));
   }
   myThreadPool.start();
-  ASSERT_TRUE(myThreadPool.wait().empty());
+  const auto ret = myThreadPool.wait();
+  ASSERT_TRUE(ret.empty()) << '\n' << ::toString(ret, "\n");
 
-  // print delays
-  std::list<Data*> myDataPtrs({&myDelaysSingle, &myDelaysDouble});
-  for (const auto myDataPtr : myDataPtrs) {
-    for (const auto& elem : *myDataPtr) {
-      std::cout << elem.first << '\t' << ::toStringStd(elem.second, "\t")
-                << std::endl;
+  // save delays
+  for (const auto& elem : myDelays) {
+    const auto myFilename =
+        theOutput + "-" + std::to_string(elem.first) + ".dat";
+    std::ofstream myOut(myFilename);
+    ASSERT_TRUE(myOut) << "could not open file for writing: " << myFilename;
+    for (const auto& myValue : elem.second) {
+      myOut << myValue << '\n';
     }
   }
 }
