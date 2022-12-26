@@ -110,6 +110,8 @@ if __name__ == "__main__":
             "numcalls": [int, 10, "number of calls per thread"],
         },
         {
+            "duration": 0,
+            "dispatchertype": "rtt",
             "cpu_limit": -1.0,
             "nat": False,
             "controller": "flat",
