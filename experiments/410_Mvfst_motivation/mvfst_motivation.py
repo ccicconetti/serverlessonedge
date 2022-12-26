@@ -106,7 +106,7 @@ if __name__ == "__main__":
             "concurrency": [int, 1, "number of concurrent operations"],
             "bw": [float, 100, "link bandwidth, in Mb/s"],
             "delay": [float, 1, "link delay, in ms"],
-            "loss": [float, 0, "link packet loss probability, in %"],
+            "loss": [float, 0, "link packet loss probability, in %%"],
             "numcalls": [int, 10, "number of calls per thread"],
         },
         {
