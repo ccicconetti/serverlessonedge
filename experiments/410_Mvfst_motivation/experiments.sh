@@ -13,10 +13,6 @@ function run {
   for d in $delays ; do
   for b in $bandwidths ; do
 
-    if [[ $s -eq $l ]] ; then
-      continue
-    fi
-
     mangle="c=$c.b=$b.d=$d.l=$l.$x"
     
     cmd="python $script_name --concurrency $c --loss $l --delay $d --bw $b --numcalls $duration --seed $x"
