@@ -13,6 +13,7 @@ git submodule update --init --recursive
 sudo etsimec/utils/build_deps.sh
 cd build/debug/
 ../build.sh g++
+make -j5
 ctest
 ```
 
