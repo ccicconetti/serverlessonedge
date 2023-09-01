@@ -31,7 +31,7 @@ SOFTWARE.
 
 #include "Edge/computer.h"
 #include "Edge/edgeclientmulti.h"
-#include "Edge/edgecomputer.h"
+#include "Edge/edgecomputersim.h"
 #include "Edge/edgeservergrpc.h"
 #include "Edge/edgeserverimpl.h"
 #include "Edge/lambda.h"
@@ -57,7 +57,7 @@ struct TestEdgeClientMulti : public ::testing::Test {
 
   static std::unique_ptr<EdgeComputer>
   makeComputer(const std::string& aEndpoint, const double aCpuSpeed = 1e9) {
-    auto ret = std::make_unique<EdgeComputer>(
+    auto ret = std::make_unique<EdgeComputerSim>(
         aEndpoint, false, Computer::UtilCallback());
     ret->computer().addProcessor(
         "cpu", ProcessorType::GenericCpu, aCpuSpeed, 1, 1);

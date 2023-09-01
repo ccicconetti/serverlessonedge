@@ -31,8 +31,8 @@ SOFTWARE.
 
 #include "Edge/composer.h"
 #include "Edge/computer.h"
-#include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerserver.h"
+#include "Edge/edgecomputersim.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgeserverimpl.h"
 #include "Edge/edgeserverimplfactory.h"
@@ -122,10 +122,10 @@ int main(int argc, char* argv[]) {
     const auto myAsynchronous = myCli.varMap().count("asynchronous") > 0 ||
                                 not myCompanionEndpoint.empty();
 
-    ec::EdgeComputer myServer(myAsynchronous ? myCli.numThreads() : 0,
-                              myCli.serverEndpoint(),
-                              myCli.secure(),
-                              myUtilCallback);
+    ec::EdgeComputerSim myServer(myAsynchronous ? myCli.numThreads() : 0,
+                                 myCli.serverEndpoint(),
+                                 myCli.secure(),
+                                 myUtilCallback);
     if (not myCompanionEndpoint.empty()) {
       myServer.companion(myCompanionEndpoint);
     }

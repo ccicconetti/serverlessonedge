@@ -24,6 +24,7 @@ add_library(uiiitedge STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/edgeclientpool.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputerclient.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputersim.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputerserver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgecomputerwsk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/edgecontroller.cpp

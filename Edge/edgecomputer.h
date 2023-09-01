@@ -31,7 +31,6 @@ SOFTWARE.
 
 #pragma once
 
-#include "Edge/computer.h"
 #include "Edge/edgeserver.h"
 #include "Support/chrono.h"
 #include "Support/queue.h"
@@ -51,25 +50,25 @@ class EdgeClientGrpc;
 class StateClient;
 
 /**
- * @brief Simulator of an edge server responding to lambda function invocations.
+ * @brief Edge server responding to lambda function invocations.
  *
  * Depending on the function invocation received it reacts differently:
  *
- * - if it is a dry request, then the function is not actually simulated but
+ * - if it is a dry request, then the function is not actually invoked but
  * an immediate reply is given with an estimate of the time it would require
- * to run the function in the current conditions
+ * to run the function in the current conditions, if available
  *
- * - if it is a synchronous request, then the function is simulated and
- * then a reply is issued to the invoker
+ * - if it is a synchronous request, then the function is invoked and
+ * a reply is issued to the invoker
  *
  * - if it is an asynchronous function request, then an immediate response is
- * issued to the invoker, and then after simulating the function the real
+ * issued to the invoker, and then after invoking the function the real
  * response is sent to the callback specified in the request (which can be
  * different from the invoker)
  *
  * - if it is chain of function invocations, which are always asynchronous,
- * then an immediate response is issued to the invoker without simulating
- * the function; then, after simulating the function, if the current
+ * then an immediate response is issued to the invoker without invoking
+ * the function; then, after invoking the function, if the current
  * function is the last in the chain then the response is sent to the callback
  * specified in the request, otherwise a new function is invoked on the
  * next computer through the companion endpoint
@@ -77,17 +76,20 @@ class StateClient;
  * - if it is a DAG workflow, then the behavior is the same as with a chain
  * of functions with two differences:
  *
- *   1) the simulation of the function is started only after all the
+ *   1) the invocation of the function is started only after all the
  *   invocations from the predecessors of the function have been received:
  *   if the current function has only one ingress in the DAG, then it
  *   behaves like a function chain; if it has N > 1 incoming edges in the DAG,
  *   then it skips the first (N-1) invocations received and then only
- *   handles the function simulation when receiving the N-th invocation
+ *   handles the function invocation when receiving the N-th invocation
  *
  *   2) since a function can have > 1 outgoing edges in the DAG, after
- *   the simulation it invokes all of them
+ *   the invocation, it invokes all of them
+ *
+ * Specialized classes must define the methods to invoke a function (both
+ * real invocation and dry run).
  */
-class EdgeComputer final : public EdgeServer
+class EdgeComputer : public EdgeServer
 {
   /**
    * Descriptor for a pending lambda request.
@@ -108,8 +110,6 @@ class EdgeComputer final : public EdgeServer
     bool                                  theDone;
     support::Chrono                       theChrono;
   };
-
-  using UtilCallback = Computer::UtilCallback;
 
   class AsyncWorker final
   {
@@ -134,28 +134,18 @@ class EdgeComputer final : public EdgeServer
    *
    * \param aSecure if true use SSL/TLS authentication.
    *
-   * \param aCallback the function called as new load values are available.
-   *
    * The companion end-point is empty by default. If needed, i.e., if this
    * edge computer is expected to serve function chains or DAGs, then it must be
    * set via the companion() method.
    */
-  explicit EdgeComputer(const size_t        aNumThreads,
-                        const std::string&  aServerEndpoint,
-                        const bool          aSecure,
-                        const UtilCallback& aCallback);
+  explicit EdgeComputer(const size_t       aNumThreads,
+                        const std::string& aServerEndpoint,
+                        const bool         aSecure);
 
   //! Create an edge computer that only supports synchronous calls.
-  explicit EdgeComputer(const std::string&  aServerEndpoint,
-                        const bool          aSecure,
-                        const UtilCallback& aCallback);
+  explicit EdgeComputer(const std::string& aServerEndpoint, const bool aSecure);
 
   ~EdgeComputer() override;
-
-  //! \return The computer inside this edge server.
-  Computer& computer() {
-    return theComputer;
-  }
 
   /**
    * @brief Set the companion end-point, which is needed for chains/DAGs.
@@ -183,16 +173,27 @@ class EdgeComputer final : public EdgeServer
    */
   void state(const std::string& aStateEndpoint);
 
- private:
+ protected:
   //! Callback invoked by the computer once a task is complete.
   void taskDone(const uint64_t                               aId,
                 const std::shared_ptr<const LambdaResponse>& aResponse);
 
+ private:
   //! Perform actual processing of a lambda request.
   rpc::LambdaResponse process(const rpc::LambdaRequest& aReq) override;
 
   //! Execute a lambda function (blocks until done).
   rpc::LambdaResponse blockingExecution(const rpc::LambdaRequest& aReq);
+
+  //! Execute a lambda function.
+  virtual double realExecution(const rpc::LambdaRequest& aRequest) = 0;
+
+  //! Estimate the time required to execute a lambda function and its load.
+  virtual double dryExecution(const rpc::LambdaRequest& aRequest,
+                              std::array<double, 3>&    aLastUtils) = 0;
+
+  //! Return a client to access the local state server or throw.
+  StateClient& stateClient() const;
 
   /**
    * @brief Handle remote states.
@@ -216,10 +217,6 @@ class EdgeComputer final : public EdgeServer
   bool handleRemoteStates(const rpc::LambdaRequest& aRequest,
                           rpc::LambdaResponse&      aResponse) const;
 
-  //! Return a client to access the local state server or throw.
-  StateClient& stateClient() const;
-
- private:
   /**
    * @brief Check if the preconditions for running this request are satisfied.
    *
@@ -257,7 +254,6 @@ class EdgeComputer final : public EdgeServer
  private:
   const bool theSecure;
 
-  Computer                                        theComputer;
   std::condition_variable                         theDescriptorsCv;
   std::map<uint64_t, std::unique_ptr<Descriptor>> theDescriptors;
 

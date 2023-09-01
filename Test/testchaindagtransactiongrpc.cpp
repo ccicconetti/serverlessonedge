@@ -35,9 +35,9 @@ SOFTWARE.
 #include "Edge/composer.h"
 #include "Edge/computer.h"
 #include "Edge/edgeclientgrpc.h"
-#include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerclient.h"
 #include "Edge/edgecomputerserver.h"
+#include "Edge/edgecomputersim.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrollerflat.h"
 #include "Edge/edgecontrollerrpc.h"
@@ -111,7 +111,7 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
       for (size_t i = 0; i < theComputerEndpoints.size(); i++) {
         const auto myId = std::to_string(i);
 
-        theComputers.emplace_back(std::make_unique<EdgeComputer>(
+        theComputers.emplace_back(std::make_unique<EdgeComputerSim>(
             theNumThreads, theComputerEndpoints[i], false, [](const auto&) {}));
         theComputers.back()->computer().addProcessor(
             "xeon", ProcessorType::GenericCpu, 4e9, 20, 128 * GB);
@@ -188,7 +188,7 @@ struct TestChainDagTransactionGrpc : public ::testing::Test {
     EdgeServerGrpc                                      theRouterImpl;
     ForwardingTableServer                               theRouterCommand;
     StateServer                                         theStateServer;
-    std::vector<std::unique_ptr<EdgeComputer>>          theComputers;
+    std::vector<std::unique_ptr<EdgeComputerSim>>       theComputers;
     std::vector<std::unique_ptr<EdgeServerImpl>>        theComputerImpls;
     std::vector<std::unique_ptr<StateServer>>           theComputerStateServers;
     std::vector<std::unique_ptr<EdgeRouter>>            theCompanions;

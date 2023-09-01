@@ -158,26 +158,17 @@ void EdgeComputer::AsyncWorker::stop() {
   // noop
 }
 
-EdgeComputer::EdgeComputer(const std::string&  aServerEndpoint,
-                           const bool          aSecure,
-                           const UtilCallback& aUtilCallback)
-    : EdgeComputer(0, aServerEndpoint, aSecure, aUtilCallback) {
+EdgeComputer::EdgeComputer(const std::string& aServerEndpoint,
+                           const bool         aSecure)
+    : EdgeComputer(0, aServerEndpoint, aSecure) {
   // noop
 }
 
-EdgeComputer::EdgeComputer(const size_t        aNumThreads,
-                           const std::string&  aServerEndpoint,
-                           const bool          aSecure,
-                           const UtilCallback& aUtilCallback)
+EdgeComputer::EdgeComputer(const size_t       aNumThreads,
+                           const std::string& aServerEndpoint,
+                           const bool         aSecure)
     : EdgeServer(aServerEndpoint)
     , theSecure(aSecure)
-    , theComputer(
-          "computer@" + aServerEndpoint,
-          [this](const uint64_t                               aId,
-                 const std::shared_ptr<const LambdaResponse>& aResponse) {
-            taskDone(aId, aResponse);
-          },
-          aUtilCallback)
     , theDescriptorsCv()
     , theDescriptors()
     , theAsyncWorkers(aNumThreads == 0 ? nullptr :
@@ -302,8 +293,7 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
 
       // convert seconds to milliseconds
       std::array<double, 3> myLastUtils;
-      myResp.set_ptime(
-          0.5 + theComputer.simTask(LambdaRequest(aReq), myLastUtils) * 1e3);
+      myResp.set_ptime(dryExecution(aReq, myLastUtils) * 1e3);
       myResp.set_load1(0.5 + myLastUtils[0] * 100);
       myResp.set_load10(0.5 + myLastUtils[1] * 100);
       myResp.set_load30(0.5 + myLastUtils[2] * 100);
@@ -331,6 +321,42 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
 
   myResp.set_hops(aReq.hops() + 1);
   myResp.set_retcode(myRetCode);
+  return myResp;
+}
+
+rpc::LambdaResponse
+EdgeComputer::blockingExecution(const rpc::LambdaRequest& aReq) {
+  // the task must be added outside the critical section below
+  // to avoid deadlock due to a race condition on tasks
+  // that are very short (and become completed before
+  // a new descriptor is added to theDescriptors)
+  const auto myId = realExecution(aReq);
+
+  std::unique_lock<std::mutex> myLock(theMutex);
+
+  auto myNewDesc = std::make_unique<Descriptor>();
+
+  const auto myIt = theDescriptors.insert(std::make_pair(myId, nullptr));
+  assert(myIt.second);
+  myIt.first->second = std::move(myNewDesc);
+  theDescriptorsCv.notify_one();
+  auto& myDescriptor = *myIt.first->second;
+
+  // wait until we get a response
+  myDescriptor.theCondition.wait(
+      myLock, [&myDescriptor]() { return myDescriptor.theDone; });
+
+  assert(myDescriptor.theResponse);
+  auto myResp = myDescriptor.theResponse->toProtobuf();
+  myResp.set_ptime(myDescriptor.theChrono.stop() * 1e3 + 0.5); // to ms
+
+  if (not handleRemoteStates(aReq, myResp)) {
+    throw std::runtime_error("could not handle all the remote states");
+  }
+
+  VLOG(2) << "number of busy descriptors " << theDescriptors.size();
+  theDescriptors.erase(myIt.first);
+
   return myResp;
 }
 
@@ -390,42 +416,6 @@ bool EdgeComputer::lastFunction(const rpc::LambdaRequest& aRequest) {
 
 std::string EdgeComputer::makeHash(const rpc::LambdaRequest& aRequest) {
   return std::to_string(aRequest.nextfunctionindex()) + "-" + aRequest.uuid();
-}
-
-rpc::LambdaResponse
-EdgeComputer::blockingExecution(const rpc::LambdaRequest& aReq) {
-  // the task must be added outside the critical section below
-  // to avoid deadlock due to a race condition on tasks
-  // that are very short (and become completed before
-  // a new descriptor is added to theDescriptors)
-  const auto myId = theComputer.addTask(LambdaRequest(aReq));
-
-  std::unique_lock<std::mutex> myLock(theMutex);
-
-  auto myNewDesc = std::make_unique<Descriptor>();
-
-  const auto myIt = theDescriptors.insert(std::make_pair(myId, nullptr));
-  assert(myIt.second);
-  myIt.first->second = std::move(myNewDesc);
-  theDescriptorsCv.notify_one();
-  auto& myDescriptor = *myIt.first->second;
-
-  // wait until we get a response
-  myDescriptor.theCondition.wait(
-      myLock, [&myDescriptor]() { return myDescriptor.theDone; });
-
-  assert(myDescriptor.theResponse);
-  auto myResp = myDescriptor.theResponse->toProtobuf();
-  myResp.set_ptime(myDescriptor.theChrono.stop() * 1e3 + 0.5); // to ms
-
-  if (not handleRemoteStates(aReq, myResp)) {
-    throw std::runtime_error("could not handle all the remote states");
-  }
-
-  VLOG(2) << "number of busy descriptors " << theDescriptors.size();
-  theDescriptors.erase(myIt.first);
-
-  return myResp;
 }
 
 bool EdgeComputer::handleRemoteStates(const rpc::LambdaRequest& aRequest,

@@ -32,7 +32,7 @@ SOFTWARE.
 #include "Edge/composer.h"
 #include "Edge/computer.h"
 #include "Edge/edgeclientgrpc.h"
-#include "Edge/edgecomputer.h"
+#include "Edge/edgecomputersim.h"
 #include "Edge/edgeservergrpc.h"
 #include "Edge/edgeserverimpl.h"
 #include "Support/chrono.h"
@@ -70,7 +70,7 @@ struct TestParallelCalls : public ::testing::Test {
     getEnv();
 
     if (theEndpoint.find("localhost") != std::string::npos) {
-      theComputer = std::make_unique<EdgeComputer>(
+      theComputer = std::make_unique<EdgeComputerSim>(
           theConcurrency, theEndpoint, theSecure, [](const auto&) {});
 
       Composer()(
@@ -134,8 +134,8 @@ struct TestParallelCalls : public ::testing::Test {
   std::list<size_t> theSizes;
   bool              theSecure = false;
 
-  std::unique_ptr<EdgeComputer>   theComputer;
-  std::unique_ptr<EdgeServerImpl> theComputerServerImpl;
+  std::unique_ptr<EdgeComputerSim> theComputer;
+  std::unique_ptr<EdgeServerImpl>  theComputerServerImpl;
 };
 
 TEST_F(TestParallelCalls, DISABLED_test_single) {

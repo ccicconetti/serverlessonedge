@@ -33,9 +33,9 @@ SOFTWARE.
 
 #include "Edge/composer.h"
 #include "Edge/computer.h"
-#include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerclient.h"
 #include "Edge/edgecomputerserver.h"
+#include "Edge/edgecomputersim.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrolleretsibalanced.h"
 #include "Edge/edgecontrollerserver.h"
@@ -126,8 +126,8 @@ struct TestEtsiTransaction : public ::testing::Test {
     uiiit::etsimec::StaticUeAppLcmProxy theProxy;
     uiiit::etsimec::GrpcUeAppLcmProxy   theProxyServer;
     EdgeControllerServer                theController;
-    EdgeComputer                        theComputer1;
-    EdgeComputer                        theComputer2;
+    EdgeComputerSim                     theComputer1;
+    EdgeComputerSim                     theComputer2;
     std::unique_ptr<EdgeServerImpl>     theServerImpl1;
     std::unique_ptr<EdgeServerImpl>     theServerImpl2;
   };

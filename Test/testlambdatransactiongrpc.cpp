@@ -33,9 +33,9 @@ SOFTWARE.
 #include "Edge/composer.h"
 #include "Edge/computer.h"
 #include "Edge/edgeclientgrpc.h"
-#include "Edge/edgecomputer.h"
 #include "Edge/edgecomputerclient.h"
 #include "Edge/edgecomputerserver.h"
+#include "Edge/edgecomputersim.h"
 #include "Edge/edgecontrollerclient.h"
 #include "Edge/edgecontrollerflat.h"
 #include "Edge/edgecontrollerrpc.h"
@@ -182,7 +182,7 @@ struct TestLambdaTransactionGrpc : public ::testing::Test {
 
     EdgeControllerServer                   theController;
     EdgeComputerServer                     theUtilServer;
-    EdgeComputer                           theComputer;
+    EdgeComputerSim                        theComputer;
     std::unique_ptr<EdgeServerImpl>        theComputerServerImpl;
     std::unique_ptr<EdgeRouter>            theRouter;
     std::unique_ptr<EdgeDispatcher>        theDispatcher;
