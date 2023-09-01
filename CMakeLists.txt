@@ -20,11 +20,6 @@ find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 set(Boost_USE_MULTITHREADED TRUE)
 set(Boost_NO_BOOST_CMAKE TRUE)
-find_package(Boost
-  REQUIRED
-  COMPONENTS program_options filesystem system chrono thread context
-  HINTS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/mvfst/_build/
-)
 find_package(CppREST REQUIRED) # populates CPP_REST_INCLUDE_DIR and CPP_REST_LIBRARY
 if(WITH_OPENCV)
   MESSAGE("Compiling with OpenCV support")
@@ -34,7 +29,17 @@ if(WITH_QUIC)
   MESSAGE("Compiling with QUIC support")
 endif()
 if(WITH_MVFST)
-  MESSAGE("Compiling with mvfst support")
+  MESSAGE("Compiling with mvfst support -- must use Boost shipped with it")
+  find_package(Boost
+    REQUIRED
+    COMPONENTS program_options filesystem system chrono thread context
+    HINTS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/mvfst/_build/
+  )
+else()
+  find_package(Boost
+    REQUIRED
+    COMPONENTS program_options filesystem system chrono thread context
+  )
 endif()
 
 set(PROXYGEN_ROOT "${PROJECT_SOURCE_DIR}/thirdparty/proxygen")
