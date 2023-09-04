@@ -385,37 +385,35 @@ void Client::recordStat(const edge::LambdaResponse& aResponse) {
   const auto myElapsed = theLambdaChrono.stop();
 
   // name to be used for logging and statistics
-  const auto myName =
-      (theChain.get() != nullptr) ?
-          theChain->name() :
-          (theDag.get() != nullptr) ? theDag->name() : theLambda;
+  const auto myName = (theChain.get() != nullptr) ? theChain->name() :
+                      (theDag.get() != nullptr)   ? theDag->name() :
+                                                    theLambda;
 
-  if (aResponse.theRetCode != "OK") {
-    VLOG(1) << "invalid response to " << myName << ": " << aResponse.theRetCode;
-
-    // do not update the output and internal statistics in case of failure
-    return;
-  } else {
+  if (aResponse.theRetCode == "OK") {
     VLOG(1) << myName << ", took " << (myElapsed * 1e3 + 0.5) << " ms, return "
             << aResponse;
-  }
 
-  if (theDry) {
-    theSaver(aResponse.processingTimeSeconds(),
-             aResponse.theLoad1,
-             aResponse.theResponder,
-             myName,
-             aResponse.theHops);
+    if (theDry) {
+      theSaver(aResponse.processingTimeSeconds(),
+               aResponse.theLoad1,
+               aResponse.theResponder,
+               myName,
+               aResponse.theHops);
+    } else {
+      theSaver(myElapsed,
+               aResponse.theLoad1,
+               aResponse.theResponder,
+               myName,
+               aResponse.theHops);
+    }
+
+    theLatencyStat(myElapsed);
+    theProcessingStat(aResponse.processingTimeSeconds());
+
   } else {
-    theSaver(myElapsed,
-             aResponse.theLoad1,
-             aResponse.theResponder,
-             myName,
-             aResponse.theHops);
+    // do not update the output and internal statistics in case of failure
+    VLOG(1) << "invalid response to " << myName << ": " << aResponse.theRetCode;
   }
-
-  theLatencyStat(myElapsed);
-  theProcessingStat(aResponse.processingTimeSeconds());
 
   // stat recorded, sendRequest() may proceed
   theSendRequestQueue.push(0);
