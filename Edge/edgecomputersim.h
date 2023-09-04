@@ -77,7 +77,7 @@ class EdgeComputerSim final : public EdgeComputer
   }
 
  private:
-  double realExecution(const rpc::LambdaRequest& aRequest) override;
+  uint64_t realExecution(const rpc::LambdaRequest& aRequest) override;
 
   double dryExecution(const rpc::LambdaRequest& aRequest,
                       std::array<double, 3>&    aLastUtils) override;

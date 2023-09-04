@@ -85,6 +85,10 @@ add_executable(testedgeclientmulti testmain.cpp testedgeclientmulti.cpp)
 target_link_libraries(testedgeclientmulti ${LIBS})
 gtest_discover_tests(testedgeclientmulti)
 
+add_executable(testedgecomputerhttp testmain.cpp testedgecomputerhttp.cpp)
+target_link_libraries(testedgecomputerhttp ${LIBS})
+gtest_discover_tests(testedgecomputerhttp)
+
 add_executable(testedgecontrolleretsi testmain.cpp testedgecontrolleretsi.cpp)
 target_link_libraries(testedgecontrolleretsi ${LIBS})
 gtest_discover_tests(testedgecontrolleretsi)

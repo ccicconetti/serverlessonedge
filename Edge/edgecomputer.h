@@ -185,8 +185,13 @@ class EdgeComputer : public EdgeServer
   //! Execute a lambda function (blocks until done).
   rpc::LambdaResponse blockingExecution(const rpc::LambdaRequest& aReq);
 
-  //! Execute a lambda function.
-  virtual double realExecution(const rpc::LambdaRequest& aRequest) = 0;
+  /**
+   * Starts the execution of a lambda function.
+   *
+   * @return a unique identifier of the task just started, which must be
+   * terminated by calling taskDone().
+   */
+  virtual uint64_t realExecution(const rpc::LambdaRequest& aRequest) = 0;
 
   //! Estimate the time required to execute a lambda function and its load.
   virtual double dryExecution(const rpc::LambdaRequest& aRequest,

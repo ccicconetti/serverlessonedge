@@ -61,7 +61,7 @@ EdgeComputerSim::EdgeComputerSim(const std::string&  aServerEndpoint,
   // noop
 }
 
-double EdgeComputerSim::realExecution(const rpc::LambdaRequest& aRequest) {
+uint64_t EdgeComputerSim::realExecution(const rpc::LambdaRequest& aRequest) {
   return theComputer.addTask(LambdaRequest(aRequest));
 }
 
