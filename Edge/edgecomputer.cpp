@@ -311,7 +311,8 @@ rpc::LambdaResponse EdgeComputer::process(const rpc::LambdaRequest& aReq) {
 
     } else {
       // actual execution of the lambda function
-      myResp = blockingExecution(aReq);
+      myResp    = blockingExecution(aReq);
+      myRetCode = myResp.retcode();
     }
   } catch (const std::exception& aErr) {
     myRetCode = aErr.what();
