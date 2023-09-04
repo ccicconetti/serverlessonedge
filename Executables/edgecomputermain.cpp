@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "Edge/composer.h"
 #include "Edge/computer.h"
+#include "Edge/edgecomputerhttp.h"
 #include "Edge/edgecomputerserver.h"
 #include "Edge/edgecomputersim.h"
 #include "Edge/edgecontrollerclient.h"
@@ -47,19 +48,23 @@ SOFTWARE.
 #include <boost/program_options.hpp>
 
 #include <cstdlib>
+#include <stdexcept>
 
 namespace po = boost::program_options;
 namespace ec = uiiit::edge;
+namespace us = uiiit::support;
 
 int main(int argc, char* argv[]) {
-  uiiit::support::GlogRaii          myGlogRaii(argv[0]);
-  uiiit::support::SignalHandlerWait mySignalHandler;
+  us::GlogRaii          myGlogRaii(argv[0]);
+  us::SignalHandlerWait mySignalHandler;
 
   std::string myUtilServerEndpoint;
   std::string myConf;
   std::string myServerConf;
+  std::string myComputerType;
   std::string myCompanionEndpoint;
   std::string myStateEndpoint;
+  std::string myHttpConfStr;
 
   po::options_description myDesc("Allowed options");
   // clang-format off
@@ -67,6 +72,9 @@ int main(int argc, char* argv[]) {
   ("server-conf",
    po::value<std::string>(&myServerConf)->default_value("type=grpc"),
    "Comma-separated configuration of the server.")
+  ("computer-type",
+   po::value<std::string>(&myComputerType)->default_value("sim"),
+   "Edge computer type (one of: sim, http).")
   ("utilization-endpoint",
    po::value<std::string>(&myUtilServerEndpoint)->default_value("0.0.0.0:6476"),
    "Utilization server end-point. If empty utilization is not computed.")
@@ -86,7 +94,10 @@ int main(int argc, char* argv[]) {
      "num-cpu-workers=4,"
      "num-gpu-containers=1,"
      "num-gpu-workers=2"),
-   "Computer configuration. Use type=file,path=<myfile.json> to read configuration from file")
+   "Computer configuration. Use type=file,path=<myfile.json> to read configuration from file. Used only with --computer-type sim")
+  ("http-conf",
+   po::value<std::string>(&myHttpConfStr)->default_value("gateway-url=http://localhost:8080/,num-clients=5,type=OpenFaaS(0.8)"),
+   "Edge computer type (one of: sim, http). Used only with --computer-type http")
   ("json-example", "Dump an JSON configuration file and exit.")
   ;
   // clang-format on
@@ -108,26 +119,59 @@ int main(int argc, char* argv[]) {
           "Cannot specify --no-state-server without --state-endpoint");
     }
 
-    ec::Computer::UtilCallback              myUtilCallback;
-    std::unique_ptr<ec::EdgeComputerServer> myUtilServer;
-    if (not myUtilServerEndpoint.empty()) {
-      myUtilServer.reset(new ec::EdgeComputerServer(myUtilServerEndpoint));
-      myUtilCallback =
-          [&myUtilServer](const std::map<std::string, double>& aUtil) {
-            myUtilServer->add(aUtil);
-          };
-      myUtilServer->run(false); // non-blocking
-    }
-
     const auto myAsynchronous = myCli.varMap().count("asynchronous") > 0 ||
                                 not myCompanionEndpoint.empty();
 
-    ec::EdgeComputerSim myServer(myAsynchronous ? myCli.numThreads() : 0,
-                                 myCli.serverEndpoint(),
-                                 myCli.secure(),
-                                 myUtilCallback);
+    std::unique_ptr<ec::EdgeComputer>       myEdgeComputer;
+    std::unique_ptr<ec::EdgeComputerServer> myUtilServer;
+    if (myComputerType == "sim") {
+
+      ec::Computer::UtilCallback myUtilCallback;
+      if (not myUtilServerEndpoint.empty()) {
+        myUtilServer.reset(new ec::EdgeComputerServer(myUtilServerEndpoint));
+        myUtilCallback =
+            [&myUtilServer](const std::map<std::string, double>& aUtil) {
+              myUtilServer->add(aUtil);
+            };
+        myUtilServer->run(false); // non-blocking
+      }
+
+      auto myEdgeComputerSim = std::make_unique<ec::EdgeComputerSim>(
+          myAsynchronous ? myCli.numThreads() : 0,
+          myCli.serverEndpoint(),
+          myCli.secure(),
+          myUtilCallback);
+      ec::Composer()(us::Conf(myConf), myEdgeComputerSim->computer());
+
+      if (myCli.controllerEndpoint().empty()) {
+        VLOG(1) << "No controller specified: announce disabled";
+      } else {
+        ec::EdgeControllerClient myControllerClient(myCli.controllerEndpoint());
+        myControllerClient.announceComputer(
+            myCli.serverEndpoint(),
+            *myEdgeComputerSim->computer().containerList());
+        LOG(INFO) << "Announced to " << myCli.controllerEndpoint();
+      }
+
+      myEdgeComputer.reset(myEdgeComputerSim.release());
+
+    } else if (myComputerType == "http") {
+      const us::Conf myHttpConf(myHttpConfStr);
+      myEdgeComputer = std::make_unique<ec::EdgeComputerHttp>(
+          myAsynchronous ? myCli.numThreads() : 0,
+          myHttpConf.getUint("num-clients"),
+          myCli.serverEndpoint(),
+          myCli.secure(),
+          ec::edgeComputerHttpTypeFromString(myHttpConf("type")),
+          myHttpConf("gateway-url"));
+    }
+
+    if (not myEdgeComputer) {
+      throw std::runtime_error("unknown edge computer type: " + myComputerType);
+    }
+
     if (not myCompanionEndpoint.empty()) {
-      myServer.companion(myCompanionEndpoint);
+      myEdgeComputer->companion(myCompanionEndpoint);
     }
 
     std::unique_ptr<ec::StateServer> myStateServer;
@@ -136,24 +180,13 @@ int main(int argc, char* argv[]) {
       myStateServer = std::make_unique<ec::StateServer>(myStateEndpoint);
       myStateServer->run(false);
     }
-    myServer.state(myStateEndpoint); // end-point can be empty
+    myEdgeComputer->state(myStateEndpoint); // end-point can be empty
 
     const auto myServerImpl =
-        ec::EdgeServerImplFactory::make(myServer,
+        ec::EdgeServerImplFactory::make(*myEdgeComputer,
                                         myCli.numThreads(),
                                         myCli.secure(),
-                                        uiiit::support::Conf(myServerConf));
-
-    ec::Composer()(uiiit::support::Conf(myConf), myServer.computer());
-
-    if (myCli.controllerEndpoint().empty()) {
-      VLOG(1) << "No controller specified: announce disabled";
-    } else {
-      ec::EdgeControllerClient myControllerClient(myCli.controllerEndpoint());
-      myControllerClient.announceComputer(myCli.serverEndpoint(),
-                                          *myServer.computer().containerList());
-      LOG(INFO) << "Announced to " << myCli.controllerEndpoint();
-    }
+                                        us::Conf(myServerConf));
 
     myServerImpl->run();    // non-blocking
     mySignalHandler.wait(); // blocking
@@ -166,7 +199,7 @@ int main(int argc, char* argv[]) {
 
     return EXIT_SUCCESS;
 
-  } catch (const uiiit::support::CliExit&) {
+  } catch (const us::CliExit&) {
     return EXIT_SUCCESS; // clean exit
 
   } catch (const std::exception& aErr) {

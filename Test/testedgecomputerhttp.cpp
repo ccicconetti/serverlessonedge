@@ -43,7 +43,7 @@ struct TrivialFaasPlatform : public rest::Server {
   TrivialFaasPlatform(const std::string& aUri)
       : rest::Server(aUri) {
     (*this)(web::http::methods::POST,
-            "/function/lambda1",
+            "/function/clambda0",
             [this](web::http::http_request aReq) { handlePost(aReq); });
   }
 
@@ -51,11 +51,12 @@ struct TrivialFaasPlatform : public rest::Server {
     const auto myRequest = aReq.extract_json().get();
     if (not myRequest.has_field("input")) {
       aReq.reply(web::http::status_codes::BadRequest);
+    } else {
+      web::json::value myResponse;
+      const auto       myInput = myRequest.at("input").as_string();
+      myResponse["output"]     = web::json::value(myInput + myInput);
+      aReq.reply(web::http::status_codes::OK, myResponse);
     }
-    web::json::value myResponse;
-    const auto       myInput = myRequest.at("input").as_string();
-    myResponse["output"]     = web::json::value(myInput + myInput);
-    aReq.reply(web::http::status_codes::OK, myResponse);
   }
 };
 
@@ -80,7 +81,7 @@ TEST_F(TestEdgeComputerHttp, test_sync_server) {
   myServerGrpc.run();
 
   EdgeClientGrpc myClient(theEndpoint, theSecure);
-  LambdaRequest  myReq("lambda1", "abc");
+  LambdaRequest  myReq("clambda0", "{\"input\" : \"abc\"}");
 
   // FaaS platform not started
   const auto myResponseFail = myClient.RunLambda(myReq, false);
@@ -94,7 +95,13 @@ TEST_F(TestEdgeComputerHttp, test_sync_server) {
   const auto myResponseSucc = myClient.RunLambda(myReq, false);
   LOG(INFO) << myResponseSucc;
   ASSERT_EQ("OK", myResponseSucc.theRetCode);
-  ASSERT_EQ("abcabc", myResponseSucc.theOutput);
+  ASSERT_EQ("{\"output\":\"abcabc\"}", myResponseSucc.theOutput);
+}
+
+TEST_F(TestEdgeComputerHttp, DISABLED_trivial_faas_platform) {
+  TrivialFaasPlatform myFaasPlatform(theGatewayUrl);
+  myFaasPlatform.start();
+  ::pause();
 }
 
 } // namespace edge

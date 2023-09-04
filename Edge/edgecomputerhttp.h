@@ -128,7 +128,8 @@ class EdgeComputerHttp final : public EdgeComputer
   support::Queue<Job>                          theJobs;
 };
 
-std::string toString(const EdgeComputerHttp::Type aType);
+std::string            toString(const EdgeComputerHttp::Type aType);
+EdgeComputerHttp::Type edgeComputerHttpTypeFromString(const std::string& aType);
 
 } // end namespace edge
 } // end namespace uiiit

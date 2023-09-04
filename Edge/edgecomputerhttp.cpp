@@ -102,6 +102,14 @@ std::string toString(const EdgeComputerHttp::Type aType) {
   assert(false);
 }
 
+EdgeComputerHttp::Type
+edgeComputerHttpTypeFromString(const std::string& aType) {
+  if (aType == "OpenFaaS(0.8)") {
+    return EdgeComputerHttp::Type::OPENFAAS_0_8;
+  }
+  throw std::runtime_error("unknown EdgeComputerHttp type: " + aType);
+}
+
 EdgeComputerHttp::Worker::Worker(EdgeComputerHttp&    aParent,
                                  const Type           aType,
                                  const std::string&   aGatewayUrl,
@@ -111,7 +119,7 @@ EdgeComputerHttp::Worker::Worker(EdgeComputerHttp&    aParent,
     , theClient(std::make_unique<rest::Client>(aGatewayUrl, false))
     , theQueue(aQueue) {
   LOG(INFO) << "EdgeComputerHttp worker created, type " << toString(aType)
-            << ", gateway " << aGatewayUrl;
+            << ", gateway-url " << aGatewayUrl;
 }
 
 void EdgeComputerHttp::Worker::operator()() {
@@ -122,21 +130,18 @@ void EdgeComputerHttp::Worker::operator()() {
       const auto myJob = theQueue.pop();
       myId             = myJob.theId;
       if (theType == Type::OPENFAAS_0_8) {
-        web::json::value myRequest;
-        myRequest["input"] = web::json::value(myJob.theRequest.input());
+        const auto myRequest =
+            web::json::value::parse(myJob.theRequest.input());
         const auto myResult =
             theClient->post(myRequest, "function/" + myJob.theRequest.name());
 
         if (myResult.first != web::http::status_codes::OK) {
           myRetCode = "error HTTP response received (" +
                       std::to_string(myResult.first) + ")";
-        } else if (not myResult.second.has_field("output")) {
-          myRetCode = "invalid response received, no 'output' field";
         } else {
-          theParent.taskDone(
-              myId,
-              std::make_shared<const LambdaResponse>(
-                  "OK", myResult.second.as_object().at("output").as_string()));
+          theParent.taskDone(myId,
+                             std::make_shared<const LambdaResponse>(
+                                 "OK", myResult.second.serialize()));
         }
       }
     } catch (const support::QueueClosed&) {
