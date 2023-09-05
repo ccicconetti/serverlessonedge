@@ -48,15 +48,9 @@ struct TrivialFaasPlatform : public rest::Server {
   }
 
   void handlePost(web::http::http_request aReq) {
-    const auto myRequest = aReq.extract_json().get();
-    if (not myRequest.has_field("input")) {
-      aReq.reply(web::http::status_codes::BadRequest);
-    } else {
-      web::json::value myResponse;
-      const auto       myInput = myRequest.at("input").as_string();
-      myResponse["output"]     = web::json::value(myInput + myInput);
-      aReq.reply(web::http::status_codes::OK, myResponse);
-    }
+    const auto myRequest  = aReq.extract_string().get();
+    const auto myResponse = myRequest + myRequest;
+    aReq.reply(web::http::status_codes::OK, myResponse);
   }
 };
 
@@ -81,7 +75,7 @@ TEST_F(TestEdgeComputerHttp, test_sync_server) {
   myServerGrpc.run();
 
   EdgeClientGrpc myClient(theEndpoint, theSecure);
-  LambdaRequest  myReq("clambda0", "{\"input\" : \"abc\"}");
+  LambdaRequest  myReq("clambda0", "abc");
 
   // FaaS platform not started
   const auto myResponseFail = myClient.RunLambda(myReq, false);
@@ -95,7 +89,7 @@ TEST_F(TestEdgeComputerHttp, test_sync_server) {
   const auto myResponseSucc = myClient.RunLambda(myReq, false);
   LOG(INFO) << myResponseSucc;
   ASSERT_EQ("OK", myResponseSucc.theRetCode);
-  ASSERT_EQ("{\"output\":\"abcabc\"}", myResponseSucc.theOutput);
+  ASSERT_EQ("abcabc", myResponseSucc.theOutput);
 }
 
 TEST_F(TestEdgeComputerHttp, DISABLED_trivial_faas_platform) {

@@ -34,8 +34,6 @@ SOFTWARE.
 #include "Edge/edgemessages.h"
 #include "Rest/client.h"
 
-#include <cpprest/json.h>
-
 #include <exception>
 #include <glog/logging.h>
 #include <grpc++/grpc++.h>
@@ -130,18 +128,16 @@ void EdgeComputerHttp::Worker::operator()() {
       const auto myJob = theQueue.pop();
       myId             = myJob.theId;
       if (theType == Type::OPENFAAS_0_8) {
-        const auto myRequest =
-            web::json::value::parse(myJob.theRequest.input());
-        const auto myResult =
-            theClient->post(myRequest, "function/" + myJob.theRequest.name());
+        const auto myResult = theClient->post(
+            myJob.theRequest.input(), "function/" + myJob.theRequest.name());
 
         if (myResult.first != web::http::status_codes::OK) {
           myRetCode = "error HTTP response received (" +
                       std::to_string(myResult.first) + ")";
         } else {
-          theParent.taskDone(myId,
-                             std::make_shared<const LambdaResponse>(
-                                 "OK", myResult.second.serialize()));
+          theParent.taskDone(
+              myId,
+              std::make_shared<const LambdaResponse>("OK", myResult.second));
         }
       }
     } catch (const support::QueueClosed&) {
